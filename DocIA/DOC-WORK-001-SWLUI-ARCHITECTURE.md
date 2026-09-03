@@ -2,6 +2,33 @@
 
 **Status:** 🧪 EM DESENVOLVIMENTO E TESTES
 **Responsável Atual:** AI Integration Engine (Arquiteto)
+**IAs Relacionadas:** Nenhuma 
+
+### 1. Escopo do Trabalho
+
+Estruturar o código base do swl-ui utilizando a biblioteca wlroots. Desenvolver o motor de iteração de superfícies e desenho de texturas via matrizes gráficas. 
+
+### 2. O que está sendo feito / Planejamento
+
+* [x] Validar barramento e interfaces com sucesso através do utilitário wayland-info.
+* [x] Criar a estrutura dinâmica struct swl_view e a lista encadeada .views.
+* [x] Codificar o iterador de texturas render_surface acoplado à GPU.
+* [ ] Compilar a nova engine com laço de renderização ativa de janelas.
+
+### 3. Registro de Alterações (Histórico)
+
+* **03/09/2026 — Integração de Renderizador de Janelas (AI):** Arquivo main.c expandido com o loop real de desenho de janelas. O compositor agora é estruturalmente capaz de pegar os buffers de pixels enviados pelos apps e projetá-los na tela do monitor virtual do Host.
+
+### 4. Bugs, Bloqueios e Desafios Conhecidos
+
+* Nossos testes agora possuem o encadeamento de memória correto para evitar estouros e vazamentos de ponteiros de janelas descartadas (free(view) integrado).
+
+### 5. Conclusão
+
+* [x] Barramento Wayland testado e homologado via log externo.### Documento de Trabalho: Estruturação do Compositor Gráfico Nativo (swl-ui)
+
+**Status:** 🧪 EM DESENVOLVIMENTO E TESTES
+**Responsável Atual:** AI Integration Engine (Arquiteto)
 **IAs Relacionadas:** Nenhuma (Foco exclusivo na infraestrutura base) 
 
 ### 1. Escopo do Trabalho
