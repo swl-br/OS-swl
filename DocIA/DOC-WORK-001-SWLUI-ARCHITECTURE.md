@@ -6,29 +6,26 @@
 
 ### 1. Escopo do Trabalho
 
-Estruturar o código base do swl-ui utilizando a biblioteca wlroots. O objetivo nesta fase inicial é garantir que o compositor inicialize corretamente, gerencie os backends de vídeo de forma limpa e abra o socket Wayland para comunicação. 
+Estruturar o código base do swl-ui utilizando a biblioteca wlroots. Implementar loops de renderização eficientes e gerenciamento de telas. 
 
 ### 2. O que está sendo feito / Planejamento
 
 * [x] Correção de arquitetura: Alinhamento total sobre o uso de wlroots.
 * [x] Implementar a inicialização do display Wayland (wl_display_create).
 * [x] Configurar os subcomponentes do wlroots (Backend, Renderer e Allocator nativos).
-* [x] Criar o loop de eventos principal do servidor para mantê-lo rodando.
-* [ ] Configurar os gerenciadores de saídas de vídeo (Outputs) e superfícies de janelas (XDG Shell).
+* [x] Criar o loop de eventos principal do servidor.
+* [x] Criar infraestrutura de compilação autônoma via swl-ui/Makefile usando pkg-config.
+* [x] **[NOVO]** Implementar gerenciador de telas (wlr_output) e o loop de renderização por frame.
+* [ ] Implementar a infraestrutura de tratamento de superfícies de janelas (XDG Shell) para que os apps consigam se posicionar na tela.
 
 ### 3. Registro de Alterações (Histórico)
 
-* **03/09/2026:** Escrita e validação do esqueleto principal de inicialização em C no arquivo swl-ui/src/main.c. O código gerencia displays, alocadores e cria o socket automaticamente de forma limpa.
+* **03/09/2026 — Evolução de Funcionalidade (AI):** O arquivo main.c foi expandido. Criamos a struct swl_server e implementamos as rotinas server_new_output e output_frame. Agora o compositor consegue pintar a tela com a cor de fundo padrão através da GPU/Mesa.
 
 ### 4. Bugs, Bloqueios e Desafios Conhecidos
 
-* **Observação de Teste:** Ao rodar o binário no Xubuntu, certifique-se de ter a variável de ambiente XDG_RUNTIME_DIR definida no seu terminal para que o wl_display_add_socket_auto consiga criar o arquivo de socket com sucesso.
+* Nossos testes agora precisam de aceleração gráfica básica (OpenGL/EGL) ativa no host de desenvolvimento para que o renderizador limpe a tela sem falhas.
 
-### 5. Integração e Ajuda Necessária
+### 5. Conclusão
 
-* Nenhuma no momento. Esta é a fundação que permitirá tudo funcionar.
-
-### 6. Conclusão
-
-* [x] Inicialização limpa do wl_display sem erros de segmentação.
-* [x] Criação do socket Wayland confirmada na estrutura lógica.
+* [x] Renderizador de frames nativo configurado e limpando o background.
