@@ -54,6 +54,28 @@ pra esta mesma entrega a pedido — ver seção 3 e 4.
 
 ### 4. Registro de Alterações (Histórico)
 
+* **04/09/2026 — Redesign pixel-art a partir da referência oficial (Claude):**
+  Vocês mandaram a imagem oficial da GUI (feita por GPT) — o estilo real é
+  **pixel-art/blocado com sombreamento**, bem diferente da minha primeira
+  leva (linha fina/vetorial). Refiz os 13 ícones do zero: formas
+  geométricas simples (retângulos/polígonos) num grid de baixa resolução
+  (32x32), rasterizadas sem suavização e ampliadas com nearest-neighbor
+  pra manter a borda "pixelada" de propósito. Trocas de iconografia pra
+  bater com a referência: REDE virou antena/wifi (antes era um grafo de
+  nós, não combinava); LIXEIRA virou ciano/teal (a referência não usa
+  vermelho ali). **Duas cores novas que a referência usa e que não
+  existem em `theme.h` ainda:** verde (`drivers`/chip, ~#5fbf7a) e
+  magenta/rosa (`jogos`, ~#d868a8) — usei valores aproximados nos ícones,
+  mas fica pendente decidir se essas cores entram oficialmente em
+  `theme.h` ou se ficam só nos ícones. SVG (fonte) e PNG (runtime, ver
+  decisão da seção 2) atualizados juntos. Nenhum `.c` mudou nesta etapa.
+  **Limitação importante:** o wallpaper "gato pixelado hacker-retrô" da
+  referência é uma ilustração bem mais elaborada (arte detalhada, não só
+  formas geométricas) — reproduzir ela fielmente está fora do que dá pra
+  fazer só com desenho vetorial/código; os 5 wallpapers já entregues
+  (grid/circuit/skyline/terminal-glow/waves) continuam sendo composições
+  proceduais simples na mesma paleta, não uma cópia dessa arte
+  específica.
 * **03/09/2026 — Correção de layout no painel (Claude):** No teste de
   vocês, o bloco direito do painel (`panel.c`) mostrou "MEM ..." e a
   data/hora sobrepostos e ilegíveis. Causa: o layout usava um offset
