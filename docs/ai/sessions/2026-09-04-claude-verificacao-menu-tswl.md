@@ -101,15 +101,10 @@ TSWL, etc.).
 
 ## TODO
 
-1. Validar interativamente o menu iniciar no Xubuntu — agora sim
-   contra o estado completo do repositório (`git pull` recente,
-   `ninja -C build` deve mostrar `menu.c` na lista de arquivos
-   compilados; se não mostrar, o build está desatualizado).
-2. Validar interativamente o TSWL: `WLR_BACKEND=x11 ./build/swlwm -s
-   "../apps/tswl/build/tswl"` (precisa compilar os dois: `swl-ui/` e
-   `apps/tswl/`).
-3. Depois: integração DRM/KMS (item 3 da lista de próximos passos em
-   `PROJECT_STATE.md`).
+1. ~~Validar interativamente o menu iniciar~~ **Feito** — usuário
+   confirmou na máquina Mint: menu funciona, TSWL funciona ("ta lindo").
+2. Próxima tarefa: integração DRM/KMS (item 1 da lista de próximos
+   passos em `PROJECT_STATE.md`).
 
 ## Integração
 
