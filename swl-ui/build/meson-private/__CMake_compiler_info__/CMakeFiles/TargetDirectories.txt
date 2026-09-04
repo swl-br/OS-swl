@@ -1,0 +1,2 @@
+/home/pedro/Downloads/swl-ui/build/meson-private/__CMake_compiler_info__/CMakeFiles/edit_cache.dir
+/home/pedro/Downloads/swl-ui/build/meson-private/__CMake_compiler_info__/CMakeFiles/rebuild_cache.dir

@@ -1,0 +1,56 @@
+[
+  {
+    "directory": "/home/pedro/Downloads/swl-ui/build",
+    "command": "cc -Iswlwm.p -I. -I.. -I../include -I/usr/include/libdrm -I/usr/include/pixman-1 -I/usr/include/cairo -I/usr/include/libpng16 -I/usr/include/freetype2 -I/usr/include/pango-1.0 -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include -I/usr/include/harfbuzz -I/usr/include/libmount -I/usr/include/blkid -I/usr/include/fribidi -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -Wall -Winvalid-pch -Wextra -std=c11 -O3 -pthread -DWLR_USE_UNSTABLE -D_DEFAULT_SOURCE -MD -MQ swlwm.p/src_swlwm.c.o -MF swlwm.p/src_swlwm.c.o.d -o swlwm.p/src_swlwm.c.o -c ../src/swlwm.c",
+    "file": "../src/swlwm.c",
+    "output": "swlwm.p/src_swlwm.c.o"
+  },
+  {
+    "directory": "/home/pedro/Downloads/swl-ui/build",
+    "command": "cc -Iswlwm.p -I. -I.. -I../include -I/usr/include/libdrm -I/usr/include/pixman-1 -I/usr/include/cairo -I/usr/include/libpng16 -I/usr/include/freetype2 -I/usr/include/pango-1.0 -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include -I/usr/include/harfbuzz -I/usr/include/libmount -I/usr/include/blkid -I/usr/include/fribidi -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -Wall -Winvalid-pch -Wextra -std=c11 -O3 -pthread -DWLR_USE_UNSTABLE -D_DEFAULT_SOURCE -MD -MQ swlwm.p/src_xdg-shell-protocol.c.o -MF swlwm.p/src_xdg-shell-protocol.c.o.d -o swlwm.p/src_xdg-shell-protocol.c.o -c ../src/xdg-shell-protocol.c",
+    "file": "../src/xdg-shell-protocol.c",
+    "output": "swlwm.p/src_xdg-shell-protocol.c.o"
+  },
+  {
+    "directory": "/home/pedro/Downloads/swl-ui/build",
+    "command": "cc -Iswlwm.p -I. -I.. -I../include -I/usr/include/libdrm -I/usr/include/pixman-1 -I/usr/include/cairo -I/usr/include/libpng16 -I/usr/include/freetype2 -I/usr/include/pango-1.0 -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include -I/usr/include/harfbuzz -I/usr/include/libmount -I/usr/include/blkid -I/usr/include/fribidi -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -Wall -Winvalid-pch -Wextra -std=c11 -O3 -pthread -DWLR_USE_UNSTABLE -D_DEFAULT_SOURCE -MD -MQ swlwm.p/src_swl_buffer.c.o -MF swlwm.p/src_swl_buffer.c.o.d -o swlwm.p/src_swl_buffer.c.o -c ../src/swl_buffer.c",
+    "file": "../src/swl_buffer.c",
+    "output": "swlwm.p/src_swl_buffer.c.o"
+  },
+  {
+    "directory": "/home/pedro/Downloads/swl-ui/build",
+    "command": "cc -Iswlwm.p -I. -I.. -I../include -I/usr/include/libdrm -I/usr/include/pixman-1 -I/usr/include/cairo -I/usr/include/libpng16 -I/usr/include/freetype2 -I/usr/include/pango-1.0 -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include -I/usr/include/harfbuzz -I/usr/include/libmount -I/usr/include/blkid -I/usr/include/fribidi -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -Wall -Winvalid-pch -Wextra -std=c11 -O3 -pthread -DWLR_USE_UNSTABLE -D_DEFAULT_SOURCE -MD -MQ swlwm.p/src_swl_draw_util.c.o -MF swlwm.p/src_swl_draw_util.c.o.d -o swlwm.p/src_swl_draw_util.c.o -c ../src/swl_draw_util.c",
+    "file": "../src/swl_draw_util.c",
+    "output": "swlwm.p/src_swl_draw_util.c.o"
+  },
+  {
+    "directory": "/home/pedro/Downloads/swl-ui/build",
+    "command": "cc -Iswlwm.p -I. -I.. -I../include -I/usr/include/libdrm -I/usr/include/pixman-1 -I/usr/include/cairo -I/usr/include/libpng16 -I/usr/include/freetype2 -I/usr/include/pango-1.0 -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include -I/usr/include/harfbuzz -I/usr/include/libmount -I/usr/include/blkid -I/usr/include/fribidi -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -Wall -Winvalid-pch -Wextra -std=c11 -O3 -pthread -DWLR_USE_UNSTABLE -D_DEFAULT_SOURCE -MD -MQ swlwm.p/src_panel.c.o -MF swlwm.p/src_panel.c.o.d -o swlwm.p/src_panel.c.o -c ../src/panel.c",
+    "file": "../src/panel.c",
+    "output": "swlwm.p/src_panel.c.o"
+  },
+  {
+    "directory": "/home/pedro/Downloads/swl-ui/build",
+    "command": "cc -Iswlwm.p -I. -I.. -I../include -I/usr/include/libdrm -I/usr/include/pixman-1 -I/usr/include/cairo -I/usr/include/libpng16 -I/usr/include/freetype2 -I/usr/include/pango-1.0 -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include -I/usr/include/harfbuzz -I/usr/include/libmount -I/usr/include/blkid -I/usr/include/fribidi -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -Wall -Winvalid-pch -Wextra -std=c11 -O3 -pthread -DWLR_USE_UNSTABLE -D_DEFAULT_SOURCE -MD -MQ swlwm.p/src_taskbar.c.o -MF swlwm.p/src_taskbar.c.o.d -o swlwm.p/src_taskbar.c.o -c ../src/taskbar.c",
+    "file": "../src/taskbar.c",
+    "output": "swlwm.p/src_taskbar.c.o"
+  },
+  {
+    "directory": "/home/pedro/Downloads/swl-ui/build",
+    "command": "cc -Iswlwm.p -I. -I.. -I../include -I/usr/include/libdrm -I/usr/include/pixman-1 -I/usr/include/cairo -I/usr/include/libpng16 -I/usr/include/freetype2 -I/usr/include/pango-1.0 -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include -I/usr/include/harfbuzz -I/usr/include/libmount -I/usr/include/blkid -I/usr/include/fribidi -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -Wall -Winvalid-pch -Wextra -std=c11 -O3 -pthread -DWLR_USE_UNSTABLE -D_DEFAULT_SOURCE -MD -MQ swlwm.p/src_decorations.c.o -MF swlwm.p/src_decorations.c.o.d -o swlwm.p/src_decorations.c.o -c ../src/decorations.c",
+    "file": "../src/decorations.c",
+    "output": "swlwm.p/src_decorations.c.o"
+  },
+  {
+    "directory": "/home/pedro/Downloads/swl-ui/build",
+    "command": "cc -Iswlwm.p -I. -I.. -I../include -I/usr/include/libdrm -I/usr/include/pixman-1 -I/usr/include/cairo -I/usr/include/libpng16 -I/usr/include/freetype2 -I/usr/include/pango-1.0 -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include -I/usr/include/harfbuzz -I/usr/include/libmount -I/usr/include/blkid -I/usr/include/fribidi -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -Wall -Winvalid-pch -Wextra -std=c11 -O3 -pthread -DWLR_USE_UNSTABLE -D_DEFAULT_SOURCE -MD -MQ swlwm.p/src_desktop.c.o -MF swlwm.p/src_desktop.c.o.d -o swlwm.p/src_desktop.c.o -c ../src/desktop.c",
+    "file": "../src/desktop.c",
+    "output": "swlwm.p/src_desktop.c.o"
+  },
+  {
+    "directory": "/home/pedro/Downloads/swl-ui/build",
+    "command": "cc -Iswlwm.p -I. -I.. -I../include -I/usr/include/libdrm -I/usr/include/pixman-1 -I/usr/include/cairo -I/usr/include/libpng16 -I/usr/include/freetype2 -I/usr/include/pango-1.0 -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include -I/usr/include/harfbuzz -I/usr/include/libmount -I/usr/include/blkid -I/usr/include/fribidi -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -Wall -Winvalid-pch -Wextra -std=c11 -O3 -pthread -DWLR_USE_UNSTABLE -D_DEFAULT_SOURCE -MD -MQ swlwm.p/src_background.c.o -MF swlwm.p/src_background.c.o.d -o swlwm.p/src_background.c.o -c ../src/background.c",
+    "file": "../src/background.c",
+    "output": "swlwm.p/src_background.c.o"
+  }
+]
