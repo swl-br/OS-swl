@@ -491,14 +491,23 @@ void tswl_term_resize(tswl_term *t, int cols, int rows) {
     tswl_cell b = blank_cell(t->cur_bg);
     for (int i = 0; i < cols * rows; i++) new_grid[i] = b;
 
-    /* Preserva o conteúdo ancorado embaixo: as últimas min(rows) linhas
-     * visíveis do grid antigo vão pras últimas linhas do grid novo. Assim
-     * o prompt (que normalmente está embaixo) continua no mesmo lugar
-     * visual. delta_y é quanto cada linha de conteúdo andou na tela. */
-    int copy_rows = t->rows < rows ? t->rows : rows;
-    int delta_y = rows - t->rows;
-    int src_row = t->rows - copy_rows;
-    int dst_row = rows - copy_rows;
+    /* Preserva o conteúdo ancorado no TOPO: quando a janela cresce, o
+     * prompt continua no topo (espaço vazio embaixo, como xterm/foot).
+     * Quando a janela encolhe, descarta só as linhas vazias do topo ou,
+     * se o conteúdo encher mais que o novo tamanho, as mais antigas. */
+    int used = 0;  /* última linha com célula não-vazia + 1 */
+    for (int r = t->rows - 1; r >= 0; r--) {
+        for (int x = 0; x < t->cols; x++) {
+            if (t->grid[(size_t)r * t->cols + x].ch != 0) {
+                used = r + 1;
+                goto found_used;
+            }
+        }
+    }
+found_used:;
+    int copy_rows = used < rows ? used : rows;
+    int src_row = used > rows ? used - rows : 0;  /* descarta as linhas antigas excedentes */
+    int dst_row = 0;                              /* conteúdo vai pro topo */
     int copy_cols = t->cols < cols ? t->cols : cols;
     for (int r = 0; r < copy_rows; r++) {
         memcpy(&new_grid[(size_t)(dst_row + r) * cols],
@@ -517,10 +526,11 @@ void tswl_term_resize(tswl_term *t, int cols, int rows) {
     t->scroll_top = 0;
     t->scroll_bot = rows - 1;
     t->scroll_offset = 0;
-    /* O cursor acompanha o conteúdo: se a tela cresceu, ele desce junto
-     * (o conteúdo desceu); se encolheu, ele sobe. Sem isso, o shell
-     * escreve na linha errada depois do resize ("texto bugado"). */
-    t->cy += delta_y;
+    /* O cursor acompanha o conteúdo: a tela cresceu, o cursor fica onde
+     * estava (conteúdo ficou no topo); a tela encolheu, o cursor sobe
+     * junto (as primeiras linhas sumiram). Sem isso, o shell escreve na
+     * linha errada depois do resize ("texto bugado"). */
+    t->cy -= src_row;
     clamp_cursor(t);
     mark_all_dirty(t);
 }
