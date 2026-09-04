@@ -9,6 +9,9 @@ project('swl-ui', 'c',
 
 wlroots    = dependency('wlroots-0.19', required: false)
 if not wlroots.found()
+  wlroots  = dependency('wlroots-0.18', required: false)
+endif
+if not wlroots.found()
   wlroots  = dependency('wlroots', required: true)
 endif
 wayland_server = dependency('wayland-server')
@@ -35,6 +38,7 @@ executable('swlwm',
     'src/decorations.c',
     'src/desktop.c',
     'src/background.c',
+    'src/menu.c',
   ],
   include_directories: include_directories('include'),
   # -DWLR_USE_UNSTABLE: exigido pelos headers do wlroots (a API ainda não é

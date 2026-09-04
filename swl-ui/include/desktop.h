@@ -30,4 +30,13 @@ void swl_desktop_destroy(struct swl_desktop *desktop);
  * nenhum. A string retornada é interna (não precisa dar free). */
 const char *swl_desktop_hit_test(struct swl_desktop *desktop, double x, double y);
 
+/* Acessores do catálogo de apps padrão (default_icons[], em desktop.c) —
+ * fonte única de verdade compartilhada pelos ícones da área de trabalho e
+ * pelo menu iniciar. Qualquer app adicionado/removido ali aparece
+ * automaticamente nos dois lugares. label/command retornam NULL para
+ * índice fora do range; as strings são internas (não precisa dar free). */
+int swl_desktop_app_count(void);
+const char *swl_desktop_app_label(int index);
+const char *swl_desktop_app_command(int index);
+
 #endif /* SWL_DESKTOP_H */

@@ -29,12 +29,29 @@
 #include "decorations.h"
 #include "desktop.h"
 #include "background.h"
+#include "menu.h"
 #include <wlr/types/wlr_seat.h>
 #include <wlr/types/wlr_subcompositor.h>
 #include <wlr/types/wlr_xcursor_manager.h>
 #include <wlr/types/wlr_xdg_shell.h>
 #include <wlr/util/log.h>
+#include <wlr/version.h>
 #include <xkbcommon/xkbcommon.h>
+
+/* Compat wlroots 0.17 ↔ 0.18: o código foi escrito e validado originalmente
+ * contra 0.17.1 (Xubuntu). A 0.18 mudou quatro APIs usadas aqui:
+ *   - wlr_backend_autocreate() recebe o event loop, não o display;
+ *   - wlr_output_layout_create() passa a receber o display;
+ *   - wlr_seat_pointer_notify_axis() ganhou o parâmetro relative_direction;
+ *   - xdg_shell: o evento new_surface passa a disparar com role NONE —
+ *     toplevel/popup agora têm eventos próprios (new_toplevel/new_popup).
+ * Os trechos dependentes ficam atrás deste guard pra compilar nas duas
+ * versões (as duas máquinas de desenvolvimento usam versões diferentes). */
+#if WLR_VERSION_NUM >= ((0 << 16) | (18 << 8) | 0)
+#define SWL_WLR_0_18 1
+#else
+#define SWL_WLR_0_18 0
+#endif
 
 /* For brevity's sake, struct members are annotated where they are used. */
 enum tinywl_cursor_mode {
@@ -52,7 +69,12 @@ struct tinywl_server {
 	struct wlr_scene_output_layout *scene_layout;
 
 	struct wlr_xdg_shell *xdg_shell;
+#if SWL_WLR_0_18
+	struct wl_listener new_xdg_toplevel;
+	struct wl_listener new_xdg_popup;
+#else
 	struct wl_listener new_xdg_surface;
+#endif
 	struct wl_list toplevels;
 
 	struct wlr_cursor *cursor;
@@ -83,6 +105,7 @@ struct tinywl_server {
 	struct swl_panel *panel;
 	struct swl_taskbar *taskbar;
 	struct swl_desktop *desktop;
+	struct swl_menu *menu;
 	struct wlr_scene_buffer *background;
 	int screen_width, screen_height;
 	const char *background_path; /* NULL = usa o fallback procedural (grade) */
@@ -689,13 +712,49 @@ static void server_cursor_button(struct wl_listener *listener, void *data) {
 		return;
 	}
 
+	/* 0) Menu iniciar aberto: flutua por cima de tudo, então este bloco
+	 *    precisa vir antes até da taskbar — é ele quem decide se o clique
+	 *    vira lançamento de app, é absorvido, ou "vaza" pro resto. */
+	if (server->menu && swl_menu_is_open(server->menu)) {
+		int mhit = swl_menu_hit_test(server->menu,
+			server->cursor->x, server->cursor->y);
+		if (mhit >= 0) {
+			/* Clicou num app: lança (mesmo padrão dos ícones do desktop)
+			 * e fecha o menu. */
+			const char *cmd = swl_menu_item_command(server->menu, mhit);
+			swl_menu_close(server->menu);
+			if (cmd && cmd[0]) {
+				pid_t pid = fork();
+				if (pid == 0) {
+					execl("/bin/sh", "/bin/sh", "-c", cmd, (void *)NULL);
+					_exit(1);
+				}
+			}
+			return;
+		}
+		if (mhit == SWL_MENU_HIT_INSIDE) {
+			/* Dentro do menu mas fora de qualquer linha: absorve o clique
+			 * (não fecha, não deixa vazar pra janela/desktop embaixo). */
+			return;
+		}
+		/* Fora do menu: fecha e deixa o clique seguir o processamento
+		 * normal — exceto dentro da faixa Y da taskbar, onde o próprio
+		 * botão MENU (bloco abaixo) cuida do toggle; se fechássemos aqui,
+		 * o mesmo clique fecharia e reabriria o menu, cancelando o toggle. */
+		if (server->cursor->y < server->screen_height - SWL_TASKBAR_HEIGHT) {
+			swl_menu_close(server->menu);
+		}
+	}
+
 	/* 1) Taskbar tem prioridade — clicar nela nunca deve atravessar pra uma
 	 *    janela por baixo. */
 	if (server->taskbar) {
 		int hit = swl_taskbar_hit_test(server->taskbar,
 			server->cursor->x, server->cursor->y);
 		if (hit == -1) {
-			/* TODO: abrir o menu iniciar quando ele existir. */
+			if (server->menu) {
+				swl_menu_toggle(server->menu);
+			}
 			return;
 		} else if (hit >= 0) {
 			int idx = 0;
@@ -784,9 +843,15 @@ static void server_cursor_axis(struct wl_listener *listener, void *data) {
 		wl_container_of(listener, server, cursor_axis);
 	struct wlr_pointer_axis_event *event = data;
 	/* Notify the client with pointer focus of the axis event. */
+#if SWL_WLR_0_18
+	wlr_seat_pointer_notify_axis(server->seat,
+			event->time_msec, event->orientation, event->delta,
+			event->delta_discrete, event->source, event->relative_direction);
+#else
 	wlr_seat_pointer_notify_axis(server->seat,
 			event->time_msec, event->orientation, event->delta,
 			event->delta_discrete, event->source);
+#endif
 }
 
 static void server_cursor_frame(struct wl_listener *listener, void *data) {
@@ -836,6 +901,7 @@ static void output_request_state(struct wl_listener *listener, void *data) {
 			swl_background_resize(server->background, ow, oh, server->background_path);
 			swl_panel_resize(server->panel, ow);
 			swl_taskbar_resize(server->taskbar, ow, oh - SWL_TASKBAR_HEIGHT);
+			swl_menu_resize(server->menu, oh);
 		}
 	}
 }
@@ -931,10 +997,13 @@ static void server_new_output(struct wl_listener *listener, void *data) {
 			server->panel = swl_panel_create(loop, &server->scene->tree, ow);
 			server->taskbar = swl_taskbar_create(loop, &server->scene->tree,
 				ow, oh - SWL_TASKBAR_HEIGHT);
+			server->menu = swl_menu_create(&server->scene->tree);
+			swl_menu_resize(server->menu, oh);
 		} else {
 			swl_background_resize(server->background, ow, oh, server->background_path);
 			swl_panel_resize(server->panel, ow);
 			swl_taskbar_resize(server->taskbar, ow, oh - SWL_TASKBAR_HEIGHT);
+			swl_menu_resize(server->menu, oh);
 		}
 	}
 }
@@ -1104,33 +1173,29 @@ static void xdg_toplevel_request_fullscreen(
 	wlr_xdg_surface_schedule_configure(toplevel->xdg_toplevel->base);
 }
 
-static void server_new_xdg_surface(struct wl_listener *listener, void *data) {
-	/* This event is raised when wlr_xdg_shell receives a new xdg surface from a
-	 * client, either a toplevel (application window) or popup. */
-	struct tinywl_server *server =
-		wl_container_of(listener, server, new_xdg_surface);
-	struct wlr_xdg_surface *xdg_surface = data;
+/* Cria a subárvore de cena de um popup xdg, pendurada no nó do popup pai.
+ * Caminho comum das duas gerações de API do xdg_shell (ver guard de versão
+ * no topo do arquivo). */
+static void server_new_popup_tree(struct wlr_xdg_surface *xdg_surface,
+		struct wlr_surface *parent_surface) {
+	struct wlr_xdg_surface *parent =
+		wlr_xdg_surface_try_from_wlr_surface(parent_surface);
+	assert(parent != NULL);
+	struct wlr_scene_tree *parent_tree = parent->data;
+	xdg_surface->data = wlr_scene_xdg_surface_create(parent_tree, xdg_surface);
+}
 
-	/* We must add xdg popups to the scene graph so they get rendered. The
-	 * wlroots scene graph provides a helper for this, but to use it we must
-	 * provide the proper parent scene node of the xdg popup. To enable this,
-	 * we always set the user data field of xdg_surfaces to the corresponding
-	 * scene node. */
-	if (xdg_surface->role == WLR_XDG_SURFACE_ROLE_POPUP) {
-		struct wlr_xdg_surface *parent =
-			wlr_xdg_surface_try_from_wlr_surface(xdg_surface->popup->parent);
-		assert(parent != NULL);
-		struct wlr_scene_tree *parent_tree = parent->data;
-		xdg_surface->data = wlr_scene_xdg_surface_create(
-			parent_tree, xdg_surface);
-		return;
-	}
-	assert(xdg_surface->role == WLR_XDG_SURFACE_ROLE_TOPLEVEL);
+/* Inicializa um tinywl_toplevel (wrapper decoração+conteúdo, listeners) a
+ * partir de um xdg_toplevel que já tem role atribuído. Caminho comum das
+ * duas gerações de API do xdg_shell. */
+static void server_new_toplevel(struct tinywl_server *server,
+		struct wlr_xdg_toplevel *xdg_toplevel) {
+	struct wlr_xdg_surface *xdg_surface = xdg_toplevel->base;
 
 	/* Allocate a tinywl_toplevel for this surface */
 	struct tinywl_toplevel *toplevel = calloc(1, sizeof(*toplevel));
 	toplevel->server = server;
-	toplevel->xdg_toplevel = xdg_surface->toplevel;
+	toplevel->xdg_toplevel = xdg_toplevel;
 
 	/* scene_tree é o wrapper (decoração + conteúdo); content_tree é a
 	 * subárvore de fato da superfície xdg, deslocada para abrir espaço pra
@@ -1139,11 +1204,11 @@ static void server_new_xdg_surface(struct wl_listener *listener, void *data) {
 	toplevel->scene_tree->node.data = toplevel;
 
 	toplevel->content_tree = wlr_scene_xdg_surface_create(
-			toplevel->scene_tree, toplevel->xdg_toplevel->base);
+			toplevel->scene_tree, xdg_surface);
 	wlr_scene_node_set_position(&toplevel->content_tree->node, 0, SWL_TITLEBAR_HEIGHT);
 	xdg_surface->data = toplevel->content_tree;
 
-	const char *initial_title = toplevel->xdg_toplevel->title;
+	const char *initial_title = xdg_toplevel->title;
 	toplevel->deco_title = strdup(initial_title ? initial_title : "janela");
 	toplevel->deco_width = 200;
 	toplevel->decoration = swl_decoration_create(toplevel->scene_tree,
@@ -1159,8 +1224,6 @@ static void server_new_xdg_surface(struct wl_listener *listener, void *data) {
 	toplevel->commit.notify = xdg_toplevel_commit;
 	wl_signal_add(&xdg_surface->surface->events.commit, &toplevel->commit);
 
-	/* cotd */
-	struct wlr_xdg_toplevel *xdg_toplevel = xdg_surface->toplevel;
 	toplevel->request_move.notify = xdg_toplevel_request_move;
 	wl_signal_add(&xdg_toplevel->events.request_move, &toplevel->request_move);
 	toplevel->request_resize.notify = xdg_toplevel_request_resize;
@@ -1172,6 +1235,43 @@ static void server_new_xdg_surface(struct wl_listener *listener, void *data) {
 	wl_signal_add(&xdg_toplevel->events.request_fullscreen,
 		&toplevel->request_fullscreen);
 }
+
+#if SWL_WLR_0_18
+/* wlroots 0.18: new_surface dispara com role NONE; toplevel e popup têm
+ * eventos próprios, já com o role atribuído. */
+static void server_new_xdg_toplevel(struct wl_listener *listener, void *data) {
+	struct tinywl_server *server =
+		wl_container_of(listener, server, new_xdg_toplevel);
+	server_new_toplevel(server, data);
+}
+
+static void server_new_xdg_popup(struct wl_listener *listener, void *data) {
+	struct wlr_xdg_popup *popup = data;
+	server_new_popup_tree(popup->base, popup->parent);
+}
+#else
+/* wlroots 0.17: um único evento new_surface, já disparado com o role
+ * atribuído (toplevel ou popup). */
+static void server_new_xdg_surface(struct wl_listener *listener, void *data) {
+	/* This event is raised when wlr_xdg_shell receives a new xdg surface from a
+	 * client, either a toplevel (application window) or popup. */
+	struct tinywl_server *server =
+		wl_container_of(listener, server, new_xdg_surface);
+	struct wlr_xdg_surface *xdg_surface = data;
+
+	/* We must add xdg popups to the scene graph so they get rendered. The
+	 * wlroots scene graph provides a helper for this, but to use it we must
+	 * provide the proper parent scene node of the xdg popup. To enable this,
+	 * we always set the user data field of xdg_surfaces to the corresponding
+	 * scene node. */
+	if (xdg_surface->role == WLR_XDG_SURFACE_ROLE_POPUP) {
+		server_new_popup_tree(xdg_surface, xdg_surface->popup->parent);
+		return;
+	}
+	assert(xdg_surface->role == WLR_XDG_SURFACE_ROLE_TOPLEVEL);
+	server_new_toplevel(server, xdg_surface->toplevel);
+}
+#endif
 
 int main(int argc, char *argv[]) {
 	wlr_log_init(WLR_DEBUG, NULL);
@@ -1226,7 +1326,12 @@ int main(int argc, char *argv[]) {
 	 * output hardware. The autocreate option will choose the most suitable
 	 * backend based on the current environment, such as opening an X11 window
 	 * if an X11 server is running. */
+#if SWL_WLR_0_18
+	server.backend = wlr_backend_autocreate(
+		wl_display_get_event_loop(server.wl_display), NULL);
+#else
 	server.backend = wlr_backend_autocreate(server.wl_display, NULL);
+#endif
 	if (server.backend == NULL) {
 		wlr_log(WLR_ERROR, "failed to create wlr_backend");
 		return 1;
@@ -1268,7 +1373,11 @@ int main(int argc, char *argv[]) {
 
 	/* Creates an output layout, which a wlroots utility for working with an
 	 * arrangement of screens in a physical layout. */
+#if SWL_WLR_0_18
+	server.output_layout = wlr_output_layout_create(server.wl_display);
+#else
 	server.output_layout = wlr_output_layout_create();
+#endif
 
 	/* Configure a listener to be notified when new outputs are available on the
 	 * backend. */
@@ -1291,9 +1400,18 @@ int main(int argc, char *argv[]) {
 	 */
 	wl_list_init(&server.toplevels);
 	server.xdg_shell = wlr_xdg_shell_create(server.wl_display, 3);
+#if SWL_WLR_0_18
+	server.new_xdg_toplevel.notify = server_new_xdg_toplevel;
+	wl_signal_add(&server.xdg_shell->events.new_toplevel,
+			&server.new_xdg_toplevel);
+	server.new_xdg_popup.notify = server_new_xdg_popup;
+	wl_signal_add(&server.xdg_shell->events.new_popup,
+			&server.new_xdg_popup);
+#else
 	server.new_xdg_surface.notify = server_new_xdg_surface;
 	wl_signal_add(&server.xdg_shell->events.new_surface,
 			&server.new_xdg_surface);
+#endif
 
 	/*
 	 * Creates a cursor, which is a wlroots utility for tracking the cursor
@@ -1385,6 +1503,7 @@ int main(int argc, char *argv[]) {
 	swl_panel_destroy(server.panel);
 	swl_taskbar_destroy(server.taskbar);
 	swl_desktop_destroy(server.desktop);
+	swl_menu_destroy(server.menu);
 	wlr_scene_node_destroy(&server.scene->tree.node);
 	wlr_xcursor_manager_destroy(server.cursor_mgr);
 	wlr_output_layout_destroy(server.output_layout);

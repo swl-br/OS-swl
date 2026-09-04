@@ -352,6 +352,24 @@ const char *swl_desktop_hit_test(struct swl_desktop *desktop, double x, double y
 	return NULL;
 }
 
+int swl_desktop_app_count(void) {
+	return (int)N_DEFAULT_ICONS;
+}
+
+const char *swl_desktop_app_label(int index) {
+	if (index < 0 || index >= (int)N_DEFAULT_ICONS) {
+		return NULL;
+	}
+	return default_icons[index].label;
+}
+
+const char *swl_desktop_app_command(int index) {
+	if (index < 0 || index >= (int)N_DEFAULT_ICONS) {
+		return NULL;
+	}
+	return default_icons[index].command;
+}
+
 void swl_desktop_destroy(struct swl_desktop *desktop) {
 	if (!desktop) {
 		return;
