@@ -1,2 +1,0 @@
-/home/pedro/Downloads/swl-ui/build/meson-private/cmake_wlroots-0.19/CMakeFiles/edit_cache.dir
-/home/pedro/Downloads/swl-ui/build/meson-private/cmake_wlroots-0.19/CMakeFiles/rebuild_cache.dir
