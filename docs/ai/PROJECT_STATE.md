@@ -76,15 +76,11 @@ só engana visualmente por rodar fora do nosso compositor. Desde
   interativamente pelo usuário no Xubuntu — maximizar, minimizar,
   arrastar (com desmaximizar automático), fechar e restaurar
   clicando na janela minimizada na taskbar, todos confirmados.
-- **Menu iniciar** (2026-09-04, Claude + OpenHands): funcional no
-  código (compilado e testado headless nas duas versões de wlroots,
-  0.17.1 e 0.18.2 — ver sessões de 2026-09-04). Reaproveita o catálogo
-  de apps de `desktop.c` (`swl_desktop_app_count/label/command()`) —
-  mesma fonte pros ícones do desktop e pro menu. **Ainda não validado
-  interativamente** (ver "Não está implementado ainda" abaixo — o
-  primeiro patch chegou incompleto ao repositório, foi corrigido pela
-  OpenHands, e a validação visual do usuário até agora só rodou contra
-  o estado incompleto).
+- **Menu iniciar** (2026-09-04, Claude + OpenHands): **funcional,
+  validado interativamente pelo usuário na máquina Mint** — abre/fecha
+  pelo botão MENU, clique em item lança o app (placeholder), clique
+  fora fecha, catálogo reaproveitado de `desktop.c`
+  (`swl_desktop_app_count/label/command()`).
 
 ### Bugs corrigidos (histórico)
 1. **2026-09-03 (Claude)**: redimensionamento não propagava pro
@@ -103,15 +99,6 @@ só engana visualmente por rodar fora do nosso compositor. Desde
    próprio `foot` usado nos testes anteriores.
 
 ### O que NÃO está implementado ainda (não fingir que está pronto)
-- **Menu iniciar: falta validação interativa real** (clicar no botão
-  MENU e ver a lista aparecer/desaparecer, clicar num item, clicar
-  fora fechando, clicar numa janela atrás focando). O código compila e
-  roda headless sem crash nas duas versões de wlroots, mas ninguém
-  ainda confirmou visualmente que aparece na tela — a única tentativa
-  de validação (2026-09-04) rodou contra uma cópia do repo onde o
-  patch do menu só tinha chegado pela metade (só `menu.c`/`menu.h`,
-  sem `meson.build`/`swlwm.c` atualizados), então não é uma validação
-  válida do estado atual.
 - Trocar papel de parede: não implementado.
 - Arrastar ícones da área de trabalho, adicionar/remover atalhos: não
   implementado (ícones são fixos, não-interativos além do clique que
@@ -139,22 +126,16 @@ STATUS: EM DESENVOLVIMENTO — primeiro app nativo criado.
   toolkit (wayland-client + xdg-shell + cairo/pango direto), parser
   ANSI/VT100 próprio, PTY via `forkpty`. Binário ~57 KB. Build
   autônomo (`cd apps/tswl && meson setup build && ninja -C build`).
-  Compilado e testado (headless, sem crash, sem busy-loop) contra
-  wlroots 0.17.1 — ver sessão de 2026-09-04 (Claude). Ainda falta
-  validação interativa de teclado de verdade (digitar, scroll,
-  cores) numa sessão gráfica real.
+  **Funcional, validado interativamente pelo usuário na máquina
+  Mint** — abre, roda o shell, digita normalmente.
 - Os outros 12 itens do catálogo (`default_icons[]` em `desktop.c`:
   SWLPad, gerenciador de arquivos, SEBRE, Configurações, etc.)
   continuam sendo só placeholders — comando aponta pra um binário que
   não existe ainda.
 
 ## Próximos passos sugeridos (GUI)
-1. Validar interativamente o menu iniciar (código pronto, nunca
-   validado contra o estado completo — ver ressalva acima).
-2. Validar interativamente o TSWL (`WLR_BACKEND=x11 ./build/swlwm -s
-   "../apps/tswl/build/tswl"`) — digitar, cores, scroll, resize.
-3. Integrar o compositor ao boot real (substituir o teste
+1. Integrar o compositor ao boot real (substituir o teste
    `WLR_BACKEND=x11` por rodar como sessão gráfica principal via
    DRM/KMS, dentro do ambiente do SWL OS de verdade).
-4. Readaptar janelas maximizadas quando o output redimensiona.
-5. Fullscreen real (protocolo já responde, falta lógica).
+2. Readaptar janelas maximizadas quando o output redimensiona.
+3. Fullscreen real (protocolo já responde, falta lógica).

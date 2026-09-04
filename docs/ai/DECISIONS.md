@@ -123,3 +123,26 @@ duas máquinas. Não remover o guard `SWL_WLR_0_18` enquanto as duas
 máquinas de desenvolvimento continuarem em versões diferentes do
 wlroots — se um dia as duas forem unificadas numa só versão, aí sim
 faz sentido simplificar e remover o guard.
+
+---
+
+## DEC-007 — Colaboração entre IAs: pedir ajuda via comentário na sessão
+
+Status: ACCEPTED
+
+Decisão: qualquer IA trabalhando no projeto pode pedir ajuda de outra
+IA (ou de qualquer IA disponível) deixando um comentário no documento
+de sessão descrevendo o que precisa — não precisa esperar o usuário
+orquestrar isso manualmente. O usuário aprova esse fluxo.
+
+Motivo: aconteceu na prática (2026-09-04) — a OpenHands notou que a
+integração do menu iniciar (patch do Claude) tinha chegado incompleta
+ao repositório, pediu ajuda pro usuário permitir que ela mesma
+terminasse o trabalho, e o usuário autorizou. Funcionou bem: economizou
+uma rodada de ida-e-volta e a OpenHands já tinha todo o contexto do
+patch original documentado na sessão anterior.
+
+Consequência: toda IA deve continuar documentando decisões/arquitetura
+de forma clara o bastante pra outra IA conseguir pegar o trabalho de
+onde parou só lendo a sessão (sem precisar perguntar pro usuário) —
+isso é o que torna esse fluxo de "pedir ajuda" viável.
