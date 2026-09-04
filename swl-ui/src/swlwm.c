@@ -142,6 +142,7 @@ struct tinywl_toplevel {
 	bool maximized;
 	bool minimized;
 	struct wlr_box saved_geo;
+	bool initial_configure_sent; /* wlroots 0.18: ver xdg_toplevel_commit */
 
 	struct wl_listener map;
 	struct wl_listener unmap;
@@ -1014,10 +1015,23 @@ static void xdg_toplevel_commit(struct wl_listener *listener, void *data) {
 	 * xdg-shell não tem um evento dedicado de "mudança de título", o valor
 	 * só fica garantidamente atualizado depois de um commit. */
 	struct tinywl_toplevel *toplevel = wl_container_of(listener, toplevel, commit);
+	struct wlr_xdg_toplevel *xt = toplevel->xdg_toplevel;
+#if SWL_WLR_0_18
+	/* wlroots 0.18: o configure inicial precisa ser agendado pelo
+	 * compositor, mas só pode ser enviado depois que a surface
+	 * inicializou (primeiro commit com role). new_toplevel dispara cedo
+	 * demais ("uninitialized"); aqui, no primeiro commit, a surface já
+	 * é válida. Agendamos UMA vez (o ack do cliente marca a surface
+	 * como initialized, então paramos de agendar depois disso — senão
+	 * cria um loop configure→commit→schedule infinito). */
+	if (!toplevel->initial_configure_sent) {
+		toplevel->initial_configure_sent = true;
+		wlr_xdg_surface_schedule_configure(xt->base);
+	}
+#endif
 	if (!toplevel->decoration) {
 		return;
 	}
-	struct wlr_xdg_toplevel *xt = toplevel->xdg_toplevel;
 	int width = xt->base->surface->current.width;
 	if (width <= 0) {
 		width = toplevel->deco_width;
