@@ -111,26 +111,17 @@ static void panel_draw(cairo_t *cr, int width, int height, void *data) {
 		mx += w + 24;
 	}
 
-	/* Bloco direito: CPU, MEM, data/hora */
-	double rx = width - 300;
-	if (rx < mx + 20) {
-		rx = mx + 20; /* evita sobrepor o menu em telas muito estreitas */
-	}
-
-	double cpu_percent = 0;
-	read_cpu_usage(&panel->prev_idle, &panel->prev_total, &cpu_percent);
-	char cpu_label[16];
-	snprintf(cpu_label, sizeof(cpu_label), "CPU %02.0f%%", cpu_percent);
-	SWL_SET(cr, SWL_COL_TEXT);
-	swl_draw_text(cr, cpu_label, rx, cy, 11, SWL_FONT_MONO, false);
-	draw_bar(cr, rx + 62, cy + 2, 60, 9, cpu_percent / 100.0);
-
-	long used_mb = 0, total_mb = 0;
-	read_mem_usage(&used_mb, &total_mb);
-	char mem_label[40];
-	snprintf(mem_label, sizeof(mem_label), "MEM %ldM/%ldM", used_mb, total_mb);
-	SWL_SET(cr, SWL_COL_TEXT);
-	swl_draw_text(cr, mem_label, rx + 140, cy, 11, SWL_FONT_MONO, false);
+	/* Bloco direito: CPU, MEM, data/hora — montado da direita pra esquerda,
+	 * medindo a largura real de cada texto antes de desenhar qualquer
+	 * coisa. O layout antigo usava um offset fixo (width - 300) pra
+	 * decidir onde tudo começava, sem levar em conta que "MEM
+	 * 1234M/5678M" + a data/hora completa já passam disso sozinhos —
+	 * resultado: os dois textos caindo um em cima do outro em janelas
+	 * menores (o "03" da data grudado no "MEM"). Aqui cada peça mede seu
+	 * próprio espaço e só desenha se couber sem sobrepor o menu; do
+	 * contrário some (nunca sobrepõe) até a janela ter espaço de novo. */
+	const double GAP = 22;
+	const double BAR_W = 60;
 
 	time_t now = time(NULL);
 	struct tm tm_info;
@@ -139,8 +130,37 @@ static void panel_draw(cairo_t *cr, int width, int height, void *data) {
 	strftime(datetime, sizeof(datetime), "%d/%m/%Y %H:%M:%S", &tm_info);
 	double dw, dh;
 	swl_text_extents(datetime, 11, SWL_FONT_MONO, false, &dw, &dh);
-	SWL_SET(cr, SWL_COL_ACCENT_PURPLE);
-	swl_draw_text(cr, datetime, width - dw - 12, cy, 11, SWL_FONT_MONO, false);
+
+	long used_mb = 0, total_mb = 0;
+	read_mem_usage(&used_mb, &total_mb);
+	char mem_label[40];
+	snprintf(mem_label, sizeof(mem_label), "MEM %ldM/%ldM", used_mb, total_mb);
+	double mw, mh;
+	swl_text_extents(mem_label, 11, SWL_FONT_MONO, false, &mw, &mh);
+
+	double cpu_percent = 0;
+	read_cpu_usage(&panel->prev_idle, &panel->prev_total, &cpu_percent);
+	char cpu_label[16];
+	snprintf(cpu_label, sizeof(cpu_label), "CPU %02.0f%%", cpu_percent);
+	double cw, ch;
+	swl_text_extents(cpu_label, 11, SWL_FONT_MONO, false, &cw, &ch);
+
+	double x_datetime = width - 12 - dw;
+	double x_mem = x_datetime - GAP - mw;
+	double x_bar = x_mem - GAP - BAR_W;
+	double x_cpu = x_bar - 8 - cw;
+
+	if (x_cpu >= mx + 20) {
+		SWL_SET(cr, SWL_COL_TEXT);
+		swl_draw_text(cr, cpu_label, x_cpu, cy, 11, SWL_FONT_MONO, false);
+		draw_bar(cr, x_bar, cy + 2, BAR_W, 9, cpu_percent / 100.0);
+		SWL_SET(cr, SWL_COL_TEXT);
+		swl_draw_text(cr, mem_label, x_mem, cy, 11, SWL_FONT_MONO, false);
+		SWL_SET(cr, SWL_COL_ACCENT_PURPLE);
+		swl_draw_text(cr, datetime, x_datetime, cy, 11, SWL_FONT_MONO, false);
+	}
+	/* Janela estreita demais pro bloco inteiro: some com CPU/MEM/data em
+	 * vez de desenhar texto ilegível por cima do menu. */
 }
 
 static int panel_tick(void *data) {

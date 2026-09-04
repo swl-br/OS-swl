@@ -1,0 +1,134 @@
+diff --git a/swl-ui/src/desktop.c b/swl-ui/src/desktop.c
+index 978a35ec3..cbd4c7473 100644
+--- a/swl-ui/src/desktop.c
++++ b/swl-ui/src/desktop.c
+@@ -2,6 +2,8 @@
+ #include <stdlib.h>
+ #include <string.h>
+ #include <math.h>
++#include <limits.h>
++#include <unistd.h>
+ #include "desktop.h"
+ #include "swl_buffer.h"
+ #include "swl_draw_util.h"
+@@ -18,24 +20,25 @@ struct swl_icon_def {
+ 	enum swl_icon_kind kind;
+ 	const char *label;
+ 	const char *command;
++	const char *icon_file; /* nome do PNG em assets/icons/, sem caminho (ex.: "tswl.png") */
+ };
+ 
+ /* Conjunto padrão de ícones, na mesma ordem/agrupamento do mockup. Ajuste
+  * livremente — cada linha vira um ícone clicável na área de trabalho. */
+ static const struct swl_icon_def default_icons[] = {
+-	{ SWL_ICON_TERMINAL, "TSWL",        "tswl" },
+-	{ SWL_ICON_EDITOR,   "SWLPAD",      "swlpad" },
+-	{ SWL_ICON_FOLDER,   "ARQUIVOS",    "swlfiles" },
+-	{ SWL_ICON_BOOK,     "SEBRE",       "sebre" },
+-	{ SWL_ICON_CONFIG,   "CONFIG",      "swlconfig" },
+-	{ SWL_ICON_CHIP,     "DRIVERS",     "swldrivers" },
+-	{ SWL_ICON_NETWORK,  "REDE",        "swlnet" },
+-	{ SWL_ICON_MONITOR,  "SISTEMA",     "swlsysinfo" },
+-	{ SWL_ICON_MEDIA,    "MEDIAPLAYER", "swlmedia" },
+-	{ SWL_ICON_IMAGE,    "IMAGENS",     "swlimages" },
+-	{ SWL_ICON_GAME,     "JOGOS",       "swlgames" },
+-	{ SWL_ICON_ARCHIVE,  "COMPACTAR",   "swlarchive" },
+-	{ SWL_ICON_TRASH,    "LIXEIRA",     "swltrash" },
++	{ SWL_ICON_TERMINAL, "TSWL",        "tswl",        "tswl.png" },
++	{ SWL_ICON_EDITOR,   "SWLPAD",      "swlpad",      "swlpad.png" },
++	{ SWL_ICON_FOLDER,   "ARQUIVOS",    "swlfiles",    "arquivos.png" },
++	{ SWL_ICON_BOOK,     "SEBRE",       "sebre",       "sebre.png" },
++	{ SWL_ICON_CONFIG,   "CONFIG",      "swlconfig",   "config.png" },
++	{ SWL_ICON_CHIP,     "DRIVERS",     "swldrivers",  "drivers.png" },
++	{ SWL_ICON_NETWORK,  "REDE",        "swlnet",      "rede.png" },
++	{ SWL_ICON_MONITOR,  "SISTEMA",     "swlsysinfo",  "sistema.png" },
++	{ SWL_ICON_MEDIA,    "MEDIAPLAYER", "swlmedia",    "mediaplayer.png" },
++	{ SWL_ICON_IMAGE,    "IMAGENS",     "swlimages",   "imagens.png" },
++	{ SWL_ICON_GAME,     "JOGOS",       "swlgames",    "jogos.png" },
++	{ SWL_ICON_ARCHIVE,  "COMPACTAR",   "swlarchive",  "compactar.png" },
++	{ SWL_ICON_TRASH,    "LIXEIRA",     "swltrash",    "lixeira.png" },
+ };
+ #define N_DEFAULT_ICONS (sizeof(default_icons) / sizeof(default_icons[0]))
+ 
+@@ -216,9 +219,35 @@ static void glyph_trash(cairo_t *cr, double s) {
+ 	cairo_stroke(cr);
+ }
+ 
++/* Procura o PNG do ícone nos mesmos lugares óbvios que swlwm.c já usa pra
++ * achar o wallpaper (pasta assets/ do repo, ou instalado no sistema).
++ * Retorna caminho absoluto/relativo utilizável, ou string vazia se não
++ * achar nada — nesse caso o chamador cai pro glifo vetorial de sempre. */
++static void resolve_icon_path(const char *filename, char *out, size_t out_size) {
++	out[0] = '\0';
++	if (!filename || !filename[0]) {
++		return;
++	}
++	char candidate[PATH_MAX];
++	const char *dirs[] = {
++		"assets/icons/",
++		"../assets/icons/",
++		"/usr/local/share/swl-ui/icons/",
++		"/usr/share/swl-ui/icons/",
++	};
++	for (size_t i = 0; i < sizeof(dirs) / sizeof(dirs[0]); i++) {
++		snprintf(candidate, sizeof(candidate), "%s%s", dirs[i], filename);
++		if (access(candidate, R_OK) == 0) {
++			snprintf(out, out_size, "%s", candidate);
++			return;
++		}
++	}
++}
++
+ struct swl_icon_draw_ctx {
+ 	enum swl_icon_kind kind;
+ 	char label[32];
++	char icon_path[PATH_MAX];
+ };
+ 
+ static void icon_cell_draw(cairo_t *cr, int width, int height, void *data) {
+@@ -228,6 +257,28 @@ static void icon_cell_draw(cairo_t *cr, int width, int height, void *data) {
+ 	double gx = (width - gs) / 2.0;
+ 	double gy = 4;
+ 
++	/* Ícone de arquivo (PNG), se existir, no lugar do glifo desenhado à
++	 * mão. Mantém compatibilidade total: sem o arquivo, cai no glifo de
++	 * sempre — nenhum ícone fica quebrado por falta de asset. */
++	if (ctx->icon_path[0]) {
++		cairo_surface_t *img = cairo_image_surface_create_from_png(ctx->icon_path);
++		if (cairo_surface_status(img) == CAIRO_STATUS_SUCCESS) {
++			int iw = cairo_image_surface_get_width(img);
++			int ih = cairo_image_surface_get_height(img);
++			if (iw > 0 && ih > 0) {
++				cairo_save(cr);
++				cairo_translate(cr, gx, gy);
++				cairo_scale(cr, gs / iw, gs / ih);
++				cairo_set_source_surface(cr, img, 0, 0);
++				cairo_paint(cr);
++				cairo_restore(cr);
++				cairo_surface_destroy(img);
++				goto draw_label;
++			}
++		}
++		cairo_surface_destroy(img);
++	}
++
+ 	cairo_save(cr);
+ 	cairo_translate(cr, gx, gy);
+ 	cairo_set_line_width(cr, 1.6);
+@@ -249,6 +300,8 @@ static void icon_cell_draw(cairo_t *cr, int width, int height, void *data) {
+ 	}
+ 	cairo_restore(cr);
+ 
++draw_label:
++	;
+ 	double lw, lh;
+ 	swl_text_extents(ctx->label, 9, SWL_FONT_MONO, false, &lw, &lh);
+ 	SWL_SET(cr, SWL_COL_TEXT);
+@@ -269,6 +322,7 @@ struct swl_desktop *swl_desktop_create(struct wlr_scene_tree *parent, int top_of
+ 		struct swl_icon_draw_ctx ctx = {0};
+ 		ctx.kind = default_icons[i].kind;
+ 		snprintf(ctx.label, sizeof(ctx.label), "%s", default_icons[i].label);
++		resolve_icon_path(default_icons[i].icon_file, ctx.icon_path, sizeof(ctx.icon_path));
+ 
+ 		/* swl_buffer_create desenha de forma síncrona; não precisa manter
+ 		 * `ctx` viva depois desta chamada (ícones fixos não são redesenhados). */
