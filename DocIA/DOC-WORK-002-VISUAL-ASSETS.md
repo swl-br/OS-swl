@@ -11,16 +11,23 @@ os glifos vetoriais atualmente desenhados direto em `desktop.c`) e um
 conjunto de wallpapers, seguindo a paleta e a estética "hacker retrô" já
 definida em `swl-ui/include/theme.h`.
 
-**Fora de escopo por enquanto:** qualquer alteração em `swlwm.c` /
-`desktop.c` / `background.c` para de fato carregar esses arquivos no lugar
-dos glifos e do grid procedural — isso fica para uma tarefa de código
-separada, feita depois que os assets estiverem prontos e aprovados.
+**Atualização:** a integração em código, inicialmente adiada, foi puxada
+pra esta mesma entrega a pedido — ver seção 3 e 4.
 
 ### 2. Decisões
 
-- **Formato:** SVG puro (vetorial, escalável, cada arquivo só com alguns KB
-  — o formato mais leve possível para ícones de linha e para wallpapers
-  proceduralmente desenhados).
+- **Formato dos ícones (fonte):** SVG (vetorial, ~200-600 bytes cada).
+- **Formato dos ícones (runtime):** rasterizados para PNG 80x80 (2x o
+  tamanho exibido, 40px). Motivo: o compositor já carrega PNG nativo via
+  Cairo (`cairo_image_surface_create_from_png`), sem dependência nova.
+  Carregar SVG direto exigiria `librsvg`/`resvg` como dependência nova do
+  `swl-ui` — adiado até termos motivo real pra pagar esse custo (ex.:
+  precisar de tamanhos arbitrários sem gerar arquivo por resolução). O SVG
+  continua sendo a fonte de verdade; o PNG é gerado a partir dele.
+- **Wallpaper:** `waypaper` inicial (`grid.svg`) também rasterizado pra
+  PNG 1920x1080 (~123KB) e colocado em `swl-ui/assets/wallpaper.png` — é
+  exatamente o primeiro caminho que `swlwm.c` já procura sozinho, então
+  não precisou mexer no `main()`.
 - **Paleta:** reaproveitada 1:1 de `theme.h` (fundo `#0b0e14`, painel
   `#0e1219`, ciano `#6bd1cc`, roxo `#bf9edb`, dourado `#d4a55c`, texto
   `#d4dee6`/`#737f8f`, vermelho de perigo `#dc5a66`), para não criar uma
@@ -38,25 +45,52 @@ separada, feita depois que os assets estiverem prontos e aprovados.
 ### 3. O que está sendo feito / Planejamento
 
 * [x] Definir paleta e estilo (reaproveitado de `theme.h`)
-* [x] Criar os 13 ícones de app em SVG
-* [x] Criar 3-5 wallpapers em SVG
-* [ ] Integração em código (carregar os SVGs em vez dos glifos/grid) — tarefa futura, não incluída aqui
+* [x] Criar os 13 ícones de app em SVG (fonte) + rasterizar em PNG (runtime)
+* [x] Criar 3-5 wallpapers em SVG; rasterizar o primeiro (`grid`) em PNG
+* [x] Integrar os PNGs em `desktop.c` (ícones do desktop) com fallback pro glifo vetorial
+* [x] Integrar o wallpaper PNG (caminho já era procurado por `swlwm.c`, nenhuma mudança de código necessária)
+* [x] Validar build (meson+ninja) e execução headless sem crash
+* [ ] Estilo ainda não é o definitivo do sistema — pack completo fica pra uma próxima rodada
 
 ### 4. Registro de Alterações (Histórico)
 
-* **03/09/2026 — Primeira entrega (Claude):** Criados `assets/icons/*.svg`
-  (13 ícones) e `assets/wallpapers/*.svg` (conjunto inicial), todos
-  seguindo a paleta de `theme.h`. Nenhum arquivo de código foi alterado
-  nesta entrega.
+* **03/09/2026 — Correção de layout no painel (Claude):** No teste de
+  vocês, o bloco direito do painel (`panel.c`) mostrou "MEM ..." e a
+  data/hora sobrepostos e ilegíveis. Causa: o layout usava um offset
+  fixo (`width - 300`) que não considerava a largura real dos textos —
+  CPU label + barra + MEM label + data/hora somados passam bem de 300px,
+  então em qualquer janela abaixo de um certo tamanho um desenhava por
+  cima do outro. Corrigido: agora cada texto é medido com
+  `swl_text_extents()` e o bloco é montado da direita pra esquerda antes
+  de desenhar qualquer coisa; se não couber tudo sem invadir o menu, o
+  bloco inteiro some (nunca mais sobrepõe texto). Build e execução
+  headless testados de novo, sem crash.
+* **03/09/2026 — Primeira entrega, só assets (Claude):** Criados
+  `assets/icons/*.svg` (13 ícones) e `assets/wallpapers/*.svg` (5
+  variações), todos seguindo a paleta de `theme.h`. Nenhum arquivo de
+  código alterado nesta etapa.
+* **03/09/2026 — Integração em código (Claude):** Rasterizados os 13
+  ícones para PNG 80x80 em `swl-ui/assets/icons/*.png` e o wallpaper
+  `grid.svg` para `swl-ui/assets/wallpaper.png` (1920x1080). Modificado
+  `swl-ui/src/desktop.c`: struct `swl_icon_def` ganhou campo `icon_file`;
+  nova função `resolve_icon_path()` (mesmo padrão de busca de caminho que
+  `swlwm.c` já usa pro wallpaper: `assets/icons/`, `../assets/icons/`,
+  `/usr/local/share/swl-ui/icons/`, `/usr/share/swl-ui/icons/`);
+  `icon_cell_draw()` agora tenta carregar o PNG primeiro e só cai no
+  glifo vetorial antigo se o arquivo não for encontrado ou falhar ao
+  carregar — nenhum ícone quebra por falta de asset. Build limpo
+  (`meson setup build && ninja -C build`) e execução headless
+  (`WLR_BACKENDS=headless WLR_RENDERER=pixman`) testados sem crash.
 
 ### 5. Bugs, Bloqueios e Desafios Conhecidos
 
-* Nenhum até o momento. Ponto de atenção para quem for integrar: o
-  compositor hoje carrega PNG nativamente via Cairo sem lib extra; para
-  usar os SVGs direto (sem pré-rasterizar) é necessário `librsvg` ou
-  `resvg` como dependência nova do `swl-ui` — decisão de integração ainda
-  não tomada.
+* Nenhum. `wlroots` instalado no ambiente de teste foi a 0.17 (não a
+  0.19 que o `meson.build` prefere) — o próprio `meson.build` já cai pro
+  fallback genérico `wlroots`, compilou e rodou normal.
+* Estilo dos assets ainda não é o definitivo — combinado que o pack
+  completo/final vem depois, essa leva é só pra destravar o teste.
 
 ### 6. Conclusão
 
-* [ ] Aguardando aprovação do conjunto antes de fechar esta entrega.
+* [x] Assets criados, integrados em código e testados sem crash.
+* [ ] Aguardando teste visual de vocês (rodando de verdade, não headless) antes de fechar esta entrega.
