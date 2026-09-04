@@ -491,10 +491,14 @@ void tswl_term_resize(tswl_term *t, int cols, int rows) {
     tswl_cell b = blank_cell(t->cur_bg);
     for (int i = 0; i < cols * rows; i++) new_grid[i] = b;
 
-    /* preserva as últimas min(rows) linhas do grid antigo, ancoradas embaixo */
+    /* Preserva o conteúdo ancorado embaixo: as últimas min(rows) linhas
+     * visíveis do grid antigo vão pras últimas linhas do grid novo. Assim
+     * o prompt (que normalmente está embaixo) continua no mesmo lugar
+     * visual. delta_y é quanto cada linha de conteúdo andou na tela. */
     int copy_rows = t->rows < rows ? t->rows : rows;
-    int dst_row = rows - copy_rows;
+    int delta_y = rows - t->rows;
     int src_row = t->rows - copy_rows;
+    int dst_row = rows - copy_rows;
     int copy_cols = t->cols < cols ? t->cols : cols;
     for (int r = 0; r < copy_rows; r++) {
         memcpy(&new_grid[(size_t)(dst_row + r) * cols],
@@ -513,6 +517,10 @@ void tswl_term_resize(tswl_term *t, int cols, int rows) {
     t->scroll_top = 0;
     t->scroll_bot = rows - 1;
     t->scroll_offset = 0;
+    /* O cursor acompanha o conteúdo: se a tela cresceu, ele desce junto
+     * (o conteúdo desceu); se encolheu, ele sobe. Sem isso, o shell
+     * escreve na linha errada depois do resize ("texto bugado"). */
+    t->cy += delta_y;
     clamp_cursor(t);
     mark_all_dirty(t);
 }

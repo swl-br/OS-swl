@@ -57,6 +57,7 @@ struct app {
 
     struct wl_buffer *buffer;
     void *buffer_data;
+    size_t buffer_size;      /* tamanho real do mmap (pra desmapear certo) */
     int width, height;       /* pixels, configurado pelo compositor */
     bool configured;
     bool running;
@@ -108,7 +109,10 @@ static bool recreate_buffer(struct app *a) {
         a->buffer = NULL;
     }
     if (a->buffer_data) {
-        munmap(a->buffer_data, (size_t)a->width * a->height * 4);
+        /* usa o tamanho guardado na criação — a->width/height podem já ter
+         * sido atualizados pro novo tamanho, e munmap com tamanho errado
+         * corrompe o espaço de endereçamento (crash no resize) */
+        munmap(a->buffer_data, a->buffer_size);
         a->buffer_data = NULL;
     }
     size_t stride = (size_t)a->width * 4;
@@ -121,6 +125,7 @@ static bool recreate_buffer(struct app *a) {
         close(fd);
         return false;
     }
+    a->buffer_size = size;
     struct wl_shm_pool *pool = wl_shm_create_pool(a->shm, fd, (int)size);
     a->buffer = wl_shm_pool_create_buffer(pool, 0, a->width, a->height,
                                           (int)stride, WL_SHM_FORMAT_ARGB8888);
@@ -548,7 +553,7 @@ int main(int argc, char *argv[]) {
     }
     if (a.pty_fd >= 0) close(a.pty_fd);
     if (a.buffer) wl_buffer_destroy(a.buffer);
-    if (a.buffer_data) munmap(a.buffer_data, (size_t)a.width * a.height * 4);
+    if (a.buffer_data) munmap(a.buffer_data, a.buffer_size);
     if (a.keyboard) wl_keyboard_destroy(a.keyboard);
     if (a.keymap) xkb_keymap_unref(a.keymap);
     if (a.xkb_state) xkb_state_unref(a.xkb_state);
