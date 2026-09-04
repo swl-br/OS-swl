@@ -5,7 +5,7 @@
 **Projeto:** SWL OS  
 **Tipo:** Sistema operacional completo, leve, modular e nativo  
 **Arquitetura inicial:** x86 32-bit / i386  
-**Ambiente de desenvolvimento:** Ubuntu Linux x86_64  
+**Ambiente de desenvolvimento:** Xubuntu e Mint xfce Linux x86_64  
 **Status:** Desenvolvimento ativo  
 **Documento:** Fonte principal de contexto, decisões e regras do projeto
 
