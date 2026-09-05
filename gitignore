@@ -1,0 +1,12 @@
+# Artefatos de build — tudo regenerável, não vai pro git
+/build/
+*.img
+*.cpio.gz
+*.bin
+*.log
+
+# rootfs montado pelo userland/build-rootfs.sh (bash/busybox/init binários)
+/rootfs/
+
+# Árvore do kernel — fonte de terceiros obtida via userland/fetch-deps.sh
+/kernel/linux-7.2.1/
