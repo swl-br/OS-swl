@@ -5,21 +5,6 @@ adicionando a interface visual: painel superior, taskbar, decoração de
 janelas, ícones de área de trabalho e wallpaper — tudo no estilo "hacker
 retrô" do mockup.
 
-## O que mudou em relação ao que vocês tinham
-
-- `icons.c`, `clock.c` e `text_label.c` foram **substituídos**. A técnica de
-  base (Cairo desenhando num buffer ARGB8888 empacotado como
-  `wlr_scene_buffer`) era boa e foi mantida — só generalizada em
-  `swl_buffer.c`, que qualquer widget novo pode reaproveitar.
-- A diferença de desempenho importante: o `clock.c` antigo **destruía e
-  recriava o nó da scene graph a cada segundo**. Agora `swl_buffer_redraw()`
-  troca só o pixel buffer por trás de um nó que já existe
-  (`wlr_scene_buffer_set_buffer`), bem mais barato.
-- A decoração de janela (fechar/mover) que existia era só uma **hitbox
-  invisível** com coordenadas fixas (`ty - 22`, `20x20`...). Agora existe
-  uma barra de título de verdade, desenhada, que sabe sua própria largura —
-  o hit-test usa essas mesmas coordenadas em vez de números soltos.
-
 ## Estrutura
 
 ```
@@ -68,15 +53,16 @@ ninja -C build
 ./build/swlwm -s "seu-app-de-teste"
 ```
 
-Compilação verificada de ponta a ponta (meson + ninja + link) contra
-wlroots 0.17 genérico (o mesmo fallback que o `meson.build` escolhe quando
-não acha o `wlroots-0.19` via pkg-config) e testada de pé com
-`WLR_BACKENDS=headless`, sem crash. Os três erros que travavam o build
-eram bugs reais no código, não falta de dependência — ver "O que foi
-corrigido" abaixo.
+Compilação verificada de ponta a ponta (meson + ninja + link). O
+`meson.build` procura wlroots nessa ordem: `wlroots-0.19`,
+`wlroots-0.18`, e o genérico `wlroots` (o pacote que o pkg-config da
+máquina tiver.. Nas máquinas atuais (Xubuntu/Mint) isso cai em
+wlroots 0.17.1 ou 0.18.2, e o código tem o guard de
+compilação `SWL_WLR_0_18` para funcionar com ambas (ver
+`docs/ai/DECISIONS.md`, DEC-006..
 
-Dependências: `wlroots` (0.19, ou ajuste o meson.build pra sua versão),
-`wayland-server`, `xkbcommon`, `cairo`, `pangocairo`, `libdrm`.
+Dependências: `wlroots`, `wayland-server`, `xkbcommon`, `cairo`,
+`pangocairo`, `libdrm`.
 
 ## O que foi corrigido
 
@@ -98,7 +84,7 @@ Dependências: `wlroots` (0.19, ou ajuste o meson.build pra sua versão),
   então o resultado final não é "escolhe uma cor ou outra", é "descarta
   quase todos os canais e sobra um valor solto", só avisado por um warning
   de "comma expression has no effect" (o `taskbar.c` e `decorations.c` do
-  log de vocês têm exatamente esse warning nos ternários de foco). Troquei
+  logs de build tinham exatamente esse warning nos ternários de foco). Troquei
   a paleta pra um `typedef struct { double r,g,b,a; } swl_color_t;` com
   compound literals (`SWL_COLOR(r,g,b,a)`), aí o ternário compara dois
   valores do mesmo tipo normalmente e o compilador para de reclamar — e o
@@ -119,27 +105,37 @@ Agora:
   `../assets/wallpaper.png`, `/usr/local/share/swl-ui/wallpaper.png` e
   `/usr/share/swl-ui/wallpaper.png`; usa o primeiro que existir e só cai no
   grid procedural se nenhum for encontrado.
-- A arte do gato pixelado que vocês mandaram já está em
-  `assets/wallpaper.png` — rodando `./build/swlwm` a partir da raiz do
-  repo (`~/Downloads/swl-ui`, como no log de vocês) ela é achada
+- A arte padrão já está em
+  `assets/wallpaper.png` (com as variações-fonte em SVG em `assets/wallpapers/`).
+  Rodando `./build/swlwm` a partir da raiz do repo, ela é achada
   automaticamente, sem precisar editar código nem hardcodar um path
   absoluto de sistema.
 
-## O que ficou como TODO (de propósito, pra não inflar demais esta entrega)
+## Funcionalidades implementadas
 
-- **Menu iniciar**: o clique no botão MENU da taskbar já está capturado
-  (`hit == -1` em `server_cursor_button`), só falta desenhar o menu em si.
-- **Maximizar/minimizar**: os botões já existem visualmente e o clique já é
-  capturado; falta guardar geometria original e implementar o toggle
-  (maximizar) e o estado "escondido, só na taskbar" (minimizar).
-- **Ícones de app com imagem própria**: hoje são glifos vetoriais (leves,
-  sem I/O). Se quiserem ícones customizados por app depois, dá pra estender
-  `swl_desktop_icon_def` com um caminho de PNG opcional, usando a mesma
-  técnica de `background.c`.
-- Multi-monitor: o código assume um layout único cobrindo a resolução do
-  primeiro output. Funciona para o caso de vocês agora; generalizar exige
-  guardar painel/taskbar por output.
+- **Painel superior** (CPU/MEM reais via `/proc`, relógio)e **taskbar**
+  (janelas abertas, bandeja) funcionais..
+- **Menu iniciar**: abre/fecha pelo botão MENU,e clique em item lança o
+  app (catálogo vindo de `desktop.c`).
+- **Maximizar/minimizar/arrastar/fechar**: implementados e validados
+  interativamente.
 
+- **Wallpaper** (`assets/wallpaper.png` ou `-b <caminho>`).
+- **Ícones de app**: glifos vetoriais (leves, sem I/O).
+
+## O que ainda falta (TODO real)
+
+- **Trocar papel de parede em runtime**: não implementado (o wallpaper é fixo
+  no boot do compositor`.
+- **Ícones da área de trabalho interativos**: hoje abrem apps no clique, mas
+  arrastar/adicionar/remover atalhos não..
+- **Preview/thumbnail** de janelas na taskbar: lista mostra título e foca ao
+  clicar, mas sem preview visual..
+
+- **Fullscreen real**: o protocolo responde, mas falta a lógica de verdade..
+- **Multi-monitor**: o código assume um layout único cobrindo a resolução do
+  primeiro output. Generalizar exige guardar painel/taskbar por output.
+ 
 ## Paleta (`theme.h`)
 
 Se quiser ajustar as cores pra bater ainda mais com a arte de referência, é
