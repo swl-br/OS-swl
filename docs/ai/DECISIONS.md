@@ -146,3 +146,22 @@ Consequência: toda IA deve continuar documentando decisões/arquitetura
 de forma clara o bastante pra outra IA conseguir pegar o trabalho de
 onde parou só lendo a sessão (sem precisar perguntar pro usuário) —
 isso é o que torna esse fluxo de "pedir ajuda" viável.
+
+---
+## DEC-008 — Documentação: sem árvore fixa, sem arquivos obrigatórios; repo mapeado a cada sessão
+
+Status: ACCEPTED
+
+Decisão: o `README.md` (MASTER_PLAN) não mantém mais uma árvore de diretórios "oficial" fixa, nem uma lista obrigatória de arquivos de documentação (`ARCHITECTURE.md`, `TASKS.md`, `INTEGRATION.md`, `CODING_RULES.md`...) que não existem no repositório. Em vez disso:
+
+- **Toda IA deve mapear o repositório e conferir o estado real** (`git status`, `git log`, listagem de arquivos) antes de alterar qualquer coisa — o repositório é a fonte de verdade (seções 20-22 do README).
+- **`docs/ai/` é um diretório vivo**: liste o que existe de fato (`ls docs/ai/`, `ls docs/ai/sessions/`) em vez de assumir arquivos por nome.
+- **Documente quando for significativo**: decisão, integração, bug não-óbvio, handoff — não por obrigação burocrática..
+- **Leveza é regra**: compile só o que for usado, dependência só com uso real, artefatos de build fora do Git, árvores gigantes de terceiros (kernel) via submodule/fetch.
+
+Motivo: a documentação anterior tinha referências a arquivos que não existem (ARCHITECTURE.md, INTEGRATION.md, docs/decisoes.md do "repositório de trabalho anterior", etc.), uma árvore fake que desatualizou (userspace/, libraries/, drivers/, tools/, tests/... que nunca existiram), e regras rígidas (sequência obrigatória de leitura, "nunca dizer terminei", "nunca criar componentes duplicados") que travavam as IAs em vez de ajudar. O resultado era doc que atrapalhava mais do que guiava.
+
+
+
+Consequência: novas IAs devem ler o README reescrito(seções 20-22, e seguir o fluxo de mapeamento → estado do Git → leitura do relevante → verificação → alteração → teste → documentação (se significativo) → commit. O `PROJECT_STATE.md` continua sendo o registro do estado real do projeto(com a data da última atualização); o `DECISIONS.md` continua sendo o registro de decisões arquiteturais(ACCEPTED / SUPERSEDED / PROPOSED).
+

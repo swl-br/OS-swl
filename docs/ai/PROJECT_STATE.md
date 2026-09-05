@@ -1,7 +1,7 @@
 # PROJECT_STATE — SWL OS
 
-Última atualização: 2026-09-04 (sessão com Claude, revisando trabalho do
-Claude + OpenHands em paralelo)
+Última atualização: 2026-09-05 (OpenHands — reorganização da documentação
+principal; ver DEC-008. Estado do projeto conferido contra o código real.)
 
 ## Kernel / Boot
 
@@ -23,10 +23,8 @@ STATUS: FUNCIONAL (ponta a ponta, testado em QEMU)
   + manifesto + kernel + initrd).
 - Testado com sucesso: boot completo até prompt de bash interativo.
 
-Bugs conhecidos já resolvidos (não repetir): ver seção "Boot" do
-`docs/decisoes.md` do repositório de trabalho anterior — principal:
-o buffer de carregamento do kernel/initrd não pode ser reaproveitado
-como área do código de setup do kernel (um sobrescreve o outro).
+Bug conhecido já resolvido (não repetir): o buffer de carregamento do kernel/initrd
+não pode ser reaproveitado como área do código de setup do kernel (um sobrescreve o outro).
 
 ## Interface Gráfica (GUI)
 
