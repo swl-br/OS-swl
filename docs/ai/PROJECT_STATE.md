@@ -149,9 +149,17 @@ STATUS: EM DESENVOLVIMENTO — primeiro app nativo criado.
 
 - Revisão de código estática periódica feita pelos orquestradores.
   Achados ficam em `docs/revisao/` com responsáveis e status.
-  Ver `docs/revisao/2026-09-05-revisao-01.md` (R-01 a R-14).
-  Críticos atuais: corrupção de memória e null deref no parser/startup
-  do TSWL (R-01 a R-03), abertos — pedido de correção à OpenHands.
+  - `2026-09-05-revisao-01.md` — R-01..R-14 (swl-ui + tswl).
+    Críticos atuais: R-01 a R-03 no TSWL (corrupção de memória e null
+    deref no parser/startup), abertos — pedido de correção à OpenHands.
+  - `2026-09-05-revisao-02.md` — R-15..R-20 (boot + scripts).
+    Destaque: R-15 `/dev` não montado no init; **R-16 lacuna de build —
+    nenhum script gera `initramfs.cpio.gz` (bloqueia build limpo do zero)**.
+
+## Lacunas de build conhecidas
+
+- **Não há receita para gerar `build/initramfs.cpio.gz`** (R-16). O qemu
+  a partir de clone do zero não reproduz o boot por causa disso.
 
 ## Espaço de orquestração
 

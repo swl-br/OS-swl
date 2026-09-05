@@ -21,9 +21,8 @@ começar agora, sem depender de outra coisa. Owner = quem sugerimos pegar
 
 | # | Tarefa | Estado | Nota |
 |---|---|---|---|
-| — | `.gitignore` | Corrigido: foi subido como `gitignore` (sem ponto) e o orquestrador renomeou para `.gitignore` em 2026-09-05. | Falta A3 (`git rm --cached` dos já rastreados) |
-| — | Deps externas | `userland/fetch-deps.sh` criado por outra IA (kernel + bash/busybox estáticos). | Não commitar a árvore do kernel no futuro |
-| — | Documento mestre / estado | Admin edita (esta pasta + `docs/ai/*`) | Contínuo |
+| A9 | **Corrigir R-15/R-16 da camada de boot** — `/dev` não montado no init e **lacuna de build do initramfs** (não dá pra gerar `initramfs.cpio.gz` do zero). R-16 bloqueia boot de clone limpo. Ver `docs/revisao/2026-09-05-revisao-02.md` | ABERTO · desbloqueada | A2 e A1 ficaram para OpenHands; A9/R-15/R-16 pode pegar qualquer IA do boot/userland |
+| — | Sessões de implementação 09-05 | Usuário ainda não subiu documentos de sessão do dia | A gente atualiza este arquivo quando subirem |
 | — | Sessões de implementação 09-05 | Usuário ainda não subiu documentos de sessão do dia | A gente atualiza este arquivo quando subirem |
 
 ## 🧭 PLANEJADAS (próximas fases — não bloqueadas por nada, só por ordem)
