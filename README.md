@@ -1,4 +1,3 @@
-[SWL_OS_MASTER_PLAN.md](https://github.com/user-attachments/files/31809672/SWL_OS_MASTER_PLAN.md)
 # SWL OS — MASTER PROJECT PLAN
 ## Documento Mestre do Projeto e Guia de Trabalho para IAs
 
@@ -29,9 +28,9 @@ Este documento existe para:
 - servir como ponto de entrada para novos colaboradores e IAs;
 - definir como o trabalho realizado deve ser documentado.
 
-O repositório Git é a **fonte de verdade do projeto**.
+**O repositório Git é a fonte de verdade do projeto.**
 
-Nenhuma IA deve confiar apenas no contexto da conversa em que está trabalhando. Antes de alterar algo, deve consultar o estado atual do repositório e os documentos de projeto.
+Nenhuma IA deve confiar apenas no contexto da conversa em que está trabalhando. Este documento descreve **princípios e direção** — mas o estado real, a estrutura e o código estão no repositório. Por isso, antes de alterar qualquer coisa: **mapeie o repositório e confira o estado atual dele** (`git status`, `git log`, listagem de arquivos, código). Nunca confie cegamente nem neste documento nem na própria memória — o repositório sempre sabe mais.
 
 ---
 
@@ -979,172 +978,92 @@ Não sacrificar segurança, estabilidade ou manutenção por micro-otimizações
 
 ---
 
-# 20. REPOSITÓRIO
+# 20. LEVEZA E OTIMIZAÇÃO DE BUILD
 
-Estrutura inicial recomendada:
+Manter o projeto leve é uma exigência prática, não estética. Dicas objetivas:
 
-```text
-swl-os/
-├── boot/
-├── kernel/
-├── userspace/
-├── apps/
-│   ├── swlpad/
-│   ├── filemanager/
-│   ├── terminal/
-│   ├── settings/
-│   ├── sebre/
-│   ├── media/
-│   ├── images/
-│   ├── compressor/
-│   ├── browser/
-│   ├── game-studio/
-│   ├── pixel-studio/
-│   ├── 3d-studio/
-│   └── electronics-studio/
-├── libraries/
-├── drivers/
-├── tools/
-├── tests/
-├── docs/
-│   ├── architecture/
-│   ├── specifications/
-│   ├── decisions/
-│   ├── api/
-│   └── ai/
-├── assets/
-│   ├── icons/
-│   ├── fonts/
-│   ├── themes/
-│   └── wallpapers/
-├── scripts/
-├── build/
-└── README.md
-```
 
-A estrutura pode mudar conforme o projeto evolui. Mudanças estruturais importantes devem ser documentadas.
+
+- **Compile só o que for usado.** Se um build liga 60 bibliotecas/lib mas o código usa 10, as outras 50 não devem ser compiladas nem linkadas. Não existe "vai que um dia precisa" — adicione quando houver uso real.
+- **Dependência só entra com uso real no mesmo trabalho.** Se a dependência não é referenciada pelo código que está sendo entregue, ela não entra. Isso vale para bibliotecas, ferramentas e serviços..
+- **Nada de "por precaução".** Não carregar framework, toolkit, driver ou app "para o caso de". Carregamento sob demanda e build enxuto são parte da arquitetura, não exceção..
+- **Artefatos de build não vão pro Git.** Binários, imagens de disco, logs, diretórios de build gerados—tudo isso é regenerável e só incha o repositório. Use `.gitignore` e/ou scripts..
+- **Árvores gigantes de terceiros (kernel etc.) devem ser tratadas com cuidado:** avaliar submodule, script de fetch, ou manter só o que o projeto realmente usa/modifica, em vez de commitar a árvore inteira no repositório principal. O repositório deve ser leve o bastante para clonar e trabalhar sem arrastar centenas de MiB de código que não é do projeto..
+- **Meça antes de otimizar.** Perfil, instrumente, e só então decida onde gastar esforço. Leveza não é micro-otimização cega—é não carregar o que não é necessário..
+- **Revise o que entra no commit:** código morto, arquivos de build, cópias de assets não usados e dependências não referenciadas não devem ser commitados. Se um arquivo não é necessário pro build ou pro runtime, ele não pertence ao repositório principal.
+
+
 
 ---
 
-# 21. DOCUMENTAÇÃO ENTRE IAs
+# 21. O REPOSITÓRIO É A FONTE DE VERDADE
 
-O projeto será desenvolvido por múltiplas IAs.
+**Não existe uma árvore de diretórios "oficial" fixa neste documento — e isso é de propósito.** A estrutura do repositório evolui com o projeto, e uma árvore documentada vira mentira no dia seguinte (e faz a IA confiar no papel em vez do código).
 
-Por isso, documentação de trabalho entre IAs é obrigatória.
+O procedimento correto para qualquer IA, sempre, é:
 
-Cada IA deve registrar o trabalho realizado.
+1. **Mapear o repositório** — listar a estrutura real (`find`, `ls`, explorar os diretórios) antes de qualquer suposição.
+2. **Conferir o estado real** — `git status`, `git log`, ver o que foi mudado recentemente, ver se há trabalho novo de outra IA.
 
-Diretório:
+3. **Ler o que for relevante para a tarefa** — `README.md`, este documento, `docs/ai/` (ver abaixo) e o código do componente que vai ser alterado.
 
-```text
-docs/ai/
-```
 
-Arquivos gerais recomendados:
 
-```text
-docs/ai/
-├── PROJECT_STATE.md
-├── ARCHITECTURE.md
-├── DECISIONS.md
-├── TASKS.md
-├── INTEGRATION.md
-├── CODING_RULES.md
-└── AI_HANDOFF.md
-```
+4. **Verificar se outra implementação já existe** antes de criar algo — nunca assumir que algo está ausente sem procurar no repositório.
+
+
+
+5. **Alterar, testar, documentar se significativo, commitar.**
+
+
+
+Mudanças estruturais importantes devem ser documentadas em `docs/ai/DECISIONS.md`.
 
 ---
 
-# 22. DOCUMENTO DE CADA SESSÃO / IA
+# 22. DOCUMENTAÇÃO ENTRE IAs E FLUXO DE TRABALHO
 
-Quando uma IA realizar uma tarefa significativa, ela deve deixar um documento de handoff.
+O projeto será desenvolvido por múltiplas IAs. Documentação de trabalho existe para **transferir contexto** — não para virar burocracia. A regra prática:
 
-Exemplo:
 
-```text
-docs/ai/
-├── sessions/
-│   ├── 2026-09-01-gpt-swlpad.md
-│   ├── 2026-09-01-claude-architecture.md
-│   ├── 2026-09-02-gemini-build-system.md
-│   └── ...
-```
+1. **Documente quando for significativo:** mudança de arquitetura, decisão relevante, integração entre componentes, bug não-óbvio, algo que outra IA precisará saber. Trabalho trivial não exige documento.
 
-Cada documento deve informar:
 
-```text
-# Sessão
 
-IA:
-Data:
-Responsável:
-Branch:
-Commit:
+2. **`docs/ai/` é um diretório vivo — não um template fixo.** Liste o que existe lá de verdade (`ls docs/ai/`, `ls docs/ai/sessions/`) em vez de assumir arquivos por nome. O que costuma existir:
 
-## Objetivo
 
-O que foi feito.
+   - `PROJECT_STATE.md` — estado atual real do projeto (o que funciona, o que não, próximos passos). Atualize quando o estado mudar significativamente.
 
-## Alterações
 
-Arquivos criados:
-Arquivos modificados:
-Arquivos removidos:
+   - `DECISIONS.md` — decisões arquiteturais importantes, com status (ACCEPTED / SUPERSEDED / PROPOSED). Decisões antigas não são apagadas—quando mudam, marcar a anterior como SUPERSEDED e criar a nova explicando o motivo.
 
-## Implementação
 
-Descrição técnica das mudanças.
+   - `sessions/` — relatos de trabalho de cada IA/sessão que tenha algo a transmitir. Use o formato que fizer sentido para o trabalho—o importante é outra IA conseguir continuar dali: o que foi feito, o que falta, o que ela precisa saber.
 
-## Decisões
 
-Decisões tomadas durante o trabalho.
 
-## Testes
+3. **Não duplique contexto.** Se a informação já está no código, nos commits ou em outro doc, não repita—aponte.
 
-Testes executados e resultados.
 
-## Problemas conhecidos
 
-Bugs, limitações ou partes incompletas.
+4. **Fluxo de trabalho padrão** — em vez de uma sequência rígida e obrigatória de leitura:
 
-## TODO
+   1. **Mapeie o repositório** — veja a estrutura real, não a imaginada.
+   2. **Confira o estado do Git** — `git status`, `git log`, branches, trabalho em andamento.
+   3. **Leia o que for relevante** — `README.md`, `docs/ai/`, e o código do componente que vai alterar.
+   4. **Verifique o que já existe** — não duplicar implementação, biblioteca, API ou serviço.
+   5. **Altere** — mudanças focadas e claras.
 
-Próximos passos.
 
-## Integração
+   6. **Teste** — compile, rode, valide o comportamento.
+   7. **Documente se significativo** — decisão, integração, estado, handoff.
+   8. **Commit** — descritivo, focado, sem lixo.
 
-O que outras IAs precisam saber antes de modificar esta parte.
 
-## Observações
+Nunca assumir que algo está ausente sem procurar no repositório. E lembre: **o repositório sabe mais sobre o projeto do que a memória da IA** — se a memória e o repositório discordarem, confie no repositório( e atualize a documentação se ela estiver errada).
 
-Informações relevantes para continuidade.
-```
-
-A IA não deve simplesmente dizer "terminei".
-
-Ela deve deixar o projeto compreensível para a próxima IA.
-
----
-
-# 23. REGRAS PARA TODAS AS IAs
-
-Antes de trabalhar:
-
-1. Ler `README.md`.
-2. Ler este `MASTER_PLAN.md`.
-3. Ler `docs/ai/PROJECT_STATE.md`.
-4. Ler `docs/ai/ARCHITECTURE.md`.
-5. Ler `docs/ai/DECISIONS.md`.
-6. Ler documentos relacionados ao componente que será alterado.
-7. Inspecionar o código atual.
-8. Verificar o estado do Git.
-9. Verificar se outra implementação já existe.
-
-Nunca assumir que algo está ausente sem procurar no repositório.
-
----
-
-# 24. NÃO QUEBRAR O TRABALHO DE OUTRAS IAS
+# 23. NÃO QUEBRAR O TRABALHO DE OUTRAS IAS
 
 Antes de modificar uma área:
 
@@ -1159,7 +1078,7 @@ Se uma alteração de arquitetura for necessária, registrar em `DECISIONS.md`.
 
 ---
 
-# 25. NÃO CRIAR COMPONENTES DUPLICADOS
+# 24. NÃO CRIAR COMPONENTES DUPLICADOS
 
 Antes de criar:
 
@@ -1180,7 +1099,7 @@ Não criar duas implementações diferentes da mesma função sem motivo arquite
 
 ---
 
-# 26. DECISÕES ARQUITETURAIS
+# 25. DECISÕES ARQUITETURAIS
 
 Decisões importantes devem ser registradas em:
 
@@ -1215,7 +1134,7 @@ Quando uma decisão mudar:
 
 ---
 
-# 27. ESTADO ATUAL DO PROJETO
+# 26. ESTADO ATUAL DO PROJETO
 
 O arquivo:
 
@@ -1248,17 +1167,18 @@ Esse arquivo deve ser atualizado quando o estado do projeto mudar significativam
 
 ---
 
-# 28. INTEGRAÇÃO
+# 27. INTEGRAÇÃO
 
-O arquivo:
+A integração entre subsistemas deve ser **documentada onde faz sentido** — não num arquivo fixo e obrigatório. Onde registrar depende do caso:
 
-```text
-docs/ai/INTEGRATION.md
-```
+- **Decisões de integração** (ex.: trocar a base da GUI, mudar como o kernel e o userspace se conectam) → `docs/ai/DECISIONS.md` COM status.
+- **Estado atual das integrações** (o que está ligado no que, o que falta) → `docs/ai/PROJECT_STATE.md`.
 
-deve explicar como os subsistemas se conectam.
+- **Detalhe fino de uma integração específica** → no doc de sessão relevante, ou num comentário no próprio código quando for não-óbvio.
 
-Exemplos:
+
+
+Exemplos de integrações que importam documentar:
 
 ```text
 Kernel
@@ -1294,11 +1214,11 @@ Filesystem APIs
 Storage
 ```
 
-Toda integração importante deve ser documentada.
+Toda integração importante deve ser documentada. E lembre: confira sempre `docs/ai/` (o que existe de fato) antes de citar um arquivo por nome.
 
 ---
 
-# 29. CODING RULES
+# 28. CODING RULES
 
 Código deve priorizar:
 
@@ -1325,7 +1245,7 @@ Evitar:
 
 ---
 
-# 30. GIT
+# 29. GIT
 
 Git é o mecanismo de integração do projeto.
 
@@ -1353,7 +1273,7 @@ test(swlc): add parser regression tests
 
 ---
 
-# 31. FLUXO DE TRABALHO MULTI-IA
+# 30. FLUXO DE TRABALHO MULTI-IA
 
 O projeto funciona como uma equipe.
 
@@ -1425,7 +1345,7 @@ O importante é que o repositório documente o resultado.
 
 ---
 
-# 32. REGRA DE OURO PARA IAs
+# 31. REGRA DE OURO PARA IAs
 
 **O repositório sabe mais sobre o projeto do que a memória da IA.**
 
@@ -1433,35 +1353,31 @@ Uma IA nunca deve dizer:
 
 > "Eu lembro que o projeto era assim."
 
-Ela deve verificar.
-
-A sequência correta é:
+Ela deve **verificar**. O fluxo já foi descrito na seção 22 — o resumo é:
 
 ```text
-README
-  ↓
-MASTER_PLAN
-  ↓
-PROJECT_STATE
-  ↓
-ARCHITECTURE
-  ↓
-DECISIONS
-  ↓
-Código
-  ↓
-Testes
-  ↓
-Alteração
-  ↓
-Documentação
-  ↓
+Mapear o repositório
+ ↓
+Conferir o estado do Git (status, log, trabalho novo)
+ ↓
+Ler o que for relevante (README, docs/ai/, código do componente)
+ ↓
+Verificar o que já existe
+ ↓
+Alterar
+ ↓
+Testar
+ ↓
+Documentar se significativo
+ ↓
 Commit
 ```
 
+Nunca confie na memória quando o repositório pode responder. Se os dois discordarem, confie no repositório — e se a documentação estiver errada, corrija-a.
+
 ---
 
-# 33. TRABALHO EM GRANDE ESCALA
+# 32. TRABALHO EM GRANDE ESCALA
 
 O projeto não deve ser desenvolvido artificialmente em pequenos pedaços apenas para aumentar o número de etapas.
 
@@ -1481,7 +1397,7 @@ Significa evitar protótipos mínimos quando uma implementação real já é vi�
 
 ---
 
-# 34. REGRA CONTRA ESCOPO FALSO
+# 33. REGRA CONTRA ESCOPO FALSO
 
 Uma IA não deve marcar uma funcionalidade como concluída apenas porque:
 
@@ -1496,7 +1412,7 @@ Uma IA não deve marcar uma funcionalidade como concluída apenas porque:
 
 ---
 
-# 35. ROADMAP GERAL
+# 34. ROADMAP GERAL
 
 O roadmap não é rígido.
 
@@ -1555,7 +1471,7 @@ As fases podem ocorrer em paralelo.
 
 ---
 
-# 36. O QUE O SWL OS NÃO DEVE SER
+# 35. O QUE O SWL OS NÃO DEVE SER
 
 O projeto não deve virar:
 
@@ -1570,7 +1486,7 @@ O projeto não deve virar:
 
 ---
 
-# 37. O QUE O SWL OS DEVE SER
+# 36. O QUE O SWL OS DEVE SER
 
 O SWL OS deve ser:
 
@@ -1592,7 +1508,7 @@ O SWL OS deve ser:
 
 ---
 
-# 38. REGRA FINAL
+# 37. REGRA FINAL
 
 Qualquer IA que entrar no projeto deve considerar este documento como a especificação geral do projeto.
 
@@ -1614,7 +1530,7 @@ Se uma informação for importante para o futuro do projeto, ela deve ser coloca
 
 ---
 
-# 39. CHECKLIST ANTES DE ENTREGAR UMA TAREFA
+# 38. CHECKLIST ANTES DE ENTREGAR UMA TAREFA
 
 Antes de considerar uma tarefa concluída:
 
@@ -1629,14 +1545,14 @@ Antes de considerar uma tarefa concluída:
 - [ ] Performance considerada
 - [ ] Segurança considerada
 - [ ] Git diff revisado
-- [ ] PROJECT_STATE atualizado se necessário
-- [ ] DECISIONS atualizado se necessário
+- [ ] `docs/ai/PROJECT_STATE.md` atualizado se necessário
+- [ ] `docs/ai/DECISIONS.md` atualizado se necessário
 - [ ] Handoff da IA criado
 - [ ] Próximos passos documentados
 
 ---
 
-# 40. PRINCÍPIO DE CONTINUIDADE
+# 39. PRINCÍPIO DE CONTINUIDADE
 
 O SWL OS é um projeto contínuo.
 
