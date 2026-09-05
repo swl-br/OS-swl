@@ -4,6 +4,30 @@ Registro diário das rodadas de orquestração. Entrada mais recente em
 cima. **Conferir sempre o repo real** — este diário é um índice, não a
 verdade de fonte.
 
+## 2026-09-05 — Rodada 3 (admin): processo de docs — sessão só no final; EM_ANDAMENTO
+
+DEC-009 criado em `docs/ai/DECISIONS.md`:
+- Sessão (`docs/ai/sessions/`) só no **final**, quando o usuário PEDIR
+  (pedaço passou nos testes e está funcionando — não precisa ser 100%).
+- Trabalho "no off" (em progresso/teste/quebrado) registrado em
+  `docs/ai/EM_ANDAMENTO.md` **assim que começa** — evita colisão de IAs
+  (ex.: A4 começado por Claude e OpenHands ao mesmo tempo).
+- Formato de sessão vira "relato completo do processo": método + erros
+  (na IA / terminal do usuário) + ideias tentadas/descartadas +
+  conclusão do que deu certo + tudo que foi implementado.
+
+Registro de andamento criado: `docs/ai/EM_ANDAMENTO.md`.
+
+Situação do A4 registrada lá: **Claude** validou a GUI subindo no boot
+numa versão ANTIGA do repo, está reaplicando no estado atual (método
+confirmado); **OpenHands** começou a mesma coisa sem saber, parou no
+meio (bug, sem progresso). **Decisão do usuário: seguir o método do
+Claude.** OpenHands fora de A4 até destravar o bug de parar.
+
+`AFAZERES.md` atualizado: A4 marcado como em andamento; regra de quem
+pegar tarefa agora manda registrar no `EM_ANDAMENTO` antes de mergulhar
+e só criar sessão no final sob pedido.
+
 ## 2026-09-05 — Rodada 2 (admin): revisão da camada de boot + scripts
 
 Estado do repo confirmado (clean, up to date com `origin/main`).

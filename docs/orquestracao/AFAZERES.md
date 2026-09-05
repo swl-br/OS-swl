@@ -11,7 +11,7 @@ começar agora, sem depender de outra coisa. Owner = quem sugerimos pegar
 | A1 | **Corrigir bugs críticos do TSWL** (corrupção de memória via `CSI r`; null deref do `xkb_ctx` no startup; CSI sem clamp → DoS). Ver `docs/revisao/2026-09-05-revisao-01.md` R-01/R-02/R-03 | É entrada não-confiável (saída de qualquer programa) — risco de segurança real. | Quem pegar `apps/tswl` (OpenHands tem o contexto da criação) |
 | A2 | **Corrigir bugs médios do swl-ui** (hit-test de decoração com minimizada/montada; foco da taskbar após minimizar/fechar; `read_cpu_usage` com variável não inicializada; `mem_available` ausente). Ver R-04/R-05/R-06/R-07 | Afetam uso real da GUI; nenhum exige decisão de arquitetura. | Quem pegar `swl-ui` (Claude criou menu/maximizar; núcleo é pré-sessões) |
 | A3 | **Remover artefatos de build commitados do git** — o `.gitignore` já está corrigido/ativo (estava subido como `gitignore`, sem ponto; renomeado em 2026-09-05) e `userland/fetch-deps.sh` já cobre as deps externas. Falta: `git rm --cached` do que já está rastreado (`build/*`, `rootfs/*`, árvore do kernel). Lista + procedimento em R-08 | Higiene do repo exigida pelo README §20; repo tem 95k arquivos / ~1.8GB de árvore de kernel. | Qualquer IA com acesso ao git (ou o admin, como tarefa de organização) |
-| A4 | **Integrar a GUI ao boot real (DRM/KMS)** — rodar o swlwm como sessão gráfica principal dentro do initramfs, sem X11. É o "próximo passo grande" já apontado no PROJECT_STATE | Fase é a que mais destrava valor do projeto: a GUI deixa de rodar "só no host do dev". | IA com contexto de wlroots/kernel (sugerido: construir sobre sessões 0.17/0.18) |
+| A4 | **Integrar a GUI ao boot real (DRM/KMS)** — rodar o swlwm como sessão gráfica principal dentro do initramfs, sem X11. É o "próximo passo grande" já apontado no PROJECT_STATE | **EM ANDAMENTO (off)** — usuário decidiu seguir o **método do Claude** (validou a GUI subindo no boot numa versão antiga do repo; está reaplicando sobre o estado atual). OpenHands tinha começado a mesma coisa e parou sozinha (sem progresso) → fora de A4 até destravar o bug. Acompanhar em `docs/ai/EM_ANDAMENTO.md` | Claude (método escolhido) |
 | A5 | **Readaptar janelas maximizadas quando o output redimensiona** | Bug conhecido documentado desde a sessão de maximizar/minimizar. | swl-ui |
 | A6 | **Fullscreen real** (hoje só responde ao protocolo, sem lógica) | Pequeno, independente. | swl-ui |
 | A7 | **Correções de build/leveza** (tswl: remover `-lm`/`-lrt` sem uso; swl-ui: remover `wayland-protocols` não usada, ordenar wlroots 0.18 antes de 0.19 no fallback, remover `xdg-shell-protocol.c` morto de 72KB) — ver R-09/R-10/R-11 | README §20 obriga dependência só com uso real. | swl-ui / tswl |
@@ -23,7 +23,12 @@ começar agora, sem depender de outra coisa. Owner = quem sugerimos pegar
 |---|---|---|---|
 | A9 | **Corrigir R-15/R-16 da camada de boot** — `/dev` não montado no init e **lacuna de build do initramfs** (não dá pra gerar `initramfs.cpio.gz` do zero). R-16 bloqueia boot de clone limpo. Ver `docs/revisao/2026-09-05-revisao-02.md` | ABERTO · desbloqueada | A2 e A1 ficaram para OpenHands; A9/R-15/R-16 pode pegar qualquer IA do boot/userland |
 | — | Sessões de implementação 09-05 | Usuário ainda não subiu documentos de sessão do dia | A gente atualiza este arquivo quando subirem |
-| — | Sessões de implementação 09-05 | Usuário ainda não subiu documentos de sessão do dia | A gente atualiza este arquivo quando subirem |
+
+## 🔄 EM ANDAMENTO (fora do repo / "no off")
+
+| # | O que | Quem | Acompanhar em |
+|---|---|---|---|
+| A4 | GUI no boot real (DRM/KMS) — método do Claude validado na versão antiga; sendo reaplicado no estado atual | Claude | `docs/ai/EM_ANDAMENTO.md` |
 
 ## 🧭 PLANEJADAS (próximas fases — não bloqueadas por nada, só por ordem)
 
@@ -41,9 +46,13 @@ começar agora, sem depender de outra coisa. Owner = quem sugerimos pegar
 
 ## ⚠️ REGRA PARA QUEM PEGAR TAREFA
 
-Ao abrir uma tarefa da lista: escreva a sessão em `docs/ai/sessions/`,
-mexa **só** no escopo da tarefa, rode os testes/montagens relevantes e
-marque no DIARIO (não edite este arquivo — quem move aqui é o admin).
+Ao abrir uma tarefa da lista: registre em `docs/ai/EM_ANDAMENTO.md`
+(assim que começar — mesmo que incompleto/no off) e mexa **só** no
+escopo da tarefa, rode os testes/montagens relevantes e marque no DIARIO
+(não edite este arquivo — quem move aqui é o admin). A **sessão
+completa** (`docs/ai/sessions/`) só é criada **no final**
+quando o usuário pedir (trabalho passou nos testes e está funcionando).
+Ver DEC-009.
 
 ---
 

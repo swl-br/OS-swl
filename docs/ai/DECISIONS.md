@@ -165,3 +165,55 @@ Motivo: a documentação anterior tinha referências a arquivos que não existem
 
 Consequência: novas IAs devem ler o README reescrito(seções 20-22, e seguir o fluxo de mapeamento → estado do Git → leitura do relevante → verificação → alteração → teste → documentação (se significativo) → commit. O `PROJECT_STATE.md` continua sendo o registro do estado real do projeto(com a data da última atualização); o `DECISIONS.md` continua sendo o registro de decisões arquiteturais(ACCEPTED / SUPERSEDED / PROPOSED).
 
+---
+## DEC-009 — Sessão só no final sob pedido; trabalho "no off" vive em `docs/ai/EM_ANDAMENTO.md`
+
+Status: ACCEPTED
+
+Decisão sobre o fluxo de documentação das IAs de implementação:
+
+- **Arquivo de sessão (`docs/ai/sessions/`) só é criado no FINAL de um
+  pedaço de trabalho, quando o usuário PEDIR** — o usuário pede quando
+  acha que aquele pedaço está pronto de "uma certa forma": não precisa
+  ser 100% do escopo, mas **passou nos testes sem erro e está
+  funcionando**. Não se cria sessão "no meio" nem "no off".
+- **Trabalho em progresso / em teste / no off** (coisa que começou, está
+  sendo tentada, ainda quebrada, ainda não validada) é registrado em
+  `docs/ai/EM_ANDAMENTO.md` **assim que começar** — o registro é barato
+  (uma linha/parágrafo) e é atualizado conforme evolui. Ele é uma
+  "espécie de sessão", mas descreve o que está sendo desenvolvido e
+  testado, não o que já deu certo.
+- **Fonte de verdade do repositório**: se não está no repo (código,
+  sessão, `EM_ANDAMENTO`, docs), a IA assume que não existe — e registra
+  o que for fazer em `EM_ANDAMENTO` na hora que começar. Assim nenhuma IA
+  reinventa ou duplica trabalho que já começou (ou já terminou) fora do
+  repo e ainda não foi subido.
+- **Formato das sessões (padrão do projeto, quando o usuário pedir no
+  final)**: a IA explica o **método** que usou, relata o **processo
+  completo** do que aconteceu (erros nela / no terminal do usuário,
+  ideias que precisaram ser tentadas/descartadas) até chegar na
+  conclusão do que deu certo, e relata **tudo o que foi feito e
+  implementado** — não só o resultado final.
+
+Motivo: o usuário não consegue subir toda sessão incompleta (e não
+devia) — mas o repositório é a fonte de verdade e as IAs leem só ele.
+Isso gerou retrabalho real em 2026-09-05: duas IAs (Claude e OpenHands)
+viram o mesmo "vazio" (A4 — GUI no boot real) e começaram a mesma coisa
+em paralelo, cada uma numa versão diferente do repo; o Claude pegou uma
+versão antiga, fez a GUI subir no boot, e agora precisa refazer sobre o
+estado atual; a OpenHands parou sozinha no meio sem progresso. O custo
+de registrar o que está acontecendo é mínimo comparado a esse tipo de
+colisão.
+
+Consequência:
+- Toda IA que começar trabalho longo/off DEVE criar/atualizar sua
+  entrada em `docs/ai/EM_ANDAMENTO.md` **antes de mergulhar**.
+- `docs/ai/sessions/` só recebe sessão quando o usuário pedir, no final
+  de um pedaço que passou nos testes.
+- Sessões passam a seguir o formato "relato completo do processo"
+  (método + erros + ideias tentadas + conclusão + tudo que foi
+  implementado).
+- O admin continua dono de `docs/orquestracao/` e `docs/revisao/`; o
+  `EM_ANDAMENTO.md` fica em `docs/ai/` para que as IAs de implementação
+  possam escrever nele sem quebrar essa regra de área.
+
