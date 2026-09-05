@@ -1,7 +1,21 @@
 # PROJECT_STATE — SWL OS
 
-Última atualização: 2026-09-05 (OpenHands — reorganização da documentação
-principal; ver DEC-008. Estado do projeto conferido contra o código real.)
+Última atualização: 2026-09-05 (orquestrador — ver docs/orquestracao/;
+reorganização da doc principal pela OpenHands; ver DEC-008)
+
+## Repositório (higiene)
+
+- Clone íntegro: 95.222 arquivos, `git status` limpo.
+- `.gitignore` subido em 2026-09-05 com o nome errado (`gitignore`, sem
+  ponto) — **corrigido para `.gitignore` pelo orquestrador** na mesma
+  data. O arquivo já cobre `/build/`, `*.img`, `*.cpio.gz`, `*.bin`,
+  `*.log`, `/rootfs/` e `/kernel/linux-7.2.1/` para arquivos NOVOS.
+- **Rastreado ainda precisa de remoção manual** (`git rm --cached`):
+  `build/*`, `rootfs/*`, `kernel/linux-7.2.1/` (94.856 arquivos) e
+  qualquer artefato já commitado (tarefa A3 em
+  `docs/orquestracao/AFAZERES.md`; achado R-08 em `docs/revisao/`).
+- Dependências externas agora têm script: `userland/fetch-deps.sh`
+  (kernel + bash/busybox estáticos).
 
 ## Kernel / Boot
 
@@ -130,6 +144,20 @@ STATUS: EM DESENVOLVIMENTO — primeiro app nativo criado.
   SWLPad, gerenciador de arquivos, SEBRE, Configurações, etc.)
   continuam sendo só placeholders — comando aponta pra um binário que
   não existe ainda.
+
+## Revisões / QA
+
+- Revisão de código estática periódica feita pelos orquestradores.
+  Achados ficam em `docs/revisao/` com responsáveis e status.
+  Ver `docs/revisao/2026-09-05-revisao-01.md` (R-01 a R-14).
+  Críticos atuais: corrupção de memória e null deref no parser/startup
+  do TSWL (R-01 a R-03), abertos — pedido de correção à OpenHands.
+
+## Espaço de orquestração
+
+- `docs/orquestracao/` — lista-mestra de tarefas desbloqueadas
+  (`AFAZERES.md`), ideias (`IDEIAS.md`), diário (`DIARIO.md`) e regras.
+  Área exclusiva dos orquestradores (admin + GPT); implementação não edita.
 
 ## Próximos passos sugeridos (GUI)
 1. Integrar o compositor ao boot real (substituir o teste
