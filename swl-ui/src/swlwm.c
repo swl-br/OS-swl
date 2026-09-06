@@ -637,6 +637,37 @@ static void process_cursor_motion(struct tinywl_server *server, uint32_t time) {
 		 * around the screen, not over any toplevels. */
 		wlr_cursor_set_xcursor(server->cursor, server->cursor_mgr, "default");
 	}
+
+	/* Resize visual: se o cursor está sobre a borda de resize de uma janela
+	 * não maximizada, troca o cursor pela setinha correspondente —
+	 * mesmo hit-test do clique ((SWL_RESIZE_MARGIN, anel de 5 px)). */
+	if (toplevel && !toplevel->maximized) {
+
+		struct wlr_box geo2;
+		wlr_xdg_surface_get_geometry(toplevel->xdg_toplevel->base, &geo2);
+		double wx2 = server->cursor->x - toplevel->scene_tree->node.x;
+		double wy2 = server->cursor->y - toplevel->scene_tree->node.y - SWL_TITLEBAR_HEIGHT;
+
+		if (wy2 >= 0) {
+			bool l2 = wx2 >= 0 && wx2 < SWL_RESIZE_MARGIN;
+			bool r2 = wx2 >= geo2.width - SWL_RESIZE_MARGIN && wx2 < geo2.width;
+			bool t2 = wy2 < SWL_RESIZE_MARGIN;
+			bool b2 = wy2 >= geo2.height - SWL_RESIZE_MARGIN && wy2 < geo2.height;
+			const char *xc = NULL;
+			if (l2 && t2)        xc = "top_left_corner";
+			else if (r2 && t2)   xc = "top_right_corner";
+			else if (l2 && b2)   xc = "bottom_left_corner";
+			else if (r2 && b2)   xc = "bottom_right_corner";
+			else if (l2)          xc = "left_side";
+			else if (r2)          xc = "right_side";
+			else if (t2)          xc = "top_side";
+			else if (b2)          xc = "bottom_side";
+			if (xc) {
+				wlr_cursor_set_xcursor(server->cursor, server->cursor_mgr, xc);
+			}
+		}
+	}
+
 	if (surface) {
 		/*
 		 * Send pointer enter and motion events.
@@ -818,7 +849,35 @@ static void server_cursor_button(struct wl_listener *listener, void *data) {
 		}
 	}
 
-	/* 3) Se nada abaixo do cursor for uma janela, tenta os ícones da área
+	/* 3) Borda da janela: clique perto da moldura (fora da barra de título,
+	 *    fora dos botões, mas na zona de resize) → entra em modo RESIZE.
+	 *    A zona é um anel de SWL_RESIZE_MARGIN pixels ao redor do conteúdo. */
+	if (toplevel != NULL && !toplevel->maximized) {
+		struct wlr_box geo;
+		wlr_xdg_surface_get_geometry(toplevel->xdg_toplevel->base, &geo);
+		/* coordenadas do cursor relativas ao wrapper (barra de título + conteúdo) */
+		double wx = server->cursor->x - toplevel->scene_tree->node.x;
+		double wy = server->cursor->y - toplevel->scene_tree->node.y - SWL_TITLEBAR_HEIGHT;
+		/* se clicou dentro da área de conteúdo, mas perto da borda → resize */
+		if (wy >= 0) {  /* abaixo da barra de título */
+			bool near_left = wx >= 0 && wx < SWL_RESIZE_MARGIN;
+			bool near_right = wx >= geo.width - SWL_RESIZE_MARGIN && wx < geo.width;
+			bool near_top = wy < SWL_RESIZE_MARGIN;
+			bool near_bottom = wy >= geo.height - SWL_RESIZE_MARGIN && wy < geo.height;
+			uint32_t edges = 0;
+			if (near_left) edges |= WLR_EDGE_LEFT;
+			if (near_right) edges |= WLR_EDGE_RIGHT;
+			if (near_top) edges |= WLR_EDGE_TOP;
+			if (near_bottom) edges |= WLR_EDGE_BOTTOM;
+			if (edges != 0) {
+				focus_toplevel(toplevel, toplevel->xdg_toplevel->base->surface);
+				begin_interactive(toplevel, TINYWL_CURSOR_RESIZE, edges);
+				return;
+			}
+		}
+	}
+
+	/* 4) Se nada abaixo do cursor for uma janela, tenta os ícones da área
 	 *    de trabalho. */
 	if (toplevel == NULL && server->desktop) {
 		const char *cmd = swl_desktop_hit_test(server->desktop,
@@ -833,7 +892,7 @@ static void server_cursor_button(struct wl_listener *listener, void *data) {
 		}
 	}
 
-	/* 4) Caso padrão: focar a janela (ou superfície) sob o cursor. */
+	/* 5) Caso padrão: focar a janela (ou superfície) sob o cursor. */
 	focus_toplevel(toplevel, surface);
 }
 

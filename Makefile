@@ -24,5 +24,20 @@ $(BUILD)/disk.img: $(BUILD)/boot.bin $(BUILD)/stage2.bin
 run: $(BUILD)/disk.img
 	qemu-system-i386 -hda $(BUILD)/disk.img -serial mon:stdio -display none
 
+# A4: -vga std expõe o dispositivo "Bochs VGA" que o driver de kernel
+# CONFIG_DRM_BOCHS sabe dirigir via KMS (/dev/dri/card0) — sem isso não
+# existe placa nenhuma pro compositor abrir, mesmo com o driver certo.
+run-gui: $(BUILD)/disk.img
+	qemu-system-i386 -hda $(BUILD)/disk.img -vga std -display gtk -serial mon:stdio -m 512
+
+# A4/A4.1: monta o chroot Debian trixie i386, compila wlroots mínimo
+# (sem X11/GLES2/Vulkan/GBM) + swlwm + udev, e deixa os artefatos em
+# ./gui-artifacts/ (ver scripts/build-gui-i386.sh). Precisa de sudo.
+# Depois: userland/build-gui-rootfs.sh <rootfs> gui-artifacts
+gui-artifacts:
+	sudo ./scripts/build-gui-i386.sh
+
 clean:
 	rm -rf $(BUILD)
+
+.PHONY: run run-gui clean gui-artifacts

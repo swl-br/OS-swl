@@ -4,6 +4,33 @@ Registro diário das rodadas de orquestração. Entrada mais recente em
 cima. **Conferir sempre o repo real** — este diário é um índice, não a
 verdade de fonte.
 
+## 2026-09-06 — Rodada 4 (admin): UNIFICAÇÃO das cópias → estado fixo
+
+O usuário sinalizou a preocupação central: **as IAs estavam trabalhando
+em versões diferentes** (repo git + cópia solta sem `.git`), causando
+retrabalho e divergência. Verificamos as cópias no sistema
+(`~/Documentos/Dev/OS-swl` = cópia de trabalho do Claude, sem `.git`;
+`~/Documentos/Estudos/projetos/OS-swl` = repo antigo de backup, fora da
+base). **Juntamos o que era útil do Dev no git**:
+
+- `userland/init.asm` — **monta `devtmpfs` em `/dev` (CORRIGE o R-15)**,
+  `tmpfs` em `/run` (XDG_RUNTIME_DIR), GUI-first (`/sbin/start-gui.sh`)
+  com fallback pro `/bin/sh`.
+- `Makefile` — targets `run-gui` (qemu `-vga std`, Bochs DRM) e
+  `gui-artifacts`.
+- `scripts/build-gui-i386.sh` (novo) + `userland/build-gui-rootfs.sh`
+  (novo) — roteiro A4/GUI-003 do Claude (chroot trixie i386 + wlroots
+  mínimo + swlwm + empacotamento no rootfs).
+- `apps/swlpad/` (novo app, só fonte; sem `build/`) — SWLPad.
+- `swl-ui/src/swlwm.c` + `theme.h` — **resize com mouse** (bordas +
+  cursores) do Claude (patch aditivo aplicado limpo).
+- Manter do git (mais novos): docs, README, ícones. **Não entra no
+  git**: `gui-artifacts/` (36MB), `apps/*/build/` (gitignore atualizado).
+
+Build verificado: `boot.bin`/`stage2.bin`/`init` (nasm/ld) OK; símbolos
+do resize presentes. R-15 → CORRIGIDO. A4 continua aguardando o teste
+final do usuário (mouse); R-16 (receita do initramfs) segue aberto.
+
 ## 2026-09-05 — Rodada 3 (admin): processo de docs — sessão só no final; EM_ANDAMENTO
 
 DEC-009 criado em `docs/ai/DECISIONS.md`:

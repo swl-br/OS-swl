@@ -10,3 +10,10 @@
 
 # Árvore do kernel — fonte de terceiros obtida via userland/fetch-deps.sh
 /kernel/linux-7.2.1/
+
+# GUI-003: artefatos do chroot wlroots+swlwm (binários i386 + .so amplos)
+# gerados por scripts/build-gui-i386.sh — 36MB regeneráveis, não vão pro git
+/gui-artifacts/
+
+# builds de apps individuais (ex.: apps/swlpad/build)
+/apps/*/build/

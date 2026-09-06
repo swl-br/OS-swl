@@ -1,21 +1,41 @@
 # PROJECT_STATE — SWL OS
 
-Última atualização: 2026-09-05 (orquestrador — ver docs/orquestracao/;
-reorganização da doc principal pela OpenHands; ver DEC-008)
+Última atualização: 2026-09-06 (orquestrador — **unificação das cópias**:
+todo o código do `Dev/OS-swl` que ainda não estava aqui foi juntado nesta
+pasta; ver DIARIO rodada 4)
+
+## Unificação de cópias (ESTADO FIXO)
+
+- Até 2026-09-06 havia **duas linhagens divergentes**: esta pasta
+  (`Default Project`, repo git/GitHub) e uma cópia solta em
+  `~/Documentos/Dev/OS-swl` (sem `.git`) onde o Claude desenvolveu o
+  A4 (GUI no boot) e o resize com mouse — ela tinha docs/README **mais
+  antigos** (pré-DEC-008) mas **código mais novo** (A4, resize, swlpad).
+- **Juntado**: o código útil do Dev (init.asm com devtmpfs, Makefile
+  run-gui/gui-artifacts, scripts/build-gui-i386.sh,
+  userland/build-gui-rootfs.sh, apps/swlpad, resize+mouse em swlwm.c e
+  theme.h) foi incorporado aqui em 2026-09-06. Docs/README/ícones
+  mantidos os desta pasta (mais novos). `gui-artifacts/`,
+  `apps/*/build/` não entram no git (gitignore).
+- **Regra a partir de agora**: esta pasta é a ÚNICA versão de trabalho e
+  o ÚNICO ponto de push. Trabalho em cópia solta (sem `.git`) é o que
+  causa divergência — qualquer trabalho novo deve nascer aqui (ou ser
+  juntado antes de virar "estado").
 
 ## Repositório (higiene)
 
-- Clone íntegro: 95.222 arquivos, `git status` limpo.
-- `.gitignore` subido em 2026-09-05 com o nome errado (`gitignore`, sem
-  ponto) — **corrigido para `.gitignore` pelo orquestrador** na mesma
-  data. O arquivo já cobre `/build/`, `*.img`, `*.cpio.gz`, `*.bin`,
-  `*.log`, `/rootfs/` e `/kernel/linux-7.2.1/` para arquivos NOVOS.
-- **Rastreado ainda precisa de remoção manual** (`git rm --cached`):
-  `build/*`, `rootfs/*`, `kernel/linux-7.2.1/` (94.856 arquivos) e
-  qualquer artefato já commitado (tarefa A3 em
-  `docs/orquestracao/AFAZERES.md`; achado R-08 em `docs/revisao/`).
-- Dependências externas agora têm script: `userland/fetch-deps.sh`
-  (kernel + bash/busybox estáticos).
+- Clone íntegro, `git status` limpo, sincronizado com `origin/main`.
+- `.gitignore` ativo cobre: `/build/`, `*.img`, `*.cpio.gz`, `*.bin`,
+  `*.log`, `/rootfs/`, `/kernel/linux-7.2.1/`, `/gui-artifacts/` e
+  `/apps/*/build/`.
+- **A3 (remoção de artefatos rastreados) CONCLUÍDA** em 2026-09-05
+  (`26c3f3feb`): build/rootfs/kernel saíram do índice git (~95k
+  arquivos); permanecem só no disco.
+- Dependências externas via script: `userland/fetch-deps.sh`
+  (kernel + bash/busybox estáticos). GUI-003: `scripts/build-gui-i386.sh`
+  (chroot Debian trixie i386; wlroots mínimo; artefatos em
+  `gui-artifacts/`) + `userland/build-gui-rootfs.sh` (empacota no
+  rootfs).
 
 ## Kernel / Boot
 
@@ -120,11 +140,14 @@ só engana visualmente por rodar fora do nosso compositor. Desde
 - Janela maximizada não readapta o tamanho se o output for
   redimensionado depois (ver sessão de maximizar/minimizar).
 - Fullscreen real: só responde ao protocolo, sem lógica de verdade.
-- Não roda ainda no hardware real / initramfs do SWL OS — só testado
-  na sessão gráfica X11 do desenvolvedor (`WLR_BACKEND=x11`).
-  Integração com o boot real (rodar como o processo gráfico principal
-  dentro do initramfs, sem X11 por baixo, via DRM/KMS) ainda não foi
-  feita — é a próxima tarefa grande da GUI.
+- **Boot com GUI (A4) — AGORA com caminho validado pelo Claude**:
+  GUI-003 subiu no boot (compositor rodando na versão antiga do repo;
+  sendo reaplicado no estado atual). Método no `scripts/build-gui-i386.sh`
+  + `userland/build-gui-rootfs.sh` + `init.asm` (GUI-first, fallback pro
+  shell). **Sem teclado/mouse funcionais de verdade ainda**
+  (`WLR_LIBINPUT_NO_DEVICES=1` no init; udev real é tarefa separada).
+  Resize com mouse (bordas) introduzido junto (2026-09-04, Claude) —
+  juntado aqui; **aguardando teste final do usuário**.
 
 ## Linguagem SWL / Compilador swlc
 
@@ -153,13 +176,16 @@ STATUS: EM DESENVOLVIMENTO — primeiro app nativo criado.
     Críticos atuais: R-01 a R-03 no TSWL (corrupção de memória e null
     deref no parser/startup), abertos — pedido de correção à OpenHands.
   - `2026-09-05-revisao-02.md` — R-15..R-20 (boot + scripts).
-    Destaque: R-15 `/dev` não montado no init; **R-16 lacuna de build —
-    nenhum script gera `initramfs.cpio.gz` (bloqueia build limpo do zero)**.
+    **R-15 CORRIGIDO** (2026-09-06): `init.asm` agora monta `devtmpfs`
+    em `/dev` — verificado no código e build OK (bundled do merge).
+    **R-16 segue ABERTO**: `build/initramfs.cpio.gz` ainda sem receita.
 
 ## Lacunas de build conhecidas
 
 - **Não há receita para gerar `build/initramfs.cpio.gz`** (R-16). O qemu
-  a partir de clone do zero não reproduz o boot por causa disso.
+  a partir de clone do zero não reproduz o boot por causa disso — o
+  rootfs é montado manualmente (`build-rootfs.sh` + `build-gui-rootfs.sh`)
+  e empacotado fora do git.
 
 ## Espaço de orquestração
 
@@ -168,8 +194,12 @@ STATUS: EM DESENVOLVIMENTO — primeiro app nativo criado.
   Área exclusiva dos orquestradores (admin + GPT); implementação não edita.
 
 ## Próximos passos sugeridos (GUI)
-1. Integrar o compositor ao boot real (substituir o teste
-   `WLR_BACKEND=x11` por rodar como sessão gráfica principal via
-   DRM/KMS, dentro do ambiente do SWL OS de verdade).
-2. Readaptar janelas maximizadas quando o output redimensiona.
-3. Fullscreen real (protocolo já responde, falta lógica).
+1. **A4 — decisão/padrão para a GUI subir no boot**: método do Claude
+   juntado; aguardando o usuário validar os testes finais (mouse/resize).
+   Depois do OK: pedir a sessão ao Claude (formato DEC-009) e revisar.
+2. Teclado/mouse reais no boot: precisa de udev mínimo dentro do initramfs
+   (R-20 relacionado).
+3. Readaptar janelas maximizadas quando o output redimensiona.
+4. Fullscreen real (protocolo já responde, falta lógica).
+5. Receita de `initramfs.cpio.gz` no repositório (R-16) para clone limpo
+   reproduzir o boot.

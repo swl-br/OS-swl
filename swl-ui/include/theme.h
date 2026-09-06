@@ -46,6 +46,7 @@ typedef struct { double r, g, b, a; } swl_color_t;
 #define SWL_PANEL_HEIGHT     26
 #define SWL_TASKBAR_HEIGHT   30
 #define SWL_TITLEBAR_HEIGHT  24
+#define SWL_RESIZE_MARGIN     5   /* anel de resize ao redor do conteúdo da janela */
 
 static inline void swl_set_color(cairo_t *cr, swl_color_t c) {
 	cairo_set_source_rgba(cr, c.r, c.g, c.b, c.a);
