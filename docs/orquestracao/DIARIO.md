@@ -4,6 +4,24 @@ Registro diário das rodadas de orquestração. Entrada mais recente em
 cima. **Conferir sempre o repo real** — este diário é um índice, não a
 verdade de fonte.
 
+## 2026-09-06 — Rodada 5 (admin): pasta oficial unificada
+
+Hierarquia real das pastas esclarecida pelo usuário:
+
+- `~/Documentos/Dev/OS-swl` — criada pelo usuário; cópia DE TRABALHO da
+  GUI (sem `.git`); juntada no repositório na rodada 4.
+- `Default Project` — clone git que a IA criou; recebeu a unificação.
+- `~/Documentos/Estudos/projetos/OS-swl` — a pasta **OFICIAL** até hoje,
+  mas **sem atualização alguma** (e sem `.git` próprio; o git pai ali é
+  o repo de backup `swl-maycon/beckup` em `/Documentos/Estudos`).
+
+Stand de decisão: a partir desta data, **`~/Documentos/Estudos/projetos/OS-swl`
+é a pasta única e oficial de trabalho**, contendo a versão fixa unificada
+(HEAD do repo `swl-br/OS-swl`). Recreada como clone do `Default Project`
+com origem no GitHub real. O `Default Project` permanece como clone de
+trabalho da IA (pode ser removido depois, se o usuário confirmar — não
+é a referência oficial).
+
 ## 2026-09-06 — Rodada 4 (admin): UNIFICAÇÃO das cópias → estado fixo
 
 O usuário sinalizou a preocupação central: **as IAs estavam trabalhando
