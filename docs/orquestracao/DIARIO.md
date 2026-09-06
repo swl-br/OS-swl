@@ -4,6 +4,34 @@ Registro diário das rodadas de orquestração. Entrada mais recente em
 cima. **Conferir sempre o repo real** — este diário é um índice, não a
 verdade de fonte.
 
+## 2026-09-06 — Rodada 6 (admin): pasta oficial FINAL = SWL-OS
+
+Reverse parcial da rodada 5. O usuário esclareceu: o `.git` de
+`~/Documentos/Estudos` **não é do projeto** — é do repo de backup de
+outra conta (`swl-maycon/beckup`). Portanto `Estudos` fica DE FORA.
+
+- **Pasta única oficial**: `~/Documentos/SWL-OS` (o antigo "Default
+  Project" foi renomeado para o nome do OS em 2026-09-06). Repo git
+  intocado, origin = `github.com/swl-br/OS-swl`.
+- **Atualizada ao máximo**: `git fetch` confirma local == origin/main
+  (`a0357f2f6`); nenhum trabalho novo no remoto nem no Dev (diff Dev vs
+  oficial: só READMEs antigos lá e `fetch-deps.sh` só aqui).
+- **Artefatos funcionais trazidos do Dev** (gitignored, não vão pro
+  git): `rootfs/` (43M), `gui-artifacts/` (36M), `apps/swlpad/build`.
+  Pasta oficial agora roda o boot + GUI com `make`.
+- **Sessão GENÉRICA criada**: `docs/ai/sessions/2026-09-06-generico-orientacao.md`
+  — orienta qualquer IA sobre o estado unificado, substituindo as
+  sessões de trabalhos que o usuário **perdeu** (resize+mouse, A4/boot,
+  devtmpfs/R-15, swlpad, integração wlroots). COMRÉ com DEC-008/009.
+- **R-16 FECHADO**: `userland/build-initramfs.sh` + `Makefile`
+  (dependência do `disk.img`) geram `initramfs.cpio.gz` do `rootfs/`.
+  Receita verificada (cpio válido, 21MB, com GUI). O `bzImage` segue
+  build manual por design (`fetch-deps.sh`); boot QEMU de validação
+  exige deps de kernel (flex/bison/libelf — sem sudo aqui).
+- Fica registrado que o clone de `Estudos/projetos/OS-swl` (rodada 5,
+  revertida) é redundante e foi removido (ficaram o `.bkp-2026-09-06` e
+  o `OS-swl.zip` de backup).
+
 ## 2026-09-06 — Rodada 5 (admin): pasta oficial unificada
 
 Hierarquia real das pastas esclarecida pelo usuário:

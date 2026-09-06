@@ -1,26 +1,24 @@
 # PROJECT_STATE — SWL OS
 
-Última atualização: 2026-09-06 (orquestrador — **unificação das cópias**:
-todo o código do `Dev/OS-swl` que ainda não estava aqui foi juntado nesta
-pasta; ver DIARIO rodada 4)
+Última atualização: 2026-09-06 (orquestrador — **pasta única oficial =
+`~/Documentos/SWL-OS`**, renomeada de "Default Project"; ver DIARIO
+rodada 6)
 
-## Unificação de cópias (ESTADO FIXO)
+## Pasta única oficial (ESTADO FIXO)
 
-- Até 2026-09-06 havia **duas linhagens divergentes**: esta pasta
-  (`Default Project`, repo git/GitHub) e uma cópia solta em
-  `~/Documentos/Dev/OS-swl` (sem `.git`) onde o Claude desenvolveu o
-  A4 (GUI no boot) e o resize com mouse — ela tinha docs/README **mais
-  antigos** (pré-DEC-008) mas **código mais novo** (A4, resize, swlpad).
-- **Juntado**: o código útil do Dev (init.asm com devtmpfs, Makefile
-  run-gui/gui-artifacts, scripts/build-gui-i386.sh,
-  userland/build-gui-rootfs.sh, apps/swlpad, resize+mouse em swlwm.c e
-  theme.h) foi incorporado aqui em 2026-09-06. Docs/README/ícones
-  mantidos os desta pasta (mais novos). `gui-artifacts/`,
-  `apps/*/build/` não entram no git (gitignore).
-- **Regra a partir de agora**: esta pasta é a ÚNICA versão de trabalho e
-  o ÚNICO ponto de push. Trabalho em cópia solta (sem `.git`) é o que
-  causa divergência — qualquer trabalho novo deve nascer aqui (ou ser
-  juntado antes de virar "estado").
+- **`~/Documentos/SWL-OS`** é a pasta única e oficial de trabalho (1º
+  commit do projeto: camada de boot + GUI A4 + resize+mouse + swlpad +
+  docs, tudo unificado). Repo git conectado a `github.com/swl-br/OS-swl`
+  (branch `main`).
+- `~/Documentos/Dev/OS-swl` — cópia de trabalho do Claude (sem `.git`);
+  **todo o código útil dela já foi juntado aqui**. Não usar para editar:
+  é o que causa divergência.
+- `~/Documentos/Estudos/projetos/OS-swl` — **NÃO é oficial**: o `.git`
+  daquele canto pertence ao repo de backup de outra conta
+  (`swl-maycon/beckup`), não ao projeto. Ignorado.
+- Como a réplica de `Estudos` chegou a receber um clone (rodada 5,
+  depois revertida), o `DIARIO` preserva o histórico; o clone de lá é
+  redundante e pode ser removido.
 
 ## Repositório (higiene)
 
@@ -176,16 +174,21 @@ STATUS: EM DESENVOLVIMENTO — primeiro app nativo criado.
     Críticos atuais: R-01 a R-03 no TSWL (corrupção de memória e null
     deref no parser/startup), abertos — pedido de correção à OpenHands.
   - `2026-09-05-revisao-02.md` — R-15..R-20 (boot + scripts).
-    **R-15 CORRIGIDO** (2026-09-06): `init.asm` agora monta `devtmpfs`
-    em `/dev` — verificado no código e build OK (bundled do merge).
-    **R-16 segue ABERTO**: `build/initramfs.cpio.gz` ainda sem receita.
+    **R-15 CORRIGIDO** (2026-09-06): `init.asm` monta `devtmpfs` em
+    `/dev` + `tmpfs` em `/run` (verificado, build OK).
+    **R-16 CORRIGIDO** (2026-09-06): receita de `initramfs.cpio.gz` no
+    repo (`userland/build-initramfs.sh` + `Makefile`).
+    R-17 (limite INT15h ~16MB) relevante com o initramfs de 21MB —
+    acompanhar no boot de validação.
 
 ## Lacunas de build conhecidas
 
-- **Não há receita para gerar `build/initramfs.cpio.gz`** (R-16). O qemu
-  a partir de clone do zero não reproduz o boot por causa disso — o
-  rootfs é montado manualmente (`build-rootfs.sh` + `build-gui-rootfs.sh`)
-  e empacotado fora do git.
+- **R-16 CORRIGIDO (2026-09-06)**: `userland/build-initramfs.sh` +
+  `Makefile` agora geram `build/initramfs.cpio.gz` a partir do `rootfs/`
+  (dependência de `disk.img`). Receita verificada (cpio válido, 21MB
+  com GUI). **Restante manual por design**: kernel precisa de
+  `make -C kernel/linux-7.2.1` (deps de build; máquina dev) e a GUI no
+  rootfs precisa de `scripts/build-gui-i386.sh` + `build-gui-rootfs.sh`.
 
 ## Espaço de orquestração
 

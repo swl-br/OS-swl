@@ -21,7 +21,7 @@ começar agora, sem depender de outra coisa. Owner = quem sugerimos pegar
 
 | # | Tarefa | Estado | Nota |
 |---|---|---|---|
-| A9 | **R-16: receita de `build/initramfs.cpio.gz` no repo** — clone limpo ainda não reproduz o boot (rootfs é montado à mão e empacotado fora do git). **R-15 já CORRIGIDO** (devtmpfs no init.asm, 2026-09-06). Ver `docs/revisao/2026-09-05-revisao-02.md` | ABERTO · desbloqueada | Qualquer IA do boot/userland |
+| A9 | **R-16: receita de `initramfs.cpio.gz` — ✅ CONCLUÍDA (2026-09-06)**: `userland/build-initramfs.sh` + dependência no `Makefile`. Verificada (cpio válido, com GUI). *Nota: `bzImage` continua build manual por design.* | ✅ | — |
 | — | Sessões de implementação 09-05 | Usuário ainda não subiu documentos de sessão do dia | A gente atualiza este arquivo quando subirem |
 
 ## 🔄 EM ANDAMENTO / ESTADO UNIFICADO (2026-09-06)
@@ -29,7 +29,7 @@ começar agora, sem depender de outra coisa. Owner = quem sugerimos pegar
 | # | O que | Quem | Acompanhar em |
 |---|---|---|---|
 | A4 | GUI no boot (DRM/KMS) — método do Claude **juntado no repo** (init.asm GUI-first, scripts gui-i386/rootfs, swlpad, resize+mouse). **Aguardando teste final do usuário (mouse)** | Claude | `docs/ai/EM_ANDAMENTO.md`; quando validar → sessão |
-| R-16 | Receita de `initramfs.cpio.gz` no repo (clone limpo ainda não reproduz boot) | Qualquer IA do userland | `AFAZERES` (A9) + revisão 02 |
+| — | Receita do initramfs (R-16) | **CONCLUÍDA** (admin, 2026-09-06) | review 02 |
 | — | Sessões de implementação 09-05/06 | Usuário ainda não subiu (padrão DEC-009: só no final) | — |
 
 ## 🧭 PLANEJADAS (próximas fases — não bloqueadas por nada, só por ordem)

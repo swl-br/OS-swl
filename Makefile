@@ -17,7 +17,14 @@ $(BUILD)/init: userland/init.asm | $(BUILD)
 	nasm -f elf32 userland/init.asm -o $(BUILD)/init.o
 	ld -m elf_i386 $(BUILD)/init.o -o $(BUILD)/init
 
-$(BUILD)/disk.img: $(BUILD)/boot.bin $(BUILD)/stage2.bin
+# R-16: receita do initramfs (era feita à mão fora do git). Presume
+# que o rootfs/ já foi montado (build-rootfs.sh + build-gui-rootfs.sh)
+# — rootfs é gitignored, mas `make disk.img` instala esta dependência.
+$(BUILD)/initramfs.cpio.gz: $(BUILD)/init | $(BUILD)
+	chmod +x userland/build-initramfs.sh
+	./userland/build-initramfs.sh rootfs $(BUILD)/initramfs.cpio.gz
+
+$(BUILD)/disk.img: $(BUILD)/boot.bin $(BUILD)/stage2.bin $(BUILD)/initramfs.cpio.gz
 	chmod +x userland/build-disk.sh
 	./userland/build-disk.sh $(BUILD)/boot.bin $(BUILD)/stage2.bin $(KERNEL) $(INITRD) $(BUILD)/disk.img
 
