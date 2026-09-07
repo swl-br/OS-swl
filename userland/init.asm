@@ -18,6 +18,13 @@ fs_devtmpfs db 'devtmpfs', 0
 path_run    db '/run', 0
 fs_tmpfs    db 'tmpfs', 0
 
+; devpts — o tswl usa forkpty() (/dev/ptmx + /dev/pts); sem montar,
+; "falha ao abrir PTY" e o terminal nunca abre. gid=5/mode=620 é o
+; padrão (grupo tty escreve no escravo).
+path_devpts db '/dev/pts', 0
+fs_devpts   db 'devpts', 0
+opts_devpts db 'gid=5,mode=620', 0
+
 ; GUI-003: tenta o swlwm primeiro. Se o execve falhar (binário ausente,
 ; lib faltando, etc. — cai direto pro código de erro do syscall, sem
 ; substituir o processo), o fluxo simplesmente continua pra baixo e
@@ -102,6 +109,20 @@ _start:
     mov edx, fs_devtmpfs
     mov esi, 0
     mov edi, 0
+    int 0x80
+
+    ; /dev/pts (devpts) — ver comentário no .data acima.
+    mov eax, 39
+    mov ebx, path_devpts
+    mov ecx, 0755o
+    int 0x80
+
+    mov eax, 21
+    mov ebx, fs_devpts
+    mov ecx, path_devpts
+    mov edx, fs_devpts
+    mov esi, 0
+    mov edi, opts_devpts
     int 0x80
 
     ; /run — 0700, não 0755: é onde XDG_RUNTIME_DIR vai apontar, e o
