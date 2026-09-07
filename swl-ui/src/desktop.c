@@ -265,7 +265,13 @@ static void icon_cell_draw(cairo_t *cr, int width, int height, void *data) {
 	 * sempre — nenhum ícone fica quebrado por falta de asset. */
 	if (ctx->icon_path[0]) {
 		cairo_surface_t *img = cairo_image_surface_create_from_png(ctx->icon_path);
-		if (cairo_surface_status(img) == CAIRO_STATUS_SUCCESS) {
+		cairo_status_t st = cairo_surface_status(img);
+		/* DEBUG sessão 2026-09-07 (ícones PNG caindo no glifo vetorial):
+		 * imprime path + status do cairo no serial. Reverter quando
+		 * o mistério estiver resolvido. */
+		fprintf(stderr, "swl-desktop: png '%s' status=%d\n",
+			ctx->icon_path, (int)st);
+		if (st == CAIRO_STATUS_SUCCESS) {
 			int iw = cairo_image_surface_get_width(img);
 			int ih = cairo_image_surface_get_height(img);
 			if (iw > 0 && ih > 0) {

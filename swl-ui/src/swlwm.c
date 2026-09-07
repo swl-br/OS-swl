@@ -729,6 +729,12 @@ static void process_cursor_motion(struct tinywl_server *server, uint32_t time) {
 		}
 		if (rname) {
 			wlr_cursor_set_xcursor(server->cursor, server->cursor_mgr, rname);
+		} else {
+			/* Dentro da janela mas fora do anel: volta pra seta padrão.
+			 * Sem isso, a setinha de resize "gruda" — ela foi setada na
+			 * borda e nada a trocaria ao entrar na janela (o cliente
+			 * tswl/swlpad não define cursor próprio). */
+			wlr_cursor_set_xcursor(server->cursor, server->cursor_mgr, "default");
 		}
 	}
 	if (surface) {
