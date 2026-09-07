@@ -7,12 +7,13 @@
 *.log
 
 # Árvores geradas/volumosas (reproduzíveis via scripts/ e userland/):
-# kernel vem via userland/fetch-deps.sh + swl_defconfig (não commitar
-# a árvore de ~1.4GB); rootfs/ e gui-artifacts/ são remontados pelos
-# scripts de empacotamento a cada build.
+# kernel vem via userland/fetch-deps.sh + kernel/config/swl_defconfig
+# (não commitar a árvore de ~1.4GB); rootfs/ e gui-artifacts/ são
+# remontados pelos scripts de empacotamento a cada build.
 /rootfs/
 /gui-artifacts/
-/kernel/
+/kernel/*
+!/kernel/config/
 
 # Build dirs do Meson (host-arch, nunca sobem — o guest compila no chroot)
 /apps/*/build/
