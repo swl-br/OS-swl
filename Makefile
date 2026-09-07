@@ -17,13 +17,12 @@ $(BUILD)/init: userland/init.asm | $(BUILD)
 	nasm -f elf32 userland/init.asm -o $(BUILD)/init.o
 	ld -m elf_i386 $(BUILD)/init.o -o $(BUILD)/init
 
-# initramfs a partir do rootfs/ (cpio newc + gzip, formato que o kernel
-# desempacota no boot). Sem pré-requisitos: só é refeito quando o arquivo
-# não existe — pra forçar, `rm -f build/initramfs.cpio.gz` (o disco
-# depende dele, então `make build/disk.img` reconstrói em cascata).
+# R-16: receita do initramfs (era feita à mão fora do git). Presume
+# que o rootfs/ já foi montado (build-rootfs.sh + build-gui-rootfs.sh)
+# — rootfs é gitignored, mas `make disk.img` instala esta dependência.
 $(INITRD): | $(BUILD)
-	cd rootfs && find . -print0 | cpio --null -o -H newc --owner=0:0 | gzip -9 > ../$(INITRD).tmp
-	mv $(INITRD).tmp $(INITRD)
+	chmod +x userland/build-initramfs.sh
+	./userland/build-initramfs.sh rootfs $(INITRD)
 
 $(BUILD)/disk.img: $(BUILD)/boot.bin $(BUILD)/stage2.bin $(INITRD)
 	chmod +x userland/build-disk.sh
