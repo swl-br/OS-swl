@@ -47,6 +47,14 @@ typedef struct { double r, g, b, a; } swl_color_t;
 #define SWL_TASKBAR_HEIGHT   30
 #define SWL_TITLEBAR_HEIGHT  24
 
+/* Tamanho mínimo de uma janela (conteúdo, sem contar a barra de título) —
+ * sem isso, arrastar uma borda de resize deixa a janela encolher até
+ * sumir visualmente. Pequeno o bastante pra não incomodar em janelas
+ * legitimamente pequenas (ex.: uma calculadora), grande o bastante pra
+ * sempre sobrar espaço de clicar nos botões da decoração. */
+#define SWL_MIN_WINDOW_WIDTH  120
+#define SWL_MIN_WINDOW_HEIGHT 80
+
 /* Largura do anel de borda (em pixels) que conta como "borda de resize"
  * da janela — usado tanto no hit-test do clique (server_cursor_button)
  * quanto no cursor visual (process_cursor_motion). */

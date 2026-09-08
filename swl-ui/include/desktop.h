@@ -1,6 +1,7 @@
 #ifndef SWL_DESKTOP_H
 #define SWL_DESKTOP_H
 
+#include <cairo/cairo.h>
 #include <stdbool.h>
 #include <wlr/types/wlr_scene.h>
 
@@ -68,5 +69,17 @@ bool swl_desktop_has_hidden_icons(struct swl_desktop *desktop);
 int swl_desktop_app_count(void);
 const char *swl_desktop_app_label(int index);
 const char *swl_desktop_app_command(int index);
+
+/* Desenha, em (x,y) com tamanho `size`, o mesmo glifo vetorial usado nos
+ * ícones da área de trabalho — mas escolhido por PALAVRA-CHAVE dentro de
+ * `title` (compara sem diferenciar maiúsculas/minúsculas contra o label
+ * de cada app do catálogo, ex.: título "TSWL - TERMINAL" contém "TSWL" →
+ * glifo de terminal). Usado pela taskbar, que só tem o título da janela
+ * — não sabe qual ícone/comando abriu ela (isso exigiria rastrear a
+ * origem de cada toplevel até o clique que a lançou, o que não existe
+ * ainda). Sem match: cai num glifo genérico de janela. `title` pode ser
+ * NULL (mesmo resultado de não achar match). */
+void swl_desktop_draw_glyph_for_title(cairo_t *cr, const char *title,
+	double x, double y, double size);
 
 #endif /* SWL_DESKTOP_H */
