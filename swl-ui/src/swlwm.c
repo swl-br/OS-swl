@@ -197,23 +197,31 @@ struct tinywl_keyboard {
 };
 
 /* Reconstrói a lista de janelas mostrada na taskbar a partir de
- * server->toplevels. focus_toplevel() sempre move a janela focada para a
- * cabeça da lista, então o índice 0 é sempre a focada. */
+ * server->toplevels. O índice focado é derivado do keyboard focus do
+ * seat (não mais "sempre 0"): minimizar/fechar a focada deixa o
+ * highlight correto (R-05). */
 static void update_taskbar(struct tinywl_server *server) {
 	if (!server->taskbar) {
 		return;
 	}
 	const char *titles[SWL_TASKBAR_MAX_WINDOWS];
 	int count = 0;
+	int focused_index = -1;
+	struct wlr_surface *focused_surf =
+		server->seat ? server->seat->keyboard_state.focused_surface : NULL;
 	struct tinywl_toplevel *t;
 	wl_list_for_each(t, &server->toplevels, link) {
 		if (count >= SWL_TASKBAR_MAX_WINDOWS) {
 			break;
 		}
 		titles[count] = t->xdg_toplevel->title ? t->xdg_toplevel->title : "janela";
+		if (focused_surf && !t->minimized &&
+				t->xdg_toplevel->base->surface == focused_surf) {
+			focused_index = count;
+		}
 		count++;
 	}
-	swl_taskbar_set_windows(server->taskbar, titles, count, count > 0 ? 0 : -1);
+	swl_taskbar_set_windows(server->taskbar, titles, count, focused_index);
 }
 
 static void focus_toplevel(struct tinywl_toplevel *toplevel, struct wlr_surface *surface) {
@@ -344,13 +352,26 @@ static void toplevel_set_minimized(struct tinywl_toplevel *toplevel, bool minimi
 
 	if (minimize) {
 		struct tinywl_server *server = toplevel->server;
-		if (server->seat->keyboard_state.focused_surface ==
-				toplevel->xdg_toplevel->base->surface) {
+		bool was_focused = (server->seat->keyboard_state.focused_surface ==
+				toplevel->xdg_toplevel->base->surface);
+		if (was_focused) {
 			wlr_seat_keyboard_clear_focus(server->seat);
 		}
 		wlr_xdg_toplevel_set_activated(toplevel->xdg_toplevel, false);
 		if (toplevel->decoration) {
 			swl_decoration_set_focused(toplevel->decoration, false);
+		}
+		/* Se a janela minimizada era a focada, passa o foco para a
+		 * próxima não-minimizada (cabeça da lista após raise). Sem
+		 * isso a taskbar continua destacando a invisível (R-05). */
+		if (was_focused) {
+			struct tinywl_toplevel *cand;
+			wl_list_for_each(cand, &server->toplevels, link) {
+				if (cand != toplevel && !cand->minimized) {
+					focus_toplevel(cand, cand->xdg_toplevel->base->surface);
+					return;
+				}
+			}
 		}
 		update_taskbar(server);
 	} else {
@@ -1030,10 +1051,14 @@ static void server_cursor_button(struct wl_listener *listener, void *data) {
 		/* hit == -2: clique fora da taskbar, continua o processamento normal. */
 	}
 
-	/* 2) Decoração das janelas (fechar/maximizar/minimizar/arrastar). */
+	/* 2) Decoração das janelas (fechar/maximizar/minimizar/arrastar).
+	 *    Pula minimizadas (nó desabilitado / invisível) — sem isso um
+	 *    clique pode fechar/arrastar janela que o usuário não vê (R-04).
+	 *    A lista toplevels tem a focada na cabeça (raise_to_top), então
+	 *    o primeiro hit em Z-order é o correto. */
 	struct tinywl_toplevel *t_iter;
 	wl_list_for_each(t_iter, &server->toplevels, link) {
-		if (!t_iter->decoration) {
+		if (t_iter->minimized || !t_iter->decoration) {
 			continue;
 		}
 		double lx = server->cursor->x - t_iter->scene_tree->node.x;

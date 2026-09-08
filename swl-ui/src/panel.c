@@ -20,7 +20,11 @@ static void read_cpu_usage(unsigned long long *prev_idle,
 		return;
 	}
 	char label[16];
-	unsigned long long user, nice_, system_, idle, iowait, irq, softirq, steal;
+	/* Zerar tudo: se fscanf ler menos de 9 campos (kernels antigos /
+	 * formatos parciais), iowait/irq/… não ficam com lixo de stack
+	 * (R-07). user+nice+system+idle são o mínimo útil (n >= 5). */
+	unsigned long long user = 0, nice_ = 0, system_ = 0, idle = 0;
+	unsigned long long iowait = 0, irq = 0, softirq = 0, steal = 0;
 	int n = fscanf(f, "%15s %llu %llu %llu %llu %llu %llu %llu %llu",
 		label, &user, &nice_, &system_, &idle, &iowait, &irq, &softirq, &steal);
 	fclose(f);
@@ -48,6 +52,8 @@ static bool read_mem_usage(long *used_mb, long *total_mb) {
 		return false;
 	}
 	long mem_total = 0, mem_available = 0;
+	long mem_free = 0, buffers = 0, cached = 0;
+	bool has_available = false;
 	char line[256];
 	while (fgets(line, sizeof(line), f)) {
 		long val;
@@ -55,14 +61,33 @@ static bool read_mem_usage(long *used_mb, long *total_mb) {
 			mem_total = val;
 		} else if (sscanf(line, "MemAvailable: %ld kB", &val) == 1) {
 			mem_available = val;
+			has_available = true;
+		} else if (sscanf(line, "MemFree: %ld kB", &val) == 1) {
+			mem_free = val;
+		} else if (sscanf(line, "Buffers: %ld kB", &val) == 1) {
+			buffers = val;
+		} else if (sscanf(line, "Cached: %ld kB", &val) == 1) {
+			cached = val;
 		}
 	}
 	fclose(f);
 	if (mem_total == 0) {
 		return false;
 	}
+	/* Sem MemAvailable (kernels muito antigos): aproxima com
+	 * Free+Buffers+Cached. Antes mem_available ficava 0 e a barra
+	 * mostrava 100% de uso o tempo todo (R-07). */
+	if (!has_available) {
+		mem_available = mem_free + buffers + cached;
+		if (mem_available > mem_total) {
+			mem_available = mem_total;
+		}
+	}
 	*total_mb = mem_total / 1024;
 	*used_mb = (mem_total - mem_available) / 1024;
+	if (*used_mb < 0) {
+		*used_mb = 0;
+	}
 	return true;
 }
 

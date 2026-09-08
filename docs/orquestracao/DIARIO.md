@@ -4,6 +4,19 @@ Registro diário das rodadas de orquestração. Entrada mais recente em
 cima. **Conferir sempre o repo real** — este diário é um índice, não a
 verdade de fonte.
 
+## 2026-09-08 — A2 (swl-ui bugs médios) parcial corrigida e verificada (admin)
+
+Usuário colocou em `revisao-de-entrada_LOCAL/swl-ui-A2-files/` a correção
+da **A2** pelo Grok (`swlwm.c` + `panel.c` + sessão). Orquestrador
+verificou: base == `HEAD` atual (nada novo tocou swl-ui desde então),
+build `meson`+`ninja` (wlroots 0.17.1) OK, lógica R-04 (hit-test pula
+minimizadas), R-05 (taskbar usa foco real do teclado; minimizar a focada
+passa foco à próxima) e R-07 (contadores zerados + fallback de memória
+com clamp) conferidas — harness contra o `/proc` real e teste do fallback
+passaram. Aprovado pelo usuário (só sobe o que ajuda) e integrado:
+R-04/R-05/R-07 → CORRIGIDO; A2 parcial — **R-06 (TSWL shm) segue em
+aberto**.
+
 ## 2026-09-08 — A1 (TSWL bugs críticos) corrigida e verificada (admin)
 
 Usuário colocou em `revisao-de-entrada_LOCAL/tswl-A1-files/` a correção
