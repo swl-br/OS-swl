@@ -4,6 +4,12 @@ Registro diário das rodadas de orquestração. Entrada mais recente em
 cima. **Conferir sempre o repo real** — este diário é um índice, não a
 verdade de fonte.
 
+## 2026-09-08 — alt-screen reconciliado (admin)
+
+`origin/notebook`: alt-screen real `?1049` (Grok) + 4 testes.
+Merge limpo, sem conflitos. Verificação do admin: suite rodada
+aqui → 19 passed. Subido.
+
 ## 2026-09-08 — Alt-screen real no TSWL (admin)
 
 Entrega do Grok: buffer `main_save` (`?1049h` salva+limpa, `?1049l`
