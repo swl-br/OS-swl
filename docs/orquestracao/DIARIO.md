@@ -4,6 +4,17 @@ Registro diário das rodadas de orquestração. Entrada mais recente em
 cima. **Conferir sempre o repo real** — este diário é um índice, não a
 verdade de fonte.
 
+## 2026-09-08 — A2 completa: R-06 (TSWL double-buffer) corrigida e integrada (admin)
+
+Usuário colocou em `revisao-de-entrada_LOCAL/tswl-R06-files/` a correção
+da **R-06** pelo Grok (`apps/tswl/src/main.c` + sessão). Orquestrador
+verificou: diff só no `main.c` do tswl (base `baae84b`, pós A1/A2);
+build `meson`+`ninja` OK; A1 preservado (`xkb_ctx` guard intacto);
+lógica do double-buffer conferida (`busy`/`stale`, recriação no
+`release`, nunca destrói buffer em uso, `need_redraw` mantido quando
+sem slot livre); zero refs ao antigo buffer único. Aprovado pelo
+usuário e integrado: R-06 → CORRIGIDO, A2 COMPLETA.
+
 ## 2026-09-08 — Revisão geral + docs sincronizadas (admin)
 
 Revisão geral do estado real (repo é a fonte de verdade) e atualização
@@ -14,8 +25,8 @@ das docs que estavam defasadas — nenhum código alterado:
   cursor) para **encerrados no código atual**; árvore do swl-ui ganhou
   `context_menu.c/h`; próximos passos GUI atualizados (ícones saem).
 - `AFAZERES.md`: B1/B2 → encerrados no código; A8 → CONCLUÍDA (R-12
-  CORRIGIDO desde 09-05, README conferido); R-06 registrado como em
-  curso (Grok) fechando o A2 parcial.
+  CORRIGIDO desde 09-05, README conferido). R-06 entrou como em curso
+  (Grok) — desde então a R-06 subiu e foi integrada (ver entrada A2 completa acima).
 
 ## 2026-09-08 — A2 (swl-ui bugs médios) parcial corrigida e verificada (admin)
 

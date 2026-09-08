@@ -1,7 +1,7 @@
 # PROJECT_STATE — SWL OS
 
-Última atualização: 2026-09-08 (orquestrador — A1 e A2 parciais
-integradas, revisão geral; ver `docs/orquestracao/DIARIO.md` e
+Última atualização: 2026-09-08 (orquestrador — A2 completa com R-06,
+integração; ver `docs/orquestracao/DIARIO.md` e
 `docs/revisao/2026-09-05-revisao-01.md`)
 
 ## Repositório (higiene)
@@ -211,9 +211,10 @@ STATUS: FUNCIONAL NO BOOT REAL (2026-09-07).
   Achados ficam em `docs/revisao/` com responsáveis e status.
   Ver `docs/revisao/2026-09-05-revisao-01.md` (R-01 a R-14).
   Status atual (2026-09-08): R-01/R-02/R-03 CORRIGIDOS (Grok, A1),
-  R-04/R-05/R-07 CORRIGIDOS (Grok, A2 parcial), R-12 CORRIGIDO,
-  R-08 SUPERADO (histórico recomeçado). Em aberto: R-06 (TSWL shm,
-  Grok em curso), R-09/R-10/R-11 (A7 leveza), R-13, R-14.
+  R-04/R-05/R-06/R-07 CORRIGIDOS (Grok, A2 — ver sessão
+  das correções R-06), R-12 CORRIGIDO,
+  R-08 SUPERADO (histórico recomeçado). Em aberto: R-09/R-10/R-11
+  (A7 leveza), R-13, R-14.
 
 ## Espaço de orquestração
 
@@ -224,6 +225,5 @@ STATUS: FUNCIONAL NO BOOT REAL (2026-09-07).
 ## Próximos passos sugeridos (GUI)
 1. Readaptar janelas maximizadas quando o output redimensiona (A5).
 2. Fullscreen real (protocolo já responde, falta lógica — A6).
-3. R-06 (TSWL shm double-buffer) — Grok em curso; A2 fecha quando subir.
-4. Resto do catálogo de apps (hoje só TSWL/SWLPAD reais; os outros são
+3. Resto do catálogo de apps (hoje só TSWL/SWLPAD reais; os outros são
    placeholders) e as fases longas do roadmap.

@@ -9,7 +9,7 @@ começar agora, sem depender de outra coisa. Owner = quem sugerimos pegar
 | # | Tarefa | Por quê agora | Owner sugerido |
 |---|---|---|---|
 | A1 | **Corrigir bugs críticos do TSWL** (corrupção de memória via `CSI r`; null deref do `xkb_ctx` no startup; CSI sem clamp → DoS). Ver `docs/revisao/2026-09-05-revisao-01.md` R-01/R-02/R-03 | CONCLUÍDA em 2026-09-08: Grok corrigiu (sessão no repo), orquestrador verificou com build + harness ASan/UBSan (antigo crashava, novo passa). R-01/R-02/R-03 → CORRIGIDO. | — |
-| A2 | **Corrigir bugs médios do swl-ui** (hit-test de decoração com minimizada/montada; foco da taskbar após minimizar/fechar; `read_cpu_usage` com variável não inicializada; `mem_available` ausente). Ver R-04/R-05/R-06/R-07 | PARCIAL em 2026-09-08: Grok corrigiu R-04/R-05/R-07 (sessão no repo; orquestrador verificou com build + harness; R-04/05/07 → CORRIGIDO). **Falta R-06** (`apps/tswl` shm double-buffer — fora do swl-ui; ver R-06). | — |
+| A2 | **Corrigir bugs médios do swl-ui** (hit-test de decoração com minimizada/montada; foco da taskbar após minimizar/fechar; `read_cpu_usage` com variável não inicializada; `mem_available` ausente). Ver R-04/R-05/R-06/R-07 | CONCLUÍDA em 2026-09-08: Grok corrigiu R-04/R-05/R-07 (sessão no repo) e R-06 (double-buffer do shm no TSWL — sessão `2026-09-08-grok-tswl-r06-double-buffer.md`); orquestrador verificou com build + harness e leitura. R-04/R-05/R-06/R-07 → CORRIGIDO. | — |
 | B1 | **Ícones PNG do desktop caem no glifo vetorial** — caso encerrado no código atual (2026-09-08, Claude): `desktop.c` tem `resolve_icon_path()` + 13 PNGs em `swl-ui/assets/icons/` (ver sessão `2026-09-08-claude-assets-visuais.md`). | — | — |
 | B2 | **Reset do cursor de resize** (`else → "default"` em `swlwm.c`) — presente no código atual (`process_cursor_motion`); bug do "gruda" permanece fechado desde 2026-09-07. Não re-remover. | — | — |
 | B3 | **`fetch-deps.sh` gera bash/busybox do host (x86_64)** — num clone limpo em máquina 64-bit, `/bin/sh` nasce quebrado de novo (ver sessão 2026-09-07 §3). Precisa busybox i386 estático reproduzível (ex.: `gcc -m32` com checagem, ou binário pinado). | Quebra o boot de qualquer clone limpo. | Admin ou quem pegar build |
@@ -28,7 +28,7 @@ começar agora, sem depender de outra coisa. Owner = quem sugerimos pegar
 | — | Deps externas | `userland/fetch-deps.sh` criado por outra IA (kernel + bash/busybox estáticos). | Não commitar a árvore do kernel no futuro |
 | — | Documento mestre / estado | Admin edita (esta pasta + `docs/ai/*`) | Contínuo |
 | — | Sessões de implementação 09-05 | Usuário ainda não subiu documentos de sessão do dia | A gente atualiza este arquivo quando subirem |
-| — | R-06 (TSWL shm double-buffer) | Grok em curso (2026-09-08) — encerra o A2 parcial quando subir | Orquestrador verifica antes de fechar |
+| — | R-06 (TSWL shm double-buffer) | CONCLUÍDA em 2026-09-08 — fechou o A2. Ver A2. | R-06 → CORRIGIDO |
 
 ## 🧭 PLANEJADAS (próximas fases — não bloqueadas por nada, só por ordem)
 

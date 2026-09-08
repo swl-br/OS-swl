@@ -37,6 +37,20 @@
 #define INIT_WIDTH  660
 #define INIT_HEIGHT 410
 #define BLINK_MS    500
+#define TSWL_BUF_COUNT 2  /* double-buffer: um no compositor, um livre pra pintar */
+
+struct app; /* forward */
+
+/* Um slot de shm. O compositor segura o wl_buffer até mandar
+ * wl_buffer.release; só então podemos reescrever ou destruir (R-06). */
+struct tswl_shm_buf {
+    struct app *app; /* pra recriar o slot no release se ficou stale */
+    struct wl_buffer *wl;
+    void *data;
+    size_t size;
+    bool busy;   /* attach feito, esperando release */
+    bool stale;  /* resize pediu destruição enquanto busy */
+};
 
 struct app {
     struct wl_display *display;
@@ -55,9 +69,7 @@ struct app {
     struct xkb_keymap *keymap;
     struct xkb_state *xkb_state;
 
-    struct wl_buffer *buffer;
-    void *buffer_data;
-    size_t buffer_size;      /* tamanho real do mmap (pra desmapear certo) */
+    struct tswl_shm_buf bufs[TSWL_BUF_COUNT];
     int width, height;       /* pixels, configurado pelo compositor */
     bool configured;
     bool running;
@@ -77,7 +89,7 @@ static long now_ms(void) {
     return ts.tv_sec * 1000L + ts.tv_nsec / 1000000L;
 }
 
-/* ---------------- buffer shm ---------------- */
+/* ---------------- buffer shm (double-buffer, R-06) ---------------- */
 
 static int create_shm_file(size_t size) {
     char name[] = "/tswl-XXXXXX";
@@ -91,53 +103,128 @@ static int create_shm_file(size_t size) {
     return fd;
 }
 
+static void shm_buf_free_resources(struct tswl_shm_buf *b) {
+    if (b->wl) {
+        wl_buffer_destroy(b->wl);
+        b->wl = NULL;
+    }
+    if (b->data) {
+        munmap(b->data, b->size);
+        b->data = NULL;
+    }
+    b->size = 0;
+    b->busy = false;
+    b->stale = false;
+}
+
+static bool shm_buf_create(struct app *a, struct tswl_shm_buf *b,
+        int width, int height);
+
 static void buffer_release(void *data, struct wl_buffer *buffer) {
-    (void)data;
+    struct tswl_shm_buf *b = data;
     (void)buffer;
-    /* buffer único reutilizado: o compositor avisa quando terminou de ler;
-     * como sempre esperamos frame_done+release antes do próximo attach,
-     * aqui não precisamos fazer nada. */
+    b->busy = false;
+    /* Resize pediu destruição enquanto o compositor ainda lia:
+     * agora que liberou, destrói o buffer antigo e recria no tamanho
+     * atual da janela (se ainda fizer sentido). */
+    if (b->stale) {
+        struct app *a = b->app;
+        shm_buf_free_resources(b);
+        if (a && a->width > 0 && a->height > 0 && a->shm) {
+            (void)shm_buf_create(a, b, a->width, a->height);
+        }
+    }
 }
 
 static const struct wl_buffer_listener buffer_listener = {
     .release = buffer_release,
 };
 
-static bool recreate_buffer(struct app *a) {
-    if (a->buffer) {
-        wl_buffer_destroy(a->buffer);
-        a->buffer = NULL;
-    }
-    if (a->buffer_data) {
-        /* usa o tamanho guardado na criação — a->width/height podem já ter
-         * sido atualizados pro novo tamanho, e munmap com tamanho errado
-         * corrompe o espaço de endereçamento (crash no resize) */
-        munmap(a->buffer_data, a->buffer_size);
-        a->buffer_data = NULL;
-    }
-    size_t stride = (size_t)a->width * 4;
-    size_t size = stride * a->height;
+static bool shm_buf_create(struct app *a, struct tswl_shm_buf *b,
+        int width, int height) {
+    size_t stride = (size_t)width * 4;
+    size_t size = stride * (size_t)height;
     int fd = create_shm_file(size);
     if (fd < 0) return false;
-    a->buffer_data = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    if (a->buffer_data == MAP_FAILED) {
-        a->buffer_data = NULL;
+    void *map = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    if (map == MAP_FAILED) {
         close(fd);
         return false;
     }
-    a->buffer_size = size;
     struct wl_shm_pool *pool = wl_shm_create_pool(a->shm, fd, (int)size);
-    a->buffer = wl_shm_pool_create_buffer(pool, 0, a->width, a->height,
-                                          (int)stride, WL_SHM_FORMAT_ARGB8888);
-    wl_buffer_add_listener(a->buffer, &buffer_listener, a);
+    struct wl_buffer *wl = wl_shm_pool_create_buffer(pool, 0, width, height,
+            (int)stride, WL_SHM_FORMAT_ARGB8888);
     wl_shm_pool_destroy(pool);
     close(fd);
+    if (!wl) {
+        munmap(map, size);
+        return false;
+    }
+    b->app = a;
+    b->wl = wl;
+    b->data = map;
+    b->size = size;
+    b->busy = false;
+    b->stale = false;
+    wl_buffer_add_listener(b->wl, &buffer_listener, b);
     return true;
+}
+
+static struct tswl_shm_buf *pick_free_buf(struct app *a) {
+    for (int i = 0; i < TSWL_BUF_COUNT; i++) {
+        struct tswl_shm_buf *b = &a->bufs[i];
+        if (b->wl && b->data && !b->busy && !b->stale) {
+            return b;
+        }
+    }
+    return NULL;
+}
+
+static bool has_any_buffer(struct app *a) {
+    for (int i = 0; i < TSWL_BUF_COUNT; i++) {
+        if (a->bufs[i].wl) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/* (Re)cria buffers no tamanho atual. Slots ainda busy ficam marcados
+ * stale e só são trocados no release — nunca destruímos um wl_buffer
+ * que o compositor ainda está lendo (R-06). */
+static bool recreate_buffers(struct app *a) {
+    if (a->width <= 0 || a->height <= 0) {
+        return false;
+    }
+    bool any_busy_deferred = false;
+    bool any_created = false;
+    for (int i = 0; i < TSWL_BUF_COUNT; i++) {
+        struct tswl_shm_buf *b = &a->bufs[i];
+        if (b->busy) {
+            b->stale = true;  /* troca real no release */
+            any_busy_deferred = true;
+            continue;
+        }
+        shm_buf_free_resources(b);
+        if (shm_buf_create(a, b, a->width, a->height)) {
+            any_created = true;
+        }
+    }
+    /* OK se tem slot livre agora, ou se só adiou (release recria). */
+    return any_created || any_busy_deferred || pick_free_buf(a) != NULL;
 }
 
 /* ---------------- desenho ---------------- */
 
 static void redraw(struct app *a) {
+    struct tswl_shm_buf *b = pick_free_buf(a);
+    if (!b) {
+        /* Os dois slots estão no compositor (ou stale). Mantém
+         * need_redraw pra tentar de novo no próximo ciclo do loop,
+         * depois que algum release chegar. */
+        return;
+    }
+
     tswl_render_draw(a->render, a->term, a->cursor_on);
     cairo_surface_t *surf = tswl_render_surface(a->render);
     int sw = cairo_image_surface_get_width(surf);
@@ -146,13 +233,15 @@ static void redraw(struct app *a) {
     int sstride = cairo_image_surface_get_stride(surf);
     int copy_w = sw < a->width ? sw : a->width;
     int copy_h = sh < a->height ? sh : a->height;
+    size_t dst_stride = (size_t)a->width * 4;
     for (int y = 0; y < copy_h; y++) {
-        memcpy((char *)a->buffer_data + (size_t)y * a->width * 4,
+        memcpy((char *)b->data + (size_t)y * dst_stride,
                src + (size_t)y * sstride, (size_t)copy_w * 4);
     }
-    wl_surface_attach(a->surface, a->buffer, 0, 0);
+    wl_surface_attach(a->surface, b->wl, 0, 0);
     wl_surface_damage_buffer(a->surface, 0, 0, a->width, a->height);
     wl_surface_commit(a->surface);
+    b->busy = true;
     a->need_redraw = false;
 }
 
@@ -162,7 +251,7 @@ static void xsurface_configure(void *data, struct xdg_surface *xs, uint32_t seri
     struct app *a = data;
     xdg_surface_ack_configure(xs, serial);
     a->configured = true;
-    if (!a->buffer && !recreate_buffer(a)) {
+    if (!has_any_buffer(a) && !recreate_buffers(a)) {
         fprintf(stderr, "tswl: falha ao criar buffer shm\n");
         a->running = false;
         return;
@@ -189,7 +278,11 @@ static void toplevel_configure(void *data, struct xdg_toplevel *tl,
         tswl_term_resize(a->term, cols, rows);
         tswl_pty_resize(a->pty_fd, cols, rows);
         if (a->configured) {
-            recreate_buffer(a);
+            if (!recreate_buffers(a)) {
+                fprintf(stderr, "tswl: falha ao recriar buffers no resize\n");
+                a->running = false;
+                return;
+            }
             a->need_redraw = true;
         }
     }
@@ -557,7 +650,7 @@ int main(int argc, char *argv[]) {
             a.need_redraw = true;
         }
 
-        if (a.need_redraw && a.configured && a.buffer) {
+        if (a.need_redraw && a.configured && has_any_buffer(&a)) {
             redraw(&a);
         }
     }
@@ -568,8 +661,9 @@ int main(int argc, char *argv[]) {
         waitpid(a.child_pid, NULL, WNOHANG);
     }
     if (a.pty_fd >= 0) close(a.pty_fd);
-    if (a.buffer) wl_buffer_destroy(a.buffer);
-    if (a.buffer_data) munmap(a.buffer_data, a.buffer_size);
+    for (int i = 0; i < TSWL_BUF_COUNT; i++) {
+        shm_buf_free_resources(&a.bufs[i]);
+    }
     if (a.keyboard) wl_keyboard_destroy(a.keyboard);
     if (a.keymap) xkb_keymap_unref(a.keymap);
     if (a.xkb_state) xkb_state_unref(a.xkb_state);
