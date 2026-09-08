@@ -27,6 +27,9 @@ int tswl_pty_spawn(int cols, int rows, pid_t *child_pid) {
             shell = "/bin/sh";
         }
         setenv("TERM", "xterm-256color", 1);
+        /* V1: shell interativo carrega identidade (splash/prompt/help) */
+        setenv("ENV", "/usr/share/swl/shell-rc.sh", 0);
+        setenv("SWL_SHARE", "/usr/share/swl", 0);
         execl(shell, shell, (void *)NULL);
         _exit(1);
     }

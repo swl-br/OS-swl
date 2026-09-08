@@ -56,4 +56,25 @@ proc /proc proc defaults 0 0
 sysfs /sys sysfs defaults 0 0
 EOF
 
+# V1 — identidade visual do terminal (shell package)
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+mkdir -p "$ROOTFS/usr/share/swl" "$ROOTFS/root"
+if [ -f "$ROOT/userland/shell/shell-rc.sh" ]; then
+    cp "$ROOT/userland/shell/shell-rc.sh" "$ROOTFS/usr/share/swl/shell-rc.sh"
+    chmod 644 "$ROOTFS/usr/share/swl/shell-rc.sh"
+fi
+if [ -f "$ROOT/userland/shell/etc-profile" ]; then
+    cp "$ROOT/userland/shell/etc-profile" "$ROOTFS/etc/profile"
+    chmod 644 "$ROOTFS/etc/profile"
+fi
+if [ -f "$ROOT/userland/neo-face.txt" ]; then
+    cp "$ROOT/userland/neo-face.txt" "$ROOTFS/usr/share/swl/neo-face.txt"
+fi
+if [ -f "$ROOT/userland/swlfetch" ]; then
+    cp "$ROOT/userland/swlfetch" "$ROOTFS/bin/swlfetch"
+    chmod 755 "$ROOTFS/bin/swlfetch"
+fi
+# ash interativo não-login: ENV aponta pro rc
+# (também exportado em /etc/profile)
+
 echo "rootfs montado em $ROOTFS"
