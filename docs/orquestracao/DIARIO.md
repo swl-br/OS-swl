@@ -4,6 +4,15 @@ Registro diário das rodadas de orquestração. Entrada mais recente em
 cima. **Conferir sempre o repo real** — este diário é um índice, não a
 verdade de fonte.
 
+## 2026-09-08 — Tarefas T4/M1/S1 (pedidos do usuário no QEMU) (admin)
+
+Usuário testando no sistema pediu: terminal completo (T4, absorve T1+T2:
+cursor barra, mouse, otimização, resize de texto, neofetch auto-fit),
+barra de menu por app estilo clássico (M1) e app Configurações completo
+(S1: wifi/rede, bluetooth, acessibilidade, apps, personalizar,
+teclado+mouse, display, painel, notificações, sobre, idiomas, disco).
+Donos a definir.
+
 ## 2026-09-08 — Alt-screen real no TSWL (admin)
 
 Entrega do Grok: buffer `main_save` (`?1049h` salva+limpa, `?1049l`
