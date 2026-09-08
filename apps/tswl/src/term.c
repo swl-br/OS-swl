@@ -499,6 +499,14 @@ bool tswl_term_feed(tswl_term *t, const char *data, size_t len) {
         }
 
         if (t->state == ST_CSI) {
+            /* R-11: ESC no meio de CSI cancela a sequência e inicia
+             * um novo escape — comportamento de xterm/foot/vte. */
+            if (b == 0x1B) {
+                t->state = ST_ESC;
+                t->csi_nparams = 0;
+                t->csi_private = false;
+                continue;
+            }
             if (b >= '0' && b <= '9') {
                 if (t->csi_nparams == 0) t->csi_nparams = 1;
                 int *p = &t->csi_params[t->csi_nparams - 1];
@@ -523,11 +531,23 @@ bool tswl_term_feed(tswl_term *t, const char *data, size_t len) {
                 csi_dispatch(t, (char)b);
                 t->state = ST_GROUND;
             }
+            /* intermediários 0x20-0x2F e outros: engolidos (sem efeito) */
             continue;
         }
 
         /* ST_GROUND */
         if (b == 0x1B) { t->state = ST_ESC; continue; }
+        /* R-11: C1 (0x80-0x9F) — não imprimir U+FFFD. 0x9B = CSI 8-bit. */
+        if (b >= 0x80 && b <= 0x9F) {
+            if (b == 0x9B) {
+                t->state = ST_CSI;
+                t->csi_nparams = 0;
+                t->csi_private = false;
+                memset(t->csi_params, 0, sizeof(t->csi_params));
+            }
+            /* demais C1: ignorados (não viram glyph) */
+            continue;
+        }
         ground_byte(t, b);
     }
     return t->changed;

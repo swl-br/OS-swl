@@ -4,6 +4,16 @@ Registro diário das rodadas de orquestração. Entrada mais recente em
 cima. **Conferir sempre o repo real** — este diário é um índice, não a
 verdade de fonte.
 
+## 2026-09-08 — R-11 integrada, A7 concluída (admin)
+
+Entrega do Grok em `revisao-de-entrada_LOCAL/r11-files/` (`term.c` +
+sessão). Verificação no código: ESC em ST_CSI cancela antes de tudo
+(reentrada limpa via memset — sem stale); C1 antes do caminho UTF-8.
+Harness ASan/UBSan comportamental: cancel sobe 1, `0x9B` com/sem
+params, C1 sem glyph/cursor; regressão R-01/R-03 limpa; build sem
+warnings. Aprovado pelo usuário e integrado: R-11 → CORRIGIDO, A7
+CONCLUÍDA (último aberto dela).
+
 ## 2026-09-08 — Primeiro programa SWL rodando na máquina do usuário (admin)
 
 Jogo par/ímpar (`swl-compiler/examples/parimpar-demo.swl`, modo demo com

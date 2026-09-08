@@ -211,10 +211,9 @@ STATUS: FUNCIONAL NO BOOT REAL (2026-09-07).
   Ver `docs/revisao/2026-09-05-revisao-01.md` (R-01 a R-14).
   Status atual (2026-09-08): R-01/R-02/R-03 CORRIGIDOS (Grok, A1),
   R-04/R-05/R-06/R-07 CORRIGIDOS (Grok, A2 — ver sessão
-  das correções R-06), R-09/R-10 CORRIGIDOS (Grok, A7 build/leveza),
+  das correções R-06),   R-09/R-10/R-11 CORRIGIDOS (Grok, A7),
   R-12 CORRIGIDO,
-  R-08 SUPERADO (histórico recomeçado). Em aberto: R-11 (parser ANSI),
-  R-13, R-14. A6 parcial (falta complemento — ver aviso ao Grok).
+  R-08 SUPERADO (histórico recomeçado). Em aberto: R-13, R-14.
 
 ## Espaço de orquestração
 
