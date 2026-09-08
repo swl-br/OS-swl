@@ -1,0 +1,51 @@
+; jogo do par ou impar (modo demo: sem input ainda, alterna a escolha)
+module main
+
+fn main() -> i32
+    swl_srand(swl_time_s())
+    var placar_voce: i32 = 0
+    var placar_pc: i32 = 0
+    swl_print_str("== PAR OU IMPAR ==\n")
+    var r: i32 = 1
+    while r < 7
+        ; voce alterna: rodada impar -> PAR, rodada par -> IMPAR
+        var quero_par: i32 = 1
+        if r % 2 == 0
+            quero_par = 0
+        end
+        if quero_par == 1
+            swl_print_str("voce: PAR | ")
+        else
+            swl_print_str("voce: IMPAR | ")
+        end
+        var n: i32 = swl_rand() % 10
+        if n < 0
+            n = 0 - n
+        end
+        n = n + 1
+        swl_print_str("saiu: ")
+        swl_print_i32(n)
+        var deu_par: i32 = 0
+        if n % 2 == 0
+            deu_par = 1
+        end
+        if deu_par == quero_par
+            swl_print_str(" -> VOCE VENCEU\n")
+            placar_voce = placar_voce + 1
+        else
+            swl_print_str(" -> PC VENCEU\n")
+            placar_pc = placar_pc + 1
+        end
+        r = r + 1
+    end
+    swl_print_str("voce: ")
+    swl_print_i32(placar_voce)
+    swl_print_str("pc: ")
+    swl_print_i32(placar_pc)
+    if placar_voce > placar_pc
+        swl_print_str("CAMPEAO: VOCE\n")
+    else
+        swl_print_str("CAMPEAO: PC\n")
+    end
+    return 0
+end
