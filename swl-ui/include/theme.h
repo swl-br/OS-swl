@@ -52,8 +52,8 @@ typedef struct { double r, g, b, a; } swl_color_t;
  * sumir visualmente. Pequeno o bastante pra não incomodar em janelas
  * legitimamente pequenas (ex.: uma calculadora), grande o bastante pra
  * sempre sobrar espaço de clicar nos botões da decoração. */
-#define SWL_MIN_WINDOW_WIDTH  120
-#define SWL_MIN_WINDOW_HEIGHT 80
+#define SWL_MIN_WINDOW_WIDTH  260
+#define SWL_MIN_WINDOW_HEIGHT 180
 
 /* Largura do anel de borda (em pixels) que conta como "borda de resize"
  * da janela — usado tanto no hit-test do clique (server_cursor_button)

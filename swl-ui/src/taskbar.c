@@ -83,22 +83,38 @@ static void taskbar_draw(cairo_t *cr, int width, int height, void *data) {
 
 	double cy = height / 2.0 - 7;
 
-	/* Botão MENU */
+	/* Botão MENU — mantido como estava (usuário confirmou que já tava bom
+	 * nessa entrega, só contorno, sem preenchimento). */
 	SWL_SET(cr, SWL_COL_ACCENT_PURPLE);
 	cairo_set_line_width(cr, 1);
 	cairo_rectangle(cr, 6, 4, SWL_TASKBAR_MENU_W - 12, height - 8);
 	cairo_stroke(cr);
 	swl_draw_text(cr, "MENU", 22, cy, 11, SWL_FONT_MONO, true);
 
-	/* Botões das janelas abertas */
+	/* Botões das janelas abertas — sem caixa completa em cada um (isso
+	 * era mais "genérico"/pesado visualmente); só uma linha divisória
+	 * fina entre eles, e a janela focada ganha um traço embaixo em vez
+	 * de um contorno inteiro — mais parecido com a referência e menos
+	 * poluído com muitas janelas abertas. */
 	double x = SWL_TASKBAR_MENU_W + 10;
 	for (int i = 0; i < tb->count && i < SWL_TASKBAR_MAX_WINDOWS; i++) {
 		double w = SWL_TASKBAR_WIN_W;
 		bool focused = (i == tb->focused);
 
-		SWL_SET(cr, focused ? SWL_COL_ACCENT_CYAN : SWL_COL_TEXT_DIM);
-		cairo_rectangle(cr, x, 4, w, height - 8);
-		cairo_stroke(cr);
+		if (i > 0) {
+			SWL_SET(cr, SWL_COL_PANEL_BORDER);
+			cairo_set_line_width(cr, 1);
+			cairo_move_to(cr, x - SWL_TASKBAR_GAP / 2.0, 6);
+			cairo_line_to(cr, x - SWL_TASKBAR_GAP / 2.0, height - 6);
+			cairo_stroke(cr);
+		}
+		if (focused) {
+			SWL_SET(cr, SWL_COL_ACCENT_CYAN);
+			cairo_set_line_width(cr, 2);
+			cairo_move_to(cr, x + 2, height - 3);
+			cairo_line_to(cr, x + w - 2, height - 3);
+			cairo_stroke(cr);
+		}
 
 		const char *title = tb->titles[i] ? tb->titles[i] : "janela";
 		swl_desktop_draw_glyph_for_title(cr, title,

@@ -4,6 +4,26 @@ Registro diário das rodadas de orquestração. Entrada mais recente em
 cima. **Conferir sempre o repo real** — este diário é um índice, não a
 verdade de fonte.
 
+## 2026-09-08 — Lote Claude (min 260, build scanner, taskbar) + aviso resize (admin)
+
+Entrega do Claude (`revisao-de-entrada_LOCAL/`, sessão
+`2026-09-08-claude-resize-taskbar-buildfix.md`). A caixa tinha 3
+conjuntos; após diffs contra o HEAD, separação feita:
+
+- **Integrados** (testados em `/tmp`, build 14/14): `theme.h` 260×180
+  (tamanho confirmado pelo usuário), `meson.build` com geração do
+  `xdg-shell-protocol` via `wayland-scanner` (solução definitiva pro
+  build quebrado — `.h` comitado removido de novo, agora com geração;
+  README com deps de build atualizadas), `taskbar.c` com divisórias +
+  traço de foco (só desenho; visual a confirmar pelo usuário em
+  sessão gráfica).
+- **Não subiu**: resize unificado (`resize_pending*`) — arquivo em base
+  pré-A5/A6, subir apagaria fullscreen/maximizadas. Virou aviso em
+  `docs/revisao/2026-09-08-aviso-claude-resize.md` (PENDENTE, com pedido
+  de rebase + teste interativo).
+- Lição de processo (sugerida na sessão e aprendida hoje no A7):
+  consolidação entre cópias exige build limpo do zero antes de subir.
+
 ## 2026-09-08 — A6 concluída + conserto do build A7 (admin)
 
 **A6 complemento** (Grok, resposta ao aviso): diff com exatamente os 2

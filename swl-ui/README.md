@@ -76,7 +76,9 @@ eram bugs reais no código, não falta de dependência — ver "O que foi
 corrigido" abaixo.
 
 Dependências: `wlroots` (0.19, ou ajuste o meson.build pra sua versão),
-`wayland-server`, `xkbcommon`, `cairo`, `pangocairo`, `libdrm`.
+`wayland-server`, `xkbcommon`, `cairo`, `pangocairo`, `libdrm` e, em tempo
+de build, `wayland-scanner` + `wayland-protocols` (o `meson.build` gera o
+`xdg-shell-protocol.h` via `custom_target` — não commitar o gerado).
 
 ## O que foi corrigido
 

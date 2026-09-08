@@ -1,7 +1,7 @@
 # PROJECT_STATE — SWL OS
 
-Última atualização: 2026-09-08 (orquestrador — A6 concluída,
-conserto do build A7; ver `docs/orquestracao/DIARIO.md`)
+Última atualização: 2026-09-08 (orquestrador — lote Claude: min 260,
+build via scanner, taskbar; aviso resize pendente; ver DIARIO.md)
 
 ## Repositório (higiene)
 

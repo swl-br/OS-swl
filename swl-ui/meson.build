@@ -9,8 +9,7 @@ project('swl-ui', 'c',
 
 # R-10 / DEC-006: preferir 0.18 (validado) antes de 0.19 (nunca validado
 # com o guard SWL_WLR_0_18). Depois cai no wlroots genérico (0.17 no
-# Xubuntu). Não declarar wayland-protocols — não é usado no build
-# (wlroots já puxa o que precisa).
+# Xubuntu).
 wlroots = dependency('wlroots-0.18', required: false)
 if not wlroots.found()
   wlroots = dependency('wlroots', required: false)
@@ -29,12 +28,36 @@ pangocairo = dependency('pangocairo')
 libdrm     = dependency('libdrm')
 mathlib    = meson.get_compiler('c').find_library('m', required: false)
 
-# R-10: xdg-shell-protocol.c/.h pré-gerados (v7, ~72KB) removidos —
-# o compositor usa só a API do wlroots (wlr_xdg_shell_create versão 3).
+# R-10 tinha removido xdg-shell-protocol.c/.h pré-gerados (v7, ~72KB)
+# achando que era código morto — mas `wlr/types/wlr_xdg_shell.h` (header
+# do PRÓPRIO wlroots, não nosso) faz `#include "xdg-shell-protocol.h"`
+# internamente, então o arquivo precisa existir no include path mesmo
+# sem nosso código chamar nada dele diretamente. A correção de verdade
+# não é reverter a remoção (voltar a commitar um binário gerado de
+# ~72KB) — é gerar de verdade em tempo de build via wayland-scanner,
+# como todo compositor wlroots faz (é o padrão do próprio tinywl, que
+# esse projeto usa como base).
+wayland_scanner = find_program('wayland-scanner')
+wayland_protocols = dependency('wayland-protocols')
+wl_protocol_dir = wayland_protocols.get_variable('pkgdatadir')
+xdg_shell_xml = wl_protocol_dir / 'stable/xdg-shell/xdg-shell.xml'
+
+xdg_shell_protocol_h = custom_target('xdg-shell-protocol.h',
+  input: xdg_shell_xml,
+  output: 'xdg-shell-protocol.h',
+  command: [wayland_scanner, 'server-header', '@INPUT@', '@OUTPUT@'],
+)
+xdg_shell_protocol_c = custom_target('xdg-shell-protocol.c',
+  input: xdg_shell_xml,
+  output: 'xdg-shell-protocol.c',
+  command: [wayland_scanner, 'private-code', '@INPUT@', '@OUTPUT@'],
+)
 
 executable('swlwm',
   [
     'src/swlwm.c',
+    xdg_shell_protocol_c,
+    xdg_shell_protocol_h,
     'src/swl_buffer.c',
     'src/swl_draw_util.c',
     'src/panel.c',
