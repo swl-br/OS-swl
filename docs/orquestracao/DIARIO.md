@@ -16,6 +16,13 @@ do FreeBuffy** (`PROJECT_STATE.md` seção swlc + `AFAZERES.md` fase 1 +
 C2/C3 com dono; DEC-009 já proibia patch externo). Ajuste fino:
 limitação `for sem var` removida (v2 já tem) + C3 listado.
 
+## 2026-09-08 — Testes unitários do parser TSWL integrados (admin)
+
+Entrega do Grok (`apps/tswl/tests/` + sessão): 13 asserts (básicos +
+R-01/R-03/R-11/R-14) + `run_parser_tests.sh` (sem Wayland/Cairo, modo
+sanitizer via `TSWL_SANITIZE=1`). Verificado no repo: 13/13 com e sem
+sanitizer. Item do IDEIAS marcado ATENDIDO.
+
 ## 2026-09-08 — R-13 integrada, catálogo R encerrado (admin)
 
 Entrega do Grok em `revisao-de-entrada_LOCAL/r13-files/` (`swlwm.c` +

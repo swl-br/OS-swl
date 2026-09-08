@@ -17,7 +17,9 @@ compromisso.
   já custou uma sessão inteira).
 - **Unit tests do parser ANSI do TSWL primeiro** — é o código mais
   exposto (entrada não-confiável) e o que tem mais bugs hoje. Testar
-  antes de expandir o parser.
+  antes de expandir o parser. → ATENDIDO em 2026-09-08:
+  `apps/tswl/tests/` (13 asserts + `run_parser_tests.sh`, com modo
+  ASan/UBSan).
 
 ## GUI
 
