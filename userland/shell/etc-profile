@@ -1,0 +1,7 @@
+# /etc/profile — SWL OS
+# Identidade do shell (V1)
+export SWL_SHARE=/usr/share/swl
+export SWL_FETCH=/bin/swlfetch
+export ENV=/usr/share/swl/shell-rc.sh
+# Login shells
+[ -f /usr/share/swl/shell-rc.sh ] && . /usr/share/swl/shell-rc.sh

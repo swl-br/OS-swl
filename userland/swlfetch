@@ -1,6 +1,14 @@
 #!/bin/sh
 # swlfetch v4 — infos à esquerda, Neo à direita, coluna alinhada
-ART="$(cd "$(dirname "$0")" && pwd)/neo-face.txt"
+# Procura a arte: junto do script, /usr/share/swl, ou CWD (dev)
+_ART_CAND1="$(cd "$(dirname "$0")" 2>/dev/null && pwd)/neo-face.txt"
+_ART_CAND2="/usr/share/swl/neo-face.txt"
+_ART_CAND3="./neo-face.txt"
+if [ -f "$_ART_CAND1" ]; then ART="$_ART_CAND1"
+elif [ -f "$_ART_CAND2" ]; then ART="$_ART_CAND2"
+elif [ -f "$_ART_CAND3" ]; then ART="$_ART_CAND3"
+else ART="$_ART_CAND2"
+fi
 esc=$(printf '\033')
 C="${esc}[36m"; M="${esc}[35m"; G="${esc}[32m"; N="${esc}[0m"
 MT=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo 2>/dev/null)

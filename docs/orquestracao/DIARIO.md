@@ -4,6 +4,24 @@ Registro diário das rodadas de orquestração. Entrada mais recente em
 cima. **Conferir sempre o repo real** — este diário é um índice, não a
 verdade de fonte.
 
+## 2026-09-08 — Scrollback sobrevive ao resize (admin)
+
+Entrega do Grok (`term.c` + 2 asserts): ring de histórico migra no
+`tswl_term_resize` (truncate/pad por coluna, ordem preservada,
+`offset` clampado) em vez de zerar. Verificação: fórmula do anel igual
+à da leitura; suíte 15/15 com e sem sanitizer (rodada no repo).
+Aprovado pelo usuário e integrado.
+
+## 2026-09-08 — V1 (shell identity) integrada e concluída (admin)
+
+Entrega do Grok em `revisao-de-entrada_LOCAL/v1-shell-files/`:
+`shell-rc.sh` + `etc-profile` (novos), `build-rootfs.sh` (instala),
+`swlfetch` (fallback de arte), `pty.c` (`ENV` no filho). Verificação
+funcional de verdade: dash + busybox ash (prompt, help colorido,
+spinner, progresso, splash em tty via `script`), sintaxe `sh -n`,
+`setenv` no lugar certo sem overwrite. Aprovado pelo usuário e
+integrado: V1 → CONCLUÍDA (desdobramentos: nativo C/ASM, boot OK).
+
 ## 2026-09-08 — parser unit tests + swlfetch reconciliados (admin)
 
 `origin/notebook`: testes unitários do parser tswl (13 casos, inclui
