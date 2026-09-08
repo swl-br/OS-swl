@@ -4,6 +4,15 @@ Registro diário das rodadas de orquestração. Entrada mais recente em
 cima. **Conferir sempre o repo real** — este diário é um índice, não a
 verdade de fonte.
 
+## 2026-09-08 — R-14 (rebase) integrada, aviso atendido (admin)
+
+Rebase do Grok em `revisao-de-entrada_LOCAL/r14-rebase-files/`:
+diff com só os 3 acréscimos sobre o `term.c` com R-11 (verificado);
+`main.c`/`term.h` aditivos. Build OK; harness combinado 8/8
+(DECCKM + R-11 + R-01) limpo no sanitizer. Aprovado pelo usuário e
+integrado: R-14 → CORRIGIDO, aviso marcado ATENDIDO. Resta R-13 como
+único R aberto.
+
 ## 2026-09-08 — R-11 integrada, A7 concluída (admin)
 
 Entrega do Grok em `revisao-de-entrada_LOCAL/r11-files/` (`term.c` +

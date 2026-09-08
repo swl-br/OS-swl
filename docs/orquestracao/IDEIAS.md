@@ -45,6 +45,18 @@ compromisso.
   quando houver um caso real (a ordem natural é: primeiro os apps
   nativos, depois a camada de compat).
 
+## Linguagem SWL
+
+- **Veredito lang-swl (projeto antigo do usuário, 2026-09-08)** — pacote
+  `revisao-de-entrada_LOCAL/lang-swl` (VM + stdlib + 35 exemplos + docs):
+  fontes de fase inicial misturados com exemplos/docs de fase posterior;
+  o snapshot **não roda os próprios exemplos** (sem declaração de
+  variável). Decisão: NÃO usar como base (não descarta o swlc do Buffy,
+  que é testado 51/51); usar como **mapa**: `input()` como spec do C3,
+  catálogo stdlib como spec de builtins futuros, 35 exemplos como backlog
+  de features/testes, modelo de permissões (`task`/`permissions`) como
+  ideia de sandbox. Análise completa com o usuário em 2026-09-08.
+
 ## Processo
 
 - **Formato de "PR de documento"**: quando uma IA quiser mudar uma

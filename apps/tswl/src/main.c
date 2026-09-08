@@ -389,6 +389,19 @@ static int keysym_to_seq(xkb_keysym_t sym, char *buf, bool app_cursor) {
         { XKB_KEY_Page_Down, "\033[6~", NULL },
         { XKB_KEY_BackSpace, "\177",   NULL },
         { XKB_KEY_Escape,    "\033",   NULL },
+        /* F1-F12 (VT100 / xterm common) — R-14 */
+        { XKB_KEY_F1,  "\033OP",   NULL },
+        { XKB_KEY_F2,  "\033OQ",   NULL },
+        { XKB_KEY_F3,  "\033OR",   NULL },
+        { XKB_KEY_F4,  "\033OS",   NULL },
+        { XKB_KEY_F5,  "\033[15~", NULL },
+        { XKB_KEY_F6,  "\033[17~", NULL },
+        { XKB_KEY_F7,  "\033[18~", NULL },
+        { XKB_KEY_F8,  "\033[19~", NULL },
+        { XKB_KEY_F9,  "\033[20~", NULL },
+        { XKB_KEY_F10, "\033[21~", NULL },
+        { XKB_KEY_F11, "\033[23~", NULL },
+        { XKB_KEY_F12, "\033[24~", NULL },
     };
     for (size_t i = 0; i < sizeof(keys) / sizeof(keys[0]); i++) {
         if (keys[i].sym == sym) {
@@ -441,7 +454,7 @@ static void keyboard_key(void *data, struct wl_keyboard *kb,
         buf[0] = 0;
         n = 1;
     } else {
-        n = keysym_to_seq(sym, buf, false);
+        n = keysym_to_seq(sym, buf, tswl_term_app_cursor(a->term));
         if (n == 0) {
             /* tecla imprimível: UTF-8 direto do xkb */
             n = xkb_state_key_get_utf8(a->xkb_state, keycode, buf, sizeof(buf));
