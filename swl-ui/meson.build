@@ -7,30 +7,34 @@ project('swl-ui', 'c',
   ],
 )
 
-wlroots    = dependency('wlroots-0.19', required: false)
+# R-10 / DEC-006: preferir 0.18 (validado) antes de 0.19 (nunca validado
+# com o guard SWL_WLR_0_18). Depois cai no wlroots genérico (0.17 no
+# Xubuntu). Não declarar wayland-protocols — não é usado no build
+# (wlroots já puxa o que precisa).
+wlroots = dependency('wlroots-0.18', required: false)
 if not wlroots.found()
-  wlroots  = dependency('wlroots-0.18', required: false)
+  wlroots = dependency('wlroots', required: false)
 endif
 if not wlroots.found()
-  wlroots  = dependency('wlroots', required: true)
+  wlroots = dependency('wlroots-0.19', required: false)
 endif
+if not wlroots.found()
+  error('wlroots não encontrado (tentou 0.18, genérico e 0.19)')
+endif
+
 wayland_server = dependency('wayland-server')
-wayland_protos = dependency('wayland-protocols')
 xkbcommon  = dependency('xkbcommon')
 cairo      = dependency('cairo')
 pangocairo = dependency('pangocairo')
 libdrm     = dependency('libdrm')
 mathlib    = meson.get_compiler('c').find_library('m', required: false)
 
-# Observação: xdg-shell-protocol.h/.c aqui são os mesmos arquivos já
-# gerados que estavam em compositor/swlwm/ (copiados como estão). Se vocês
-# preferirem gerar via wayland-scanner no build, é só trocar por um
-# custom_target() apontando pro XML do wayland-protocols.
+# R-10: xdg-shell-protocol.c/.h pré-gerados (v7, ~72KB) removidos —
+# o compositor usa só a API do wlroots (wlr_xdg_shell_create versão 3).
 
 executable('swlwm',
   [
     'src/swlwm.c',
-    'src/xdg-shell-protocol.c',
     'src/swl_buffer.c',
     'src/swl_draw_util.c',
     'src/panel.c',
@@ -42,11 +46,8 @@ executable('swlwm',
     'src/context_menu.c',
   ],
   include_directories: include_directories('include'),
-  # -DWLR_USE_UNSTABLE: exigido pelos headers do wlroots (a API ainda não é
-  # considerada estável pelo projeto upstream, mas é a única que existe).
-  # -D_DEFAULT_SOURCE: com c_std=c11 puro (sem extensões gnu), a glibc
-  # esconde M_PI (math.h) e strdup (string.h) atrás das feature test
-  # macros; isso reabilita as duas sem precisar trocar pra 'gnu11'.
+  # -DWLR_USE_UNSTABLE: exigido pelos headers do wlroots.
+  # -D_DEFAULT_SOURCE: c_std=c11 puro esconde M_PI e strdup na glibc.
   c_args: ['-DWLR_USE_UNSTABLE', '-D_DEFAULT_SOURCE'],
   dependencies: [
     wlroots, wayland_server, xkbcommon, cairo, pangocairo, libdrm, mathlib,

@@ -4,6 +4,20 @@ Registro diário das rodadas de orquestração. Entrada mais recente em
 cima. **Conferir sempre o repo real** — este diário é um índice, não a
 verdade de fonte.
 
+## 2026-09-08 — A7 parcial (R-09/R-10) integrada (admin)
+
+Entrega do Grok em `revisao-de-entrada_LOCAL/a7-files/` (2 `meson.build`
++ sessão + `DELETE_THESE.txt`). Verificação no código: tswl sem
+`<math.h>` (só `clock_gettime`, libc); `wayland_protos` declarada e
+nunca usada no meson do swl-ui; nenhum fonte inclui
+`xdg-shell-protocol.h`; swl-ui usa `M_PI`/`sin`/`cos` (math mantido,
+correto). Builds em `/tmp` com os arquivos novos: tswl OK sem
+`libm`/`librt` diretos no `readelf -d`; swl-ui 11/11 OK com fallback
+0.18 → genérico (achou 0.17.1). Arquivos mortos deletados do git
+(`git rm`). R-11 ficou de fora com razão (bug do parser, separado) e
+segue aberto. Aprovado pelo usuário e integrado: R-09/R-10 →
+CORRIGIDO, A7 PARCIAL.
+
 ## 2026-09-08 — A6 (fullscreen) integrada com ressalva + aviso ao Grok (admin)
 
 Entrega do Grok em `revisao-de-entrada_LOCAL/a6-files/` (`swlwm.c` +

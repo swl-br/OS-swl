@@ -12,11 +12,11 @@ wayland_protos = dependency('wayland-protocols')
 xkbcommon      = dependency('xkbcommon')
 cairo          = dependency('cairo')
 pangocairo     = dependency('pangocairo')
-mathlib        = meson.get_compiler('c').find_library('m', required: false)
-rt             = meson.get_compiler('c').find_library('rt', required: false)
+# R-09: sem -lm / -lrt — nenhum <math.h>; clock_gettime está na libc
+# moderna (não precisa librt).
 
 # xdg-shell: gerado em modo CLIENTE a partir do XML do wayland-protocols
-# (o arquivo do swl-ui é modo servidor — não serve pra apps).
+# (o arquivo do swl-ui era modo servidor — não serve pra apps).
 wayland_scanner = find_program('wayland-scanner')
 wl_protocols_dir = wayland_protos.get_variable('pkgdatadir')
 xdg_shell_xml = join_paths(wl_protocols_dir, 'stable/xdg-shell/xdg-shell.xml')
@@ -43,6 +43,6 @@ executable('tswl',
   ],
   include_directories: include_directories('include'),
   c_args: ['-D_GNU_SOURCE'],
-  dependencies: [wayland_client, xkbcommon, cairo, pangocairo, mathlib, rt],
+  dependencies: [wayland_client, xkbcommon, cairo, pangocairo],
   install: true,
 )
