@@ -1,5 +1,12 @@
 # DIARIO — Mudanças e atualizações
 
+## 2026-09-08 — R-14 reconciliado (admin)
+
+`origin/notebook`: DECCKM + F1-F12 (Grok, com o rebase pedido no
+aviso — ver sessão `2026-09-08-grok-r14-decckm-rebase.md`). Merge
+limpo, sem conflitos. Revisão do admin: sequências F1–F12 corretas
+(xterm), `app_cursor` plugado no `keysym_to_seq`. Subido.
+
 Registro diário das rodadas de orquestração. Entrada mais recente em
 cima. **Conferir sempre o repo real** — este diário é um índice, não a
 verdade de fonte.
