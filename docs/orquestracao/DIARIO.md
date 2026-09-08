@@ -4,6 +4,13 @@ Registro diário das rodadas de orquestração. Entrada mais recente em
 cima. **Conferir sempre o repo real** — este diário é um índice, não a
 verdade de fonte.
 
+## 2026-09-08 — Primeiro programa SWL rodando na máquina do usuário (admin)
+
+Jogo par/ímpar (`swl-compiler/examples/parimpar-demo.swl`, modo demo com
+`while` por causa do C2) compilado e executado pelo usuário na própria
+máquina: 6 rodadas, 3-3, campeão PC (desempate do `else`). Primeira
+validação ponta a ponta da linguagem fora do sandbox do orquestrador.
+
 ## 2026-09-08 — Lote Claude (min 260, build scanner, taskbar) + aviso resize (admin)
 
 Entrega do Claude (`revisao-de-entrada_LOCAL/`, sessão
