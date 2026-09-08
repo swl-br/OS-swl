@@ -694,6 +694,11 @@ static struct tinywl_toplevel *desktop_toplevel_at(
 	while (tree != NULL && tree->node.data == NULL) {
 		tree = tree->node.parent;
 	}
+	/* R-13: se o buffer não está sob um toplevel (painel, desktop,
+	 * menu…), tree pode ser NULL — não ler tree->node.data. */
+	if (tree == NULL) {
+		return NULL;
+	}
 	return tree->node.data;
 }
 

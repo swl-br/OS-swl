@@ -4,6 +4,14 @@ Registro diário das rodadas de orquestração. Entrada mais recente em
 cima. **Conferir sempre o repo real** — este diário é um índice, não a
 verdade de fonte.
 
+## 2026-09-08 — R-13 integrada, catálogo R encerrado (admin)
+
+Entrega do Grok em `revisao-de-entrada_LOCAL/r13-files/` (`swlwm.c` +
+sessão): guarda NULL de 5 linhas em `desktop_toplevel_at`. Verificação:
+diff só a guarda; ambos os chamadores NULL-safe; build OK sem warnings
+novos. Aprovado pelo usuário e integrado: R-13 → CORRIGIDO.
+**R-01 a R-14 todos encerrados.**
+
 ## 2026-09-08 — R-14 (rebase) integrada, aviso atendido (admin)
 
 Rebase do Grok em `revisao-de-entrada_LOCAL/r14-rebase-files/`:
