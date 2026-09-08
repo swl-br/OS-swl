@@ -35,7 +35,8 @@ começar agora, sem depender de outra coisa. Owner = quem sugerimos pegar
 
 ## 🧭 PLANEJADAS (próximas fases — não bloqueadas por nada, só por ordem)
 
-1. **Linguagem SWL / compilador `swlc`** — MVP–M7 ENTREGUE em
+1. **Linguagem SWL / compilador `swlc`** (área ativa do FreeBuffy —
+   DEC-009; orquestrador só verifica) — MVP–M7 ENTREGUE em
    2026-09-07 (notebook) e verificado pelo admin (46/46). Restos
    possíveis em `swl-compiler/ROADMAP-V1-REMAINING.md`.
 2. **Restante do catálogo de apps** (SWLPad, file manager, SEBRE, config…)
