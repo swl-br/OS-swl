@@ -4,6 +4,43 @@ Registro diário das rodadas de orquestração. Entrada mais recente em
 cima. **Conferir sempre o repo real** — este diário é um índice, não a
 verdade de fonte.
 
+## 2026-09-08 — Revisão completa: builds + testes (admin)
+
+Rodada de verificação geral do sistema (builds em `/tmp`, repo intacto):
+
+- `apps/tswl`: `meson`+`ninja` OK, **0 warnings**.
+- `apps/swlpad`: `meson`+`ninja` OK, **0 warnings**.
+- `swl-ui`: `meson`+`ninja` OK (12/12); 16 warnings — 15×
+  `-Wunused-parameter` (benignos, listeners Wayland) + 1×
+  `-Wformat-truncation` em `panel.c:204` (`snprintf` do label MEM,
+  cosmético: só estouraria com valores absurdos de RAM).
+- `swl-compiler`: `make all rt` OK, 0 warnings; `make test` =
+  **51 passed, 0 failed** (22 exemplos + 29 rejeições — bate com o
+  README). Exemplos cobrem v2 (`for_loop.swl`, `hex_demo.swl`, etc.).
+- Harness adversarial do parser TSWL (ASan+UBSan, 21 casos: CSI `r`
+  malicioso, 1500 params, SGR/cursor absurdos, resize, OSC/DCS lixo,
+  feed de 100KB, UTF-8 quebrado): **limpo, sem sanitizer**.
+- Scripts (`fetch-deps.sh`, `build-*.sh`, `runtests.sh`): `bash -n` OK.
+- `tools/gen-cursors`: compila com a receita do `generate.sh`
+  (`gcc -O2`); com `-std=c11` estrito reclama de `M_PI` — falso alarme,
+  receita oficial funciona.
+
+Observações (sem ação, aguardando decisão do usuário):
+
+1. `tswl_term_resize` não valida `cols/rows < 1`. Fora de contrato e
+   inalcançável em produção (`cols/rows_for` prendem em ≥1 e o
+   `toplevel_configure` exige `w>0 && h>0`; overflow p/ wrap exigiria
+   janela > 2^33 px). Endurecimento de 1 linha possível, mas não é bug
+   vivo — não virou achado formal.
+2. Não testável aqui: `disk.img` completo (precisa da árvore do kernel
+   + rootfs, externos), GUI em runtime (precisa de display/compositor)
+   e `fetch-deps.sh` de ponta a ponta (baixaria toolchain; B3 segue
+   aberto e é o único item desse tipo).
+
+Docs: `AFAZERES.md`/`PROJECT_STATE.md` conferidos contra o repo — sem
+divergência restante (abertos reais: A5, A6, A7/R-09..11, R-13, R-14,
+B3). Nenhuma doc precisou de correção nesta rodada além deste registro.
+
 ## 2026-09-08 — A2 completa: R-06 (TSWL double-buffer) corrigida e integrada (admin)
 
 Usuário colocou em `revisao-de-entrada_LOCAL/tswl-R06-files/` a correção
