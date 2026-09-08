@@ -153,6 +153,24 @@ static void test_scrollback_survives_resize(void)
     (void)before;
 }
 
+
+/* Alt screen 1049: preserva a tela principal */
+static void test_alt_screen_restores(void)
+{
+    tswl_term *t = tswl_term_new(20, 6);
+    feed(t, "HELLO");
+    expect(tswl_term_cell(t, 0, 0)->ch == 'H', "setup HELLO");
+    feed(t, "\033[?1049h");
+    expect(tswl_term_cell(t, 0, 0)->ch == 0, "alt screen limpa a tela");
+    feed(t, "ALT");
+    expect(tswl_term_cell(t, 0, 0)->ch == 'A', "escreve no alt");
+    feed(t, "\033[?1049l");
+    expect(tswl_term_cell(t, 0, 0)->ch == 'H' &&
+           tswl_term_cell(t, 1, 0)->ch == 'E',
+           "sai do alt: restaura HELLO");
+    tswl_term_free(t);
+}
+
 int main(void)
 {
     printf("tswl term parser unit tests\n");
@@ -165,6 +183,7 @@ int main(void)
     test_c1_and_csi_8bit();
     test_decckm();
     test_scrollback_survives_resize();
+    test_alt_screen_restores();
     printf("\nsummary: %d passed, %d failed\n", passes, fails);
     return fails ? 1 : 0;
 }
