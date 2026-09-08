@@ -4,6 +4,16 @@ Registro diário das rodadas de orquestração. Entrada mais recente em
 cima. **Conferir sempre o repo real** — este diário é um índice, não a
 verdade de fonte.
 
+## 2026-09-08 — Notebook reconciliado (admin)
+
+Usuário subiu via web o trabalho do notebook (`origin/main` 93071b7 +
+branch `origin/arquivos`): wallpaper novo (1,2 MB), `swlcat.png`,
+`swl_desktop_draw_glyph_for_title()` (ícones da taskbar por keyword),
+`SWL_MIN_WINDOW_*` + throttle de resize (`resize_deco_dirty`, redraw
+por frame). FF do `main` local + merge do WIP local (term.c, desktop.c,
+swlwm.c) SEM conflitos — regiões disjuntas. B2 segue aberto (reset do
+cursor ainda fora). `swlcat.png` sem referência (asset futuro).
+
 ## 2026-09-07 — Rodada 2 (admin)
 
 Pasta oficial apagada pelo usuário no meio do dia; reconstruída dos
