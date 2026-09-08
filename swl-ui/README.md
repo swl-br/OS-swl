@@ -127,15 +127,16 @@ Agora:
 
 ## O que ficou como TODO (de propósito, pra não inflar demais esta entrega)
 
-- **Menu iniciar**: o clique no botão MENU da taskbar já está capturado
-  (`hit == -1` em `server_cursor_button`), só falta desenhar o menu em si.
-- **Maximizar/minimizar**: os botões já existem visualmente e o clique já é
-  capturado; falta guardar geometria original e implementar o toggle
-  (maximizar) e o estado "escondido, só na taskbar" (minimizar).
-- **Ícones de app com imagem própria**: hoje são glifos vetoriais (leves,
-  sem I/O). Se quiserem ícones customizados por app depois, dá pra estender
-  `swl_desktop_icon_def` com um caminho de PNG opcional, usando a mesma
-  técnica de `background.c`.
+- **Menu iniciar**: implementado (`menu.c`) — abre/fecha pelo botão
+  MENU, clique em item lança o app, clique fora fecha. (Entradas ainda
+  sem ícones, só texto.)
+- **Maximizar/minimizar**: implementados (toggle com geometria salva,
+  minimizar esconde pra taskbar, arrastar título desmaximiza).
+- **Ícones de app com imagem própria**: implementado
+  (`swl_desktop_icon_def.icon_file` + `resolve_icon_path`, mesma
+  técnica de `background.c`, com fallback pro glifo vetorial). Nota
+  2026-09-07: os PNGs estão caindo no fallback no boot real (em
+  investigação — ver tarefa B1 em `docs/orquestracao/AFAZERES.md`).
 - Multi-monitor: o código assume um layout único cobrindo a resolução do
   primeiro output. Funciona para o caso de vocês agora; generalizar exige
   guardar painel/taskbar por output.

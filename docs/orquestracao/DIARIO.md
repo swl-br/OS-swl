@@ -4,6 +4,27 @@ Registro diário das rodadas de orquestração. Entrada mais recente em
 cima. **Conferir sempre o repo real** — este diário é um índice, não a
 verdade de fonte.
 
+## 2026-09-07 — Rodada 2 (admin)
+
+Pasta oficial apagada pelo usuário no meio do dia; reconstruída dos
+snapshots + histórico, com 4 fixes de boot no caminho (initrd no topo
+da RAM, `/bin/sh`→busybox i386, xkb-data+`/dev/shm`, `devpts` pro
+tswl). GUI verificada ponta a ponta (headless+usuário) e subida:
+`main` recomeçado limpo (só fontes), tag `main-arquivo` guarda o
+histórico antigo. Ver `docs/ai/sessions/2026-09-07-recuperacao-pasta-boot-gui.md`.
+
+Docs atualizadas nesta rodada: `PROJECT_STATE.md` (estado real),
+`AFAZERES.md` (A3/A4 concluídas; novas B1/B2/B3), `swl-ui/README.md`
+(A8: menu/maximizar/PNG não são mais TODO).
+
+Em curso por outras IAs (não mexer no código delas): PNG dos ícones
+(B1), resize do terminal (term.c), compat wlroots (`WLR_BUTTON_`
+→ `WL_POINTER_BUTTON_STATE_`). ATENÇÃO B2: removeram o reset do
+cursor de resize (`else → "default"` em `swlwm.c`) — reabre bug
+confirmado pelo usuário; reaplicar antes de fechar.
+
+Nenhum código alterado pelo admin nesta rodada (só docs).
+
 ## 2026-09-05 — Rodada 1 (admin)
 
 Estado do repo conferido na prática: clone íntegro (95.222 arquivos),

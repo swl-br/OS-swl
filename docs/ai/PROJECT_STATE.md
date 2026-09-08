@@ -1,21 +1,23 @@
 # PROJECT_STATE — SWL OS
 
-Última atualização: 2026-09-05 (orquestrador — ver docs/orquestracao/;
-reorganização da doc principal pela OpenHands; ver DEC-008)
+Última atualização: 2026-09-07 (orquestrador — boot GUI real funcional,
+recuperação da pasta, push no `main`; ver
+`docs/ai/sessions/2026-09-07-recuperacao-pasta-boot-gui.md`)
 
 ## Repositório (higiene)
 
-- Clone íntegro: 95.222 arquivos, `git status` limpo.
-- `.gitignore` subido em 2026-09-05 com o nome errado (`gitignore`, sem
-  ponto) — **corrigido para `.gitignore` pelo orquestrador** na mesma
-  data. O arquivo já cobre `/build/`, `*.img`, `*.cpio.gz`, `*.bin`,
-  `*.log`, `/rootfs/` e `/kernel/linux-7.2.1/` para arquivos NOVOS.
-- **Rastreado ainda precisa de remoção manual** (`git rm --cached`):
-  `build/*`, `rootfs/*`, `kernel/linux-7.2.1/` (94.856 arquivos) e
-  qualquer artefato já commitado (tarefa A3 em
-  `docs/orquestracao/AFAZERES.md`; achado R-08 em `docs/revisao/`).
-- Dependências externas agora têm script: `userland/fetch-deps.sh`
-  (kernel + bash/busybox estáticos).
+- Histórico recomeçado em 2026-09-07 (pasta oficial apagada; ver sessão
+  acima): `main` atual tem só fontes + assets (969 arquivos no commit
+  base), `git status` limpo. Histórico antigo (54 commits, incluía a
+  árvore do kernel ~1,8 GB) preservado na tag `main-arquivo`.
+- `.gitignore` cobre `/build/`, `*.img`, `*.cpio.gz`, `*.bin`, `*.log`,
+  `/rootfs/`, `/gui-artifacts/`, `/kernel/*` (exceto
+  `kernel/config/swl_defconfig`, que o `fetch-deps.sh` exige),
+  `apps/*/build/`, `swl-ui/build/`. Tarefa A3 (git rm de artefatos)
+  está SUPERADA — nada rastreado além de fontes.
+- `userland/build-initramfs.sh` (R-16) recuperado do `main` antigo;
+  `Makefile` tem regra de initramfs e o disco depende dela (acaba com
+  o disco desatualizado parecia-atual).
 
 ## Kernel / Boot
 
@@ -37,13 +39,44 @@ STATUS: FUNCIONAL (ponta a ponta, testado em QEMU)
   + manifesto + kernel + initrd).
 - Testado com sucesso: boot completo até prompt de bash interativo.
 
+Bugs de boot resolvidos em 2026-09-07 (não repetir):
+- stage2 carregava o initrd colado no kernel (~6,5 MB); o kernel se
+  autodescomprime por cima (~20–30 MB) e initrds >13 MB morriam com
+  `Initramfs unpacking failed`. Fix: `INITRD_TOP 0x17000000`.
+- `/bin/sh` era bash 64-bit do host (inexequível no i386) → `sh` agora
+  aponta pro busybox i386 (idem no `build-rootfs.sh`).
+- init monta `devpts` (`/dev/pts`, gid=5/mode=620) — sem isso o tswl
+  falha com `falha ao abrir PTY`.
+- `/dev/shm → /run/shm` no `start-gui.sh` (wlroots falhava o keymap shm).
+
 Bug conhecido já resolvido (não repetir): o buffer de carregamento do kernel/initrd
 não pode ser reaproveitado como área do código de setup do kernel (um sobrescreve o outro).
 
 ## Interface Gráfica (GUI)
 
-STATUS: EM DESENVOLVIMENTO — base visual avançada, lógica de interação
-parcialmente implementada.
+STATUS: FUNCIONAL NO BOOT REAL (2026-09-07) — compositor como sessão
+principal via DRM/KMS no initramfs, verificado headless (QEMU+QMP) e
+pelo usuário (`make run-gui`).
+
+O que funciona (testado e confirmado em 2026-09-07):
+- Boot até desktop: 13 ícones, painel (CPU/MEM/relógio com segundos),
+  taskbar (MENU, janelas, NET, relógio), wallpaper PNG, cursor SWL
+  (55, com setas de resize) — tudo renderizado.
+- Clique em ícone lança o app; tswl e swlpad compilados i386 no chroot
+  (`scripts/build-gui-i386.sh` → `gui-artifacts/apps/`) e instalados
+  em `/bin` (`build-gui-rootfs.sh`); tswl abre com shell funcional.
+- Arrastar ícones (com limiar anti-clique), botão-direito com menu de
+  contexto (Abrir / Remover do desktop / Restaurar ícones removidos).
+- Resize server-side por borda/canto (`SWL_RESIZE_MARGIN`) + cursor
+  visual; arrastar título desmaximiza.
+- Menu iniciar, maximizar/minimizar, fechar pela decoração (herdados).
+
+Em investigação (outras IAs, 2026-09-07):
+- Ícones PNG do desktop caem no glifo vetorial (forma difere do asset;
+  wallpaper carrega — falha específica dos ícones).
+- Cursor de resize "gruda" dentro da janela se o reset pra `default`
+  for removido (fix aplicado e confirmado pelo usuário; ver sessão).
+- 1 segfault em libxkbcommon aos ~60 s de uso, sem reprodução até aqui.
 
 Base adotada: `swl-ui/` — compositor Wayland baseado em wlroots 0.17.1,
 partindo do `tinywl` (exemplo mínimo oficial) e evoluído para uma
@@ -112,19 +145,13 @@ só engana visualmente por rodar fora do nosso compositor. Desde
 
 ### O que NÃO está implementado ainda (não fingir que está pronto)
 - Trocar papel de parede: não implementado.
-- Arrastar ícones da área de trabalho, adicionar/remover atalhos: não
-  implementado (ícones são fixos, não-interativos além do clique que
-  já abre programas).
 - Lista de janelas abertas na taskbar: mostra título e foca ao
   clicar, mas sem preview/thumbnail.
 - Janela maximizada não readapta o tamanho se o output for
   redimensionado depois (ver sessão de maximizar/minimizar).
 - Fullscreen real: só responde ao protocolo, sem lógica de verdade.
-- Não roda ainda no hardware real / initramfs do SWL OS — só testado
-  na sessão gráfica X11 do desenvolvedor (`WLR_BACKEND=x11`).
-  Integração com o boot real (rodar como o processo gráfico principal
-  dentro do initramfs, sem X11 por baixo, via DRM/KMS) ainda não foi
-  feita — é a próxima tarefa grande da GUI.
+- Entradas do menu iniciar não têm ícones (só texto).
+- Não roda ainda no hardware real — só testado em QEMU.
 
 ## Linguagem SWL / Compilador swlc
 
@@ -132,18 +159,16 @@ STATUS: NÃO INICIADO.
 
 ## Aplicativos
 
-STATUS: EM DESENVOLVIMENTO — primeiro app nativo criado.
+STATUS: FUNCIONAL NO BOOT REAL (2026-09-07).
 
-- **TSWL** (`apps/tswl/`, 2026-09-04, OpenHands): terminal nativo, sem
-  toolkit (wayland-client + xdg-shell + cairo/pango direto), parser
-  ANSI/VT100 próprio, PTY via `forkpty`. Binário ~57 KB. Build
-  autônomo (`cd apps/tswl && meson setup build && ninja -C build`).
-  **Funcional, validado interativamente pelo usuário na máquina
-  Mint** — abre, roda o shell, digita normalmente.
-- Os outros 12 itens do catálogo (`default_icons[]` em `desktop.c`:
-  SWLPad, gerenciador de arquivos, SEBRE, Configurações, etc.)
-  continuam sendo só placeholders — comando aponta pra um binário que
-  não existe ainda.
+- **TSWL** (`apps/tswl/`): terminal nativo (wayland-client + xdg-shell
+  + cairo/pango, parser ANSI próprio, PTY via `forkpty`). Compilado
+  i386 no chroot (`scripts/build-gui-i386.sh` → `gui-artifacts/apps/`)
+  e instalado em `/bin` — abre no boot real com shell funcional
+  (exigia `/dev/pts` montado no init; ver sessão 2026-09-07).
+- **SWLPAD** (`apps/swlpad/`): mesmo fluxo de build/instalação; abre.
+- Os outros 11 itens do catálogo continuam placeholders (comando
+  aponta pra binário inexistente).
 
 ## Revisões / QA
 
@@ -160,8 +185,6 @@ STATUS: EM DESENVOLVIMENTO — primeiro app nativo criado.
   Área exclusiva dos orquestradores (admin + GPT); implementação não edita.
 
 ## Próximos passos sugeridos (GUI)
-1. Integrar o compositor ao boot real (substituir o teste
-   `WLR_BACKEND=x11` por rodar como sessão gráfica principal via
-   DRM/KMS, dentro do ambiente do SWL OS de verdade).
+1. Ícones PNG do desktop (caem no glifo vetorial — em investigação).
 2. Readaptar janelas maximizadas quando o output redimensiona.
 3. Fullscreen real (protocolo já responde, falta lógica).
