@@ -17,7 +17,9 @@ compromisso.
   já custou uma sessão inteira).
 - **Unit tests do parser ANSI do TSWL primeiro** — é o código mais
   exposto (entrada não-confiável) e o que tem mais bugs hoje. Testar
-  antes de expandir o parser.
+  antes de expandir o parser. → ATENDIDO em 2026-09-08:
+  `apps/tswl/tests/` (13 asserts + `run_parser_tests.sh`, com modo
+  ASan/UBSan).
 
 ## GUI
 
@@ -56,6 +58,20 @@ compromisso.
   catálogo stdlib como spec de builtins futuros, 35 exemplos como backlog
   de features/testes, modelo de permissões (`task`/`permissions`) como
   ideia de sandbox. Análise completa com o usuário em 2026-09-08.
+
+## Identidade visual do terminal (pedido do usuário, 2026-09-08)
+
+- **Neo em ASCII na abertura do terminal + `swlfetch`**: mascote
+  (`swl-ui/assets/mascot/cat.png`) convertido em arte ANSI colorida
+  (rosto, 52 col) + script que imprime infos à esquerda e Neo à direita
+  (versão/kernel/mem/uptime do `/proc`). Protótipo testado e aprovado
+  pelo usuário em `/tmp` (fora do repo); usuário pediu versão nativa
+  em **C/Assembly** do `swlfetch` (arte embutida, sem shell) como
+  desdobramento — para um implementador, quando a identidade virar
+  tarefa. Conversor PNG→ANSI em Python foi ferramenta pontual (fora do
+  repo), não parte da entrega.
+- **Biblioteca C `swl_ui_*` e boot com OK**: futuro (quando houver 2+
+  apps precisando; boot mexe em área sensível).
 
 ## Processo
 

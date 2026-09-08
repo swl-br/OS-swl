@@ -1,0 +1,28 @@
+#!/bin/sh
+# swlfetch v4 — infos à esquerda, Neo à direita, coluna alinhada
+ART="$(cd "$(dirname "$0")" && pwd)/neo-face.txt"
+esc=$(printf '\033')
+C="${esc}[36m"; M="${esc}[35m"; G="${esc}[32m"; N="${esc}[0m"
+MT=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo 2>/dev/null)
+MA=$(awk '/MemAvailable/{print int($2/1024)}' /proc/meminfo 2>/dev/null)
+UP=$(cut -d. -f1 /proc/uptime 2>/dev/null | awk '{printf "%02d:%02d:%02d", $1/3600, ($1%3600)/60, $1%60}')
+padinfo() {
+  vis=$(printf '%s' "$1" | sed "s/${esc}\[[0-9;]*m//g")
+  n=$((${#vis})); w=28
+  printf '%s' "$1"
+  while [ $n -lt $w ]; do printf ' '; n=$((n+1)); done
+}
+i=0
+while IFS= read -r line; do
+  i=$((i+1))
+  case $i in
+    6)  info="${C}SWL OS${N}  v1.0.0 x86 32bit" ;;
+    7)  info="Kernel:  $(uname -r)" ;;
+    8)  info="Shell:   SWL Shell" ;;
+    9)  info="Mem:     ${G}${MA}M${N} / ${MT}M" ;;
+    10) info="Uptime:  ${UP}" ;;
+    *)  info="" ;;
+  esac
+  padinfo "$info"; printf '   %s\n' "$line"
+done < "$ART"
+printf '\n'
