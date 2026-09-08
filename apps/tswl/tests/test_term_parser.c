@@ -127,6 +127,32 @@ static void test_cup_clamp(void)
     tswl_term_free(t);
 }
 
+
+/* Scrollback migra no resize (não zera) */
+static void test_scrollback_survives_resize(void)
+{
+    tswl_term *t = tswl_term_new(20, 5);
+    /* enche a tela e força scroll → linhas no ring */
+    for (int i = 0; i < 12; i++) {
+        char buf[32];
+        snprintf(buf, sizeof(buf), "L%02d\n", i);
+        feed(t, buf);
+    }
+    int before = 0;
+    /* força offset via API se back_count > 0 — não temos getter de count,
+     * então só confere que após resize o feed não crasha e cursor ok.
+     * Marca uma linha conhecida: após vários \\n o histórico tem "L00". */
+    tswl_term_resize(t, 30, 8);
+    expect(tswl_term_cols(t) == 30 && tswl_term_rows(t) == 8,
+           "resize 30x8 aplica dims");
+    /* scroll_view pro máximo: se histórico migrou, offset > 0 é possível */
+    tswl_term_scroll_view(t, 1000);
+    int off = tswl_term_scroll_offset(t);
+    expect(off > 0, "scrollback sobreviveu ao resize (offset > 0)");
+    tswl_term_free(t);
+    (void)before;
+}
+
 int main(void)
 {
     printf("tswl term parser unit tests\n");
@@ -138,6 +164,7 @@ int main(void)
     test_esc_cancels_csi();
     test_c1_and_csi_8bit();
     test_decckm();
+    test_scrollback_survives_resize();
     printf("\nsummary: %d passed, %d failed\n", passes, fails);
     return fails ? 1 : 0;
 }

@@ -594,17 +594,39 @@ found_used:;
                (size_t)copy_cols * sizeof(tswl_cell));
     }
 
+    /* Migra scrollback para o novo número de colunas (antes zerava —
+     * "scrollback não zerar no resize", AFAZERES fase TSWL). */
+    tswl_cell bb = blank_cell(t->cur_bg);
+    for (int i = 0; i < TSWL_SCROLLBACK * cols; i++)
+        new_back[i] = bb;
+    int new_count = t->back_count;
+    if (new_count > TSWL_SCROLLBACK)
+        new_count = TSWL_SCROLLBACK;
+    int new_head = 0;
+    int mig_cols = t->cols < cols ? t->cols : cols;
+    for (int i = 0; i < new_count; i++) {
+        int old_ring = (t->back_head - t->back_count + i + TSWL_SCROLLBACK)
+                       % TSWL_SCROLLBACK;
+        memcpy(&new_back[(size_t)new_head * cols],
+               &t->back[(size_t)old_ring * t->cols],
+               (size_t)mig_cols * sizeof(tswl_cell));
+        new_head = (new_head + 1) % TSWL_SCROLLBACK;
+    }
+    if (new_count == 0)
+        new_head = 0;
+
     free(t->grid); free(t->dirty); free(t->back);
     t->grid = new_grid;
     t->dirty = new_dirty;
     t->back = new_back;
     t->cols = cols;
     t->rows = rows;
-    t->back_head = 0;
-    t->back_count = 0;  /* histórico não migra entre resizes (simples e seguro) */
+    t->back_head = new_head;
+    t->back_count = new_count;
     t->scroll_top = 0;
     t->scroll_bot = rows - 1;
-    t->scroll_offset = 0;
+    if (t->scroll_offset > t->back_count)
+        t->scroll_offset = t->back_count;
     /* O cursor acompanha o conteúdo: a tela cresceu, o cursor fica onde
      * estava (conteúdo ficou no topo); a tela encolheu, o cursor sobe
      * junto (as primeiras linhas sumiram). Sem isso, o shell escreve na
