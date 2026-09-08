@@ -59,6 +59,18 @@ compromisso.
   de features/testes, modelo de permissões (`task`/`permissions`) como
   ideia de sandbox. Análise completa com o usuário em 2026-09-08.
 
+## Identidade visual do terminal (pedido do usuário, 2026-09-08)
+
+- **Neo em ASCII na abertura do terminal + `swlfetch`**: mascote
+  (`swl-ui/assets/mascot/cat.png`) convertido em arte ANSI colorida
+  (blocos, 72 col) + script que imprime arte + versão/kernel/mem/uptime
+  lidos do `/proc`. Protótipo testado pelo usuário em `/tmp` (fora do
+  repo); se aprovado, virar pacote "identidade do shell" (prompt
+  `SWL:~$`, help, clear com cabeçalho, spinner/progresso como funções
+  shell — tudo sem binário novo).
+- **Biblioteca C `swl_ui_*` e boot com OK**: futuro (quando houver 2+
+  apps precisando; boot mexe em área sensível).
+
 ## Processo
 
 - **Formato de "PR de documento"**: quando uma IA quiser mudar uma
