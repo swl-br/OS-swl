@@ -1,0 +1,11 @@
+module main
+
+fn main() -> i32
+    var x: i32 = 3
+    var p: *i32 = &x
+    var q: *i32 = &x
+    if p < q
+        return 1
+    end
+    return 0
+end

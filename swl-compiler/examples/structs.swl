@@ -1,0 +1,27 @@
+; structs.swl -- struct fields, while loop, nested function call
+module main
+
+struct Pair
+    a: i32
+    b: i32
+end
+
+fn sum_to(n: i32) -> i32
+    var i: i32 = 1
+    var s: i32 = 0
+    while i <= n
+        s = s + i
+        i = i + 1
+    end
+    return s
+end
+
+fn main() -> i32
+    var p: Pair
+    var t: i32
+    p.a = 3
+    p.b = 7
+    t = sum_to(p.a) + p.b
+    swl_print_i32(t)
+    return t
+end

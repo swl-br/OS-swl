@@ -1,0 +1,9 @@
+; hello.swl -- string literal + module-level const
+module main
+
+const MARK: i32 = 7
+
+fn main() -> i32
+    swl_print_str("SWL OS!\n")
+    return MARK
+end

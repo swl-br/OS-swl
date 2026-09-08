@@ -1,0 +1,22 @@
+; layout.swl -- struct fields keep sequential offsets (i8/i32/u8 mix)
+module main
+
+struct Mixed
+    c: i8
+    x: i32
+    y: u8
+end
+
+fn main() -> i32
+    var m: Mixed
+    var r: i32 = 0
+    m.c = 65
+    m.x = 1000
+    m.y = 200
+    if m.c == 65 and m.x == 1000 and m.y == 200
+        r = 2000
+    else
+        r = 1
+    end
+    return r - 1990
+end

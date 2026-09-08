@@ -1,0 +1,7 @@
+; a string literal longer than the buffer must be rejected
+module main
+
+fn main() -> i32
+    var msg: [u8, 3] = "abcd"
+    return 0
+end

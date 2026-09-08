@@ -1,0 +1,8 @@
+; bad_builtin_u32.swl -- i32 value passed where swl_print_u32 wants u32
+module main
+
+fn main() -> i32
+    var x: i32 = 7
+    swl_print_u32(x)
+    return 0
+end

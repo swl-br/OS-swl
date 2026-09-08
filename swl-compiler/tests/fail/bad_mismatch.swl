@@ -1,0 +1,7 @@
+module main
+
+fn main() -> i32
+    var a: i32 = 10
+    var b: i8 = 3
+    return a + b
+end

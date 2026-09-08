@@ -1,0 +1,16 @@
+; fib.swl -- recursion and forward references
+module main
+
+fn fib(n: i32) -> i32
+    if n < 2
+        return n
+    end
+    return fib(n - 1) + fib(n - 2)
+end
+
+fn main() -> i32
+    var n: i32 = 10
+    var r: i32 = fib(n)
+    swl_print_i32(r)
+    return r
+end

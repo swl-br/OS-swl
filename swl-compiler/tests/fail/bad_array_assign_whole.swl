@@ -1,0 +1,9 @@
+; whole-array assignment is not part of the MVP
+module main
+
+fn main() -> i32
+    var a: [i32, 4]
+    var b: [i32, 4]
+    b = a
+    return 0
+end

@@ -1,0 +1,17 @@
+; casts.swl -- explicit `as` conversions (truncation is allowed explicitly)
+module main
+
+fn main() -> i32
+    var u: u8 = 200
+    var a: i32 = u as i32
+    var c: i8 = -1
+    var w: u16 = c as u16
+    var t: i8 = a as i8
+    var big: u32 = c as u32
+
+    if a == 200 and w == 65535 and t == -56 and big == 0xFFFFFFFF
+        swl_print_i32(a)
+        return 100 + 1
+    end
+    return 1
+end

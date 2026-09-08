@@ -1,0 +1,26 @@
+; wide.swl -- i8/u8 arithmetic wraps at its own width (no silent widening)
+module main
+
+fn main() -> i32
+    var c: i8 = 100
+    var d: i8 = 100
+    var s: i32 = 0
+
+    if c + d > 0      ; 200 wraps to -56 as i8 -> false
+        s = s + 1
+    end
+
+    c = 100
+    d = 30
+    if c + d < 0      ; 130 wraps to -126 as i8 -> true
+        s = s + 2
+    end
+
+    var e: u8 = 200
+    var f: u8 = 100
+    if e + f == 44    ; 300 wraps to 44 as u8 -> true
+        s = s + 4
+    end
+
+    return s + 100
+end

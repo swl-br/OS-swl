@@ -1,0 +1,11 @@
+module main
+
+fn absval(x: i32) -> i32
+    if x < 0
+        return -x
+    end
+end
+
+fn main() -> i32
+    return 0
+end

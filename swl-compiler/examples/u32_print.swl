@@ -1,0 +1,14 @@
+; u32_print.swl -- unsigned printing and wraparound at the 32-bit edge
+module main
+
+fn main() -> i32
+    swl_print_u32(0 as u32)          ; 0
+    swl_print_u32(1 as u32)          ; 1
+    swl_print_u32(-1 as u32)         ; 4294967295 (0xffffffff)
+    swl_print_u32(-2 as u32)         ; 4294967294
+
+    var big: i32 = 65535
+    swl_print_u32((big as u32) * (big as u32))  ; 4294836225
+    swl_print_i32(big)               ; 65535 (signed path unchanged)
+    return 0
+end

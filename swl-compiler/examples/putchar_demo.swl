@@ -1,0 +1,18 @@
+module main
+
+fn main() -> i32
+    swl_putchar(72)
+    swl_putchar(101)
+    swl_putchar(108)
+    swl_putchar(108)
+    swl_putchar(111)
+    swl_putchar(32)
+    swl_putchar(87)
+    swl_putchar(79)
+    swl_putchar(82)
+    swl_putchar(76)
+    swl_putchar(68)
+    swl_putchar(33)
+    swl_putchar(10)
+    return 0
+end

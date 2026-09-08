@@ -1,0 +1,10 @@
+; pointer difference is not supported in this version
+module main
+fn main() -> i32
+    var x: i32 = 5
+    var y: i32 = 6
+    var p: *i32 = &x
+    var q: *i32 = &y
+    var d: i32 = p - q
+    return 0
+end

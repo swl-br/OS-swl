@@ -1,0 +1,15 @@
+; unsigned.swl -- u32 arithmetic and comparisons are unsigned
+module main
+
+fn main() -> i32
+    var a: u32 = 0xFFFFFFF0
+    var r: i32 = 0
+
+    ; 0xFFFFFFF0 + 10 = 0xFFFFFFFA, which is huge as an unsigned value
+    if a + 10 > 10
+        r = 2
+    else
+        r = 1
+    end
+    return r
+end

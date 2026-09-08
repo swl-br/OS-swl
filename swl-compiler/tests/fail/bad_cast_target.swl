@@ -1,0 +1,10 @@
+module main
+
+struct Point
+    x: i32
+end
+
+fn main() -> i32
+    var x: i32 = 3
+    return x as Point
+end

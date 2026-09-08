@@ -1,0 +1,19 @@
+; loops.swl -- break / continue
+module main
+
+fn main() -> i32
+    var i: i32 = 0
+    var acc: i32 = 0
+    while i < 10
+        i = i + 1
+        if i == 3
+            continue
+        end
+        if i == 7
+            break
+        end
+        acc = acc + i
+    end
+    swl_print_i32(acc)
+    return acc
+end

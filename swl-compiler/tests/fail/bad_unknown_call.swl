@@ -1,0 +1,5 @@
+module main
+
+fn main() -> i32
+    return nope(1, 2)
+end

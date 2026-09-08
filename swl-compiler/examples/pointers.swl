@@ -1,0 +1,19 @@
+; pointers.swl -- **i32, NULL (0), pointer comparisons
+module main
+
+fn main() -> i32
+    var x: i32 = 5
+    var p: *i32 = &x
+    var pp: **i32 = &p
+
+    **pp = 77
+    *p = *p + 1
+    if x == 78 and *p == 78 and **pp == 78
+        p = 0
+        if p == 0 and not (p != 0)
+            swl_print_i32(x)
+            return x
+        end
+    end
+    return -1
+end

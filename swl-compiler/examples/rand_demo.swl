@@ -1,0 +1,27 @@
+; rand_demo.swl -- seeded PRNG, memset8, strlen and time_s builtins
+module main
+
+fn main() -> i32
+    swl_srand(42)
+    var i: i32 = 0
+    while i < 5
+        swl_print_i32(swl_rand() % 100)
+        i = i + 1
+    end
+
+    var buf: [u8, 8]
+    swl_memset8(buf, 65, 5)   ; fill 5 bytes with 'A'
+    buf[5] = 10               ; newline
+    swl_print_str(buf)
+
+    swl_memset8(buf, 0, 8)
+    swl_print_i32(swl_strlen(buf))
+
+    var t: i32 = swl_time_s()
+    if t > 0
+        swl_print_i32(1)
+    else
+        swl_print_i32(0)
+    end
+    return 0
+end

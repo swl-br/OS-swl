@@ -1,0 +1,14 @@
+module main
+
+fn main() -> i32
+{
+    var a: i32 = 2
+    var b: i32 = 3
+    var r: i32 = add(a, b)
+    return r
+}
+
+fn add(x: i32, y: i32) -> i32
+{
+    return x + y
+}

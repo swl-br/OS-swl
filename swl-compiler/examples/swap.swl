@@ -1,0 +1,18 @@
+; swap.swl -- pointers: &var, *p read and *p = v write
+module main
+
+fn swap(a: *i32, b: *i32)
+    var t: i32 = 0
+    t = *a
+    *a = *b
+    *b = t
+end
+
+fn main() -> i32
+    var x: i32 = 10
+    var y: i32 = 20
+    swap(&x, &y)
+    swl_print_i32(x)
+    swl_print_i32(y)
+    return x
+end

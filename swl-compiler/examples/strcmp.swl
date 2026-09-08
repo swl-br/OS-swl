@@ -1,0 +1,13 @@
+; strcmp.swl -- string comparison helper demo
+module main
+
+fn main() -> i32
+    var x: [u8, 3] = "abc"
+    var y: [u8, 3] = "abc"
+    var z: [u8, 3] = "abd"
+    var eq: i32 = swl_strcmp(x, y)
+    var lt: i32 = swl_strcmp(x, z)
+    swl_print_i32(eq)
+    swl_print_i32(lt)
+    return 0
+end

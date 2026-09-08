@@ -1,0 +1,7 @@
+module main
+
+const BAD: u8 = 999
+
+fn main() -> i32
+    return 0
+end

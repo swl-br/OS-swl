@@ -1,0 +1,6 @@
+module bad
+fn main() -> i32
+{
+    var x: i32 = "not a number"
+    return x
+}

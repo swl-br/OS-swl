@@ -1,0 +1,22 @@
+; ops.swl -- signed division/remainder behave like C
+module main
+
+fn main() -> i32
+    var x: i32 = 0
+    var y: i32 = 0
+    var z: i32 = 0
+
+    x = 17 / 5        ; 3
+    x = x * 3         ; 9
+    x = x - 2         ; 7
+    x = x + 100       ; 107
+    x = x % 10        ; 7
+
+    y = -17 / 5       ; -3
+    z = -17 % 5       ; -2
+
+    swl_print_i32(x)
+    swl_print_i32(y)
+    swl_print_i32(z)
+    return x + 1
+end

@@ -1,0 +1,23 @@
+; arrays.swl -- local arrays, indexing, strlen demo
+module main
+
+fn main() -> i32
+    var a: [i32, 4]
+    a[0] = 10
+    a[1] = 20
+    a[2] = 30
+    a[3] = 40
+
+    var sum: i32 = 0
+    var i: i32 = 0
+    while i < 4
+        sum = sum + a[i]
+        i = i + 1
+    end
+
+    var msg: [u8, 13] = "hello, world"
+    var len: i32 = swl_strlen(msg)
+    swl_print_i32(sum)
+    swl_print_i32(len)
+    return sum + len
+end

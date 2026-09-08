@@ -1,0 +1,19 @@
+; bool.swl -- and / or / not
+module main
+
+fn main() -> i32
+    var a: i32 = 1
+    var b: i32 = 0
+    var r: i32 = 0
+
+    if a and not b
+        r = r + 1
+    end
+    if (a == 1) or (b == 1)
+        r = r + 10
+    end
+    if not (r == 11)
+        r = 0
+    end
+    return r
+end
