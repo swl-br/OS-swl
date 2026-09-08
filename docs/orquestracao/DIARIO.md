@@ -4,6 +4,15 @@ Registro diário das rodadas de orquestração. Entrada mais recente em
 cima. **Conferir sempre o repo real** — este diário é um índice, não a
 verdade de fonte.
 
+## 2026-09-08 — swlfetch + Neo no repo, tarefa V1 (admin)
+
+A pedido do usuário: `userland/swlfetch` (infos à esquerda, Neo à
+direita, cores via `printf`, coluna alinhada) + `userland/neo-face.txt`
+(arte ANSI 52 col do mascote) commitados; testado de outro CWD (arte
+resolve relativo ao script). Tarefa V1 criada (splash, prompt, help,
+versão nativa C/ASM). C1/C2/C3 já estavam no AFAZERES — confirmado ao
+usuário.
+
 ## 2026-09-08 — B3 locale integrado + dono da linguagem explicitado (admin)
 
 Fix do Grok p/ ressalva do B3 (`LC_ALL=C` + grep `Class(e)?:`) em
