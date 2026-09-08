@@ -4,6 +4,16 @@ Registro diário das rodadas de orquestração. Entrada mais recente em
 cima. **Conferir sempre o repo real** — este diário é um índice, não a
 verdade de fonte.
 
+## 2026-09-08 — lote do notebook reconciliado (admin)
+
+Quatro commits (`0ebcbd5` A7 parcial, `cec64cb4` A6 fullscreen,
+`cb8d42d` A6 conclusão + xdg-shell restaurado, `da21340` lote Claude:
+min 260x180, xdg via scanner, taskbar, wallpaper novo + swlcat) +
+branch `notebook` criada (= main). FF local + merge do WIP
+(term.c/desktop.c/swlwm.c) sem conflitos; regiões disjuntas, tudo
+preservado. B2 segue aberto (remoção do reset é do WIP local).
+AFAZERES: A6 concluída.
+
 ## 2026-09-08 — Lote Claude (min 260, build scanner, taskbar) + aviso resize (admin)
 
 Entrega do Claude (`revisao-de-entrada_LOCAL/`, sessão
