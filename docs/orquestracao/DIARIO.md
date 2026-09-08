@@ -4,6 +4,13 @@ Registro diário das rodadas de orquestração. Entrada mais recente em
 cima. **Conferir sempre o repo real** — este diário é um índice, não a
 verdade de fonte.
 
+## 2026-09-08 — parser unit tests + swlfetch reconciliados (admin)
+
+`origin/notebook`: testes unitários do parser tswl (13 casos, inclui
+R-14) + `userland/swlfetch` + `neo-face.txt` (V1 identidade visual).
+Merge limpo. Verificação do admin: suite rodada aqui → 13 passed;
+`bash -n` no swlfetch OK. Subido.
+
 ## 2026-09-08 — swlfetch + Neo no repo, tarefa V1 (admin)
 
 A pedido do usuário: `userland/swlfetch` (infos à esquerda, Neo à
