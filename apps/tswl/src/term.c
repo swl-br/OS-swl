@@ -34,6 +34,7 @@ struct tswl_term {
     uint16_t cur_fg, cur_bg;
     uint8_t cur_attrs;
     bool cursor_visible;
+    bool app_cursor;          /* DECCKM: CSI ? 1 h/l (R-14) */
     int scroll_top, scroll_bot;  /* região de scroll (linhas, inclusivo) */
 
     int scroll_offset;        /* scrollback visual (0 = fim) */
@@ -88,6 +89,7 @@ int tswl_term_rows(const tswl_term *t) { return t->rows; }
 int tswl_term_cursor_x(const tswl_term *t) { return t->cx; }
 int tswl_term_cursor_y(const tswl_term *t) { return t->cy; }
 bool tswl_term_cursor_visible(const tswl_term *t) { return t->cursor_visible; }
+bool tswl_term_app_cursor(const tswl_term *t) { return t->app_cursor; }
 int tswl_term_scroll_offset(const tswl_term *t) { return t->scroll_offset; }
 
 const tswl_cell *tswl_term_cell(const tswl_term *t, int col, int row) {
@@ -369,6 +371,9 @@ static void csi_dispatch(tswl_term *t, char final) {
             if (t->csi_private && t->csi_params[i] == 25) {
                 t->cursor_visible = set;
                 t->changed = true;
+            } else if (t->csi_private && t->csi_params[i] == 1) {
+                /* DECCKM: application cursor keys (R-14) */
+                t->app_cursor = set;
             } else if (t->csi_private && t->csi_params[i] == 1049) {
                 /* alt screen: primeira versão = limpa a tela e vai,
                  * sai restaurando cursor. Suficiente pro htop/top não

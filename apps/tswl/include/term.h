@@ -64,6 +64,9 @@ int tswl_term_cursor_x(const tswl_term *t);
 int tswl_term_cursor_y(const tswl_term *t);
 bool tswl_term_cursor_visible(const tswl_term *t);
 
+/* DECCKM: true = setas em application mode (ESC O A etc.). */
+bool tswl_term_app_cursor(const tswl_term *t);
+
 /* scrollback: quantas linhas para trás a tela está deslocada
  * (0 = posição normal, no fim do histórico). O renderer usa
  * tswl_term_scrollback_line(t, row) em vez de tswl_term_cell quando

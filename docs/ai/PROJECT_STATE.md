@@ -213,7 +213,7 @@ STATUS: FUNCIONAL NO BOOT REAL (2026-09-07).
   R-04/R-05/R-06/R-07 CORRIGIDOS (Grok, A2 — ver sessão
   das correções R-06),   R-09/R-10/R-11 CORRIGIDOS (Grok, A7),
   R-12 CORRIGIDO,
-  R-08 SUPERADO (histórico recomeçado). Em aberto: R-13, R-14.
+  R-08 SUPERADO (histórico recomeçado). Em aberto: R-13.
 
 ## Espaço de orquestração
 
