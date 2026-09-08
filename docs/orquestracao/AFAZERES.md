@@ -31,8 +31,9 @@ começar agora, sem depender de outra coisa. Owner = quem sugerimos pegar
 
 ## 🧭 PLANEJADAS (próximas fases — não bloqueadas por nada, só por ordem)
 
-1. **Linguagem SWL / compilador `swlc`** — fase inteira ainda não iniciada;
-   caminho técnico já definido no README (lexer → parser → AST → backend).
+1. **Linguagem SWL / compilador `swlc`** — MVP–M7 ENTREGUE em
+   2026-09-07 (notebook) e verificado pelo admin (46/46). Restos
+   possíveis em `swl-compiler/ROADMAP-V1-REMAINING.md`.
 2. **Restante do catálogo de apps** (SWLPad, file manager, SEBRE, config…)
    — hoje só placeholders no `desktop.c`; TSWL é o padrão de arquitetura.
 3. Instalar/integrar o TSWL de verdade no catálogo (PATH + instalação),

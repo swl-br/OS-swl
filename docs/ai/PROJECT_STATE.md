@@ -155,7 +155,16 @@ só engana visualmente por rodar fora do nosso compositor. Desde
 
 ## Linguagem SWL / Compilador swlc
 
-STATUS: NÃO INICIADO.
+STATUS: MVP–M7 ENTREGUE E VERIFICADO (2026-09-07, notebook; conferido
+de forma independente pelo admin nesta máquina: `make -C swl-compiler`
++ `make -C swl-compiler test` → **46 passed, 0 failed**).
+
+- `swl-compiler/`: frontend + codegen em C, runtime em Assembly
+  (`src/swlrt.asm`), backend emite NASM x86 32-bit (o mesmo do boot).
+  `swlc <arq>.swl` → `.asm` → `nasm -f elf32` → `ld -m elf_i386` →
+  executa; 19 exemplos + 27 rejeições. Ver `swl-compiler/README.md`,
+  `NOTES-V1-SCOPE.md`, `ROADMAP-V1-REMAINING.md` e a sessão
+  `2026-09-07-buffy-swlc-m7-v1-final.md`.
 
 ## Aplicativos
 

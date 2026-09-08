@@ -4,6 +4,14 @@ Registro diário das rodadas de orquestração. Entrada mais recente em
 cima. **Conferir sempre o repo real** — este diário é um índice, não a
 verdade de fonte.
 
+## 2026-09-08 — swlc v1 reconciliado + verificado (admin)
+
+Notebook subiu `swl-compiler/` (MVP–M7) + sessão de fechamento.
+Admin: FF limpo, WIP local intacto, `make -C swl-compiler test`
+rodado aqui → **46 passed, 0 failed** (entrega confirmada de forma
+independente). Docs: `PROJECT_STATE` (swlc) + `AFAZERES` (fase 1
+entregue, ver `ROADMAP-V1-REMAINING.md` pros restos).
+
 ## 2026-09-08 — Notebook reconciliado (admin)
 
 Usuário subiu via web o trabalho do notebook (`origin/main` 93071b7 +
