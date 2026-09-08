@@ -4,14 +4,31 @@ Registro diário das rodadas de orquestração. Entrada mais recente em
 cima. **Conferir sempre o repo real** — este diário é um índice, não a
 verdade de fonte.
 
+## 2026-09-08 — R-11 integrada, A7 concluída (admin)
+
+Entrega do Grok em `revisao-de-entrada_LOCAL/r11-files/` (`term.c` +
+sessão). Verificação no código: ESC em ST_CSI cancela antes de tudo
+(reentrada limpa via memset — sem stale); C1 antes do caminho UTF-8.
+Harness ASan/UBSan comportamental: cancel sobe 1, `0x9B` com/sem
+params, C1 sem glyph/cursor; regressão R-01/R-03 limpa; build sem
+warnings. Aprovado pelo usuário e integrado: R-11 → CORRIGIDO, A7
+CONCLUÍDA (último aberto dela).
+
+## 2026-09-08 — Primeiro programa SWL rodando na máquina do usuário (admin)
+
+Jogo par/ímpar (`swl-compiler/examples/parimpar-demo.swl`, modo demo com
+`while` por causa do C2) compilado e executado pelo usuário na própria
+máquina: 6 rodadas, 3-3, campeão PC (desempate do `else`). Primeira
+validação ponta a ponta da linguagem fora do sandbox do orquestrador.
+
 ## 2026-09-08 — lote do notebook reconciliado (admin)
 
 Quatro commits (`0ebcbd5` A7 parcial, `cec64cb4` A6 fullscreen,
 `cb8d42d` A6 conclusão + xdg-shell restaurado, `da21340` lote Claude:
 min 260x180, xdg via scanner, taskbar, wallpaper novo + swlcat) +
-branch `notebook` criada (= main). FF local + merge do WIP
-(term.c/desktop.c/swlwm.c) sem conflitos; regiões disjuntas, tudo
-preservado. B2 segue aberto (remoção do reset é do WIP local).
+branch `notebook` criada (= main). WIP local não-aprovado
+(term.c/desktop.c/swlwm.c) descartado por ordem do usuário (backup em
+/tmp); B2 continua valendo pelo código do repo (reset presente).
 AFAZERES: A6 concluída.
 
 ## 2026-09-08 — Lote Claude (min 260, build scanner, taskbar) + aviso resize (admin)
