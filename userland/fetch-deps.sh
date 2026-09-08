@@ -68,8 +68,10 @@ assert_elf32() {
     fi
     info=""
     if command -v readelf >/dev/null 2>&1; then
-        info="$(readelf -h "$path" 2>/dev/null || true)"
-        if echo "$info" | grep -q 'Class:[[:space:]]*ELF32'; then
+        # LC_ALL=C: readelf pt_BR imprime "Classe:" em vez de "Class:"
+        # (B3 ressalva — rebuild redundante em locale não-C).
+        info="$(LC_ALL=C readelf -h "$path" 2>/dev/null || true)"
+        if echo "$info" | grep -qE 'Class(e)?:[[:space:]]*ELF32'; then
             echo "    $label: ELF32 ok ($(basename "$path"))"
             return 0
         fi
@@ -96,7 +98,7 @@ ensure_elf32_or_rebuild() {
         return 1
     fi
     if command -v readelf >/dev/null 2>&1; then
-        if readelf -h "$path" 2>/dev/null | grep -q 'Class:[[:space:]]*ELF32'; then
+        if LC_ALL=C readelf -h "$path" 2>/dev/null | grep -qE 'Class(e)?:[[:space:]]*ELF32'; then
             echo "    $label já presente e é ELF32 — reutilizando"
             return 0
         fi

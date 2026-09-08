@@ -4,6 +4,26 @@ Registro diário das rodadas de orquestração. Entrada mais recente em
 cima. **Conferir sempre o repo real** — este diário é um índice, não a
 verdade de fonte.
 
+## 2026-09-08 — B3 locale integrado + dono da linguagem explicitado (admin)
+
+Fix do Grok p/ ressalva do B3 (`LC_ALL=C` + grep `Class(e)?:`) em
+`revisao-de-entrada_LOCAL/b3-locale-files.tar.gz`: diff mínimo (2
+trechos), funções retestadas isoladamente (caso que falhava agora
+reutiliza), sintaxe OK. Aprovado pelo usuário e integrado.
+
+Docs: a pedido do usuário, explicitado que **a linguagem é área ativa
+do FreeBuffy** (`PROJECT_STATE.md` seção swlc + `AFAZERES.md` fase 1 +
+C2/C3 com dono; DEC-009 já proibia patch externo). Ajuste fino:
+limitação `for sem var` removida (v2 já tem) + C3 listado.
+
+## 2026-09-08 — R-13 integrada, catálogo R encerrado (admin)
+
+Entrega do Grok em `revisao-de-entrada_LOCAL/r13-files/` (`swlwm.c` +
+sessão): guarda NULL de 5 linhas em `desktop_toplevel_at`. Verificação:
+diff só a guarda; ambos os chamadores NULL-safe; build OK sem warnings
+novos. Aprovado pelo usuário e integrado: R-13 → CORRIGIDO.
+**R-01 a R-14 todos encerrados.**
+
 ## 2026-09-08 — R-14 reconciliado (admin)
 
 `origin/notebook`: DECCKM + F1-F12 (Grok, com o rebase pedido no

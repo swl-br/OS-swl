@@ -160,6 +160,10 @@ só engana visualmente por rodar fora do nosso compositor. Desde
 
 STATUS: FUNCIONAL — v2 completa (2026-09-08).
 
+**Área ativa: FreeBuffy** (DEC-009 — dono da linguagem; outras IAs não
+integram código em `swl-compiler/`, só guardam contribuição. Orquestrador
+só verifica com build/teste, não implementa.)
+
 Compilador C → NASM x86-32 com runtime em Assembly puro. Pipeline:
 `swlc <arquivo>.swl` → `.asm` → NASM → `ld -m elf_i386` → executável.
 
@@ -183,8 +187,9 @@ Compilador C → NASM x86-32 com runtime em Assembly puro. Pipeline:
 
 ### Limitações conhecidas
 - Compilador de um único arquivo; sem múltiplas unidades.
-- Runtime 32-bit; sem GC, `for` sem `var`, `switch`.
+- Runtime 32-bit; sem GC, sem `switch`.
 - Structs não são valores completos.
+- Sem leitura de teclado ainda (C3, área do Buffy).
 
 ### Links
 - `swl-compiler/README.md` — visão geral.
@@ -213,7 +218,8 @@ STATUS: FUNCIONAL NO BOOT REAL (2026-09-07).
   R-04/R-05/R-06/R-07 CORRIGIDOS (Grok, A2 — ver sessão
   das correções R-06),   R-09/R-10/R-11 CORRIGIDOS (Grok, A7),
   R-12 CORRIGIDO,
-  R-08 SUPERADO (histórico recomeçado). Em aberto: R-13.
+  R-08 SUPERADO (histórico recomeçado). Catálogo R-01..R-14
+  encerrado em 2026-09-08 (todos CORRIGIDOS/SUPERADO).
 
 ## Espaço de orquestração
 

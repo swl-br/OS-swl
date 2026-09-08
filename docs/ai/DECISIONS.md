@@ -165,3 +165,20 @@ Motivo: a documentação anterior tinha referências a arquivos que não existem
 
 Consequência: novas IAs devem ler o README reescrito(seções 20-22, e seguir o fluxo de mapeamento → estado do Git → leitura do relevante → verificação → alteração → teste → documentação (se significativo) → commit. O `PROJECT_STATE.md` continua sendo o registro do estado real do projeto(com a data da última atualização); o `DECISIONS.md` continua sendo o registro de decisões arquiteturais(ACCEPTED / SUPERSEDED / PROPOSED).
 
+---
+## DEC-009 — Não-interferência: área ativa de uma IA não recebe patch de outra
+
+Status: ACCEPTED
+
+Decisão: enquanto uma IA estiver trabalhando ativamente numa área (ex.:
+Buffy na linguagem `swl-compiler`), nenhuma outra IA integra código
+naquela área — mesmo com fix pronto e verificado. Contribuição externa
+fica **guardada** (pasta de entrada + tarefa no AFAZERES com dono
+marcado) até o dono concluir ou pedir ajuda (DEC-007).
+
+Motivo: regra de organização do usuário (2026-09-08) — o Buffy já
+construía o C2 ("off") e mais itens da linguagem quando o Grok entregou
+fix equivalente. Subir por cima seria atropelar trabalho em curso e
+gerar retrabalho/conflito. Caso concreto: C2 verificado e APROVADO
+tecnicamente, integração SUSPENSA aguardando o Buffy.
+
