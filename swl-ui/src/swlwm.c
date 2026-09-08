@@ -126,6 +126,18 @@ struct tinywl_server {
 	double desktop_drag_press_x, desktop_drag_press_y;
 	int desktop_drag_icon_orig_x, desktop_drag_icon_orig_y;
 
+	/* Throttle do redesenho da decoração durante resize interativo — ver
+	 * process_cursor_resize()/output_frame(). Sem isso, swl_decoration_
+	 * resize() (realoca buffer + redesenha tudo com Cairo/Pango) roda a
+	 * cada evento de motion do mouse, que pode disparar muito mais rápido
+	 * que a taxa de frame real — o trabalho de redesenho vira fila e a
+	 * decoração visualmente "atrasa" alguns quadros atrás do cursor.
+	 * Aqui só marcamos "precisa redesenhar com esta largura" no motion, e
+	 * o redesenho de verdade acontece no máximo uma vez por frame, dentro
+	 * de output_frame(), logo antes do commit. */
+	bool resize_deco_dirty;
+	int resize_deco_pending_width;
+
 	struct wlr_scene_buffer *background;
 	int screen_width, screen_height;
 	const char *background_path; /* NULL = usa o fallback procedural (grade) */
@@ -622,6 +634,27 @@ static void process_cursor_resize(struct tinywl_server *server, uint32_t time) {
 		}
 	}
 
+	/* Tamanho mínimo de verdade — antes disso, o único limite era "não
+	 * inverter as bordas" (mínimo de 1px), o que deixa a janela encolher
+	 * até sumir visualmente. Aplica o mínimo a partir da borda que está
+	 * sendo arrastada, pra não fazer a janela "pular" de posição quando
+	 * bate no limite (se está arrastando a borda esquerda, é o lado
+	 * esquerdo que para; a borda direita nunca se mexe nesse caso). */
+	if (new_right - new_left < SWL_MIN_WINDOW_WIDTH) {
+		if (server->resize_edges & WLR_EDGE_LEFT) {
+			new_left = new_right - SWL_MIN_WINDOW_WIDTH;
+		} else {
+			new_right = new_left + SWL_MIN_WINDOW_WIDTH;
+		}
+	}
+	if (new_bottom - new_top < SWL_MIN_WINDOW_HEIGHT) {
+		if (server->resize_edges & WLR_EDGE_TOP) {
+			new_top = new_bottom - SWL_MIN_WINDOW_HEIGHT;
+		} else {
+			new_bottom = new_top + SWL_MIN_WINDOW_HEIGHT;
+		}
+	}
+
 	struct wlr_box geo_box;
 	wlr_xdg_surface_get_geometry(toplevel->xdg_toplevel->base, &geo_box);
 	wlr_scene_node_set_position(&toplevel->scene_tree->node,
@@ -631,7 +664,10 @@ static void process_cursor_resize(struct tinywl_server *server, uint32_t time) {
 	int new_height = new_bottom - new_top;
 	wlr_xdg_toplevel_set_size(toplevel->xdg_toplevel, new_width, new_height);
 	if (toplevel->decoration && new_width > 0) {
-		swl_decoration_resize(toplevel->decoration, new_width);
+		/* NÃO redesenha aqui — só marca. Ver comentário do campo
+		 * resize_deco_dirty no struct do servidor. */
+		server->resize_deco_dirty = true;
+		server->resize_deco_pending_width = new_width;
 	}
 }
 
@@ -827,6 +863,19 @@ static void server_cursor_button(struct wl_listener *listener, void *data) {
 					}
 				}
 			}
+		}
+		/* Descarrega o redesenho pendente da decoração (ver
+		 * resize_deco_dirty) ANTES de soltar server->grabbed_toplevel —
+		 * reset_cursor_mode() zera esse ponteiro, e output_frame() usa
+		 * exatamente ele pra saber qual decoração redesenhar. Sem isso,
+		 * soltar o botão entre o último motion e o próximo frame perderia
+		 * o redesenho final pra sempre (decoração ficaria com a largura
+		 * de alguns instantes atrás até outra interação acontecer). */
+		if (server->resize_deco_dirty && server->grabbed_toplevel &&
+				server->grabbed_toplevel->decoration) {
+			swl_decoration_resize(server->grabbed_toplevel->decoration,
+				server->resize_deco_pending_width);
+			server->resize_deco_dirty = false;
 		}
 		/* If you released any buttons, we exit interactive move/resize mode. */
 		reset_cursor_mode(server);
@@ -1131,6 +1180,17 @@ static void output_frame(struct wl_listener *listener, void *data) {
 	 * generally at the output's refresh rate (e.g. 60Hz). */
 	struct tinywl_output *output = wl_container_of(listener, output, frame);
 	struct wlr_scene *scene = output->server->scene;
+
+	/* Redesenho da decoração pendente de um resize interativo (ver
+	 * process_cursor_resize) — no máximo uma vez por frame, aqui, nunca
+	 * síncrono por evento de motion. */
+	struct tinywl_server *server = output->server;
+	if (server->resize_deco_dirty && server->grabbed_toplevel &&
+			server->grabbed_toplevel->decoration) {
+		swl_decoration_resize(server->grabbed_toplevel->decoration,
+			server->resize_deco_pending_width);
+		server->resize_deco_dirty = false;
+	}
 
 	struct wlr_scene_output *scene_output = wlr_scene_get_scene_output(
 		scene, output->wlr_output);

@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -431,6 +432,80 @@ bool swl_desktop_has_hidden_icons(struct swl_desktop *desktop) {
 		}
 	}
 	return false;
+}
+
+/* strstr case-insensitive simples (evita depender de strcasestr, que é
+ * extensão GNU — não vale a pena puxar _GNU_SOURCE só por causa disso). */
+static bool ci_contains(const char *haystack, const char *needle) {
+	if (!haystack || !needle || !needle[0]) {
+		return false;
+	}
+	size_t hn = strlen(haystack), nn = strlen(needle);
+	for (size_t i = 0; i + nn <= hn; i++) {
+		size_t j = 0;
+		for (; j < nn; j++) {
+			if (tolower((unsigned char)haystack[i + j]) !=
+					tolower((unsigned char)needle[j])) {
+				break;
+			}
+		}
+		if (j == nn) {
+			return true;
+		}
+	}
+	return false;
+}
+
+/* Glifo genérico de "janela" — usado quando o título não bate com
+ * nenhum app do catálogo (ex.: apps de terceiros no futuro, ou
+ * clientes de teste como `foot`). Um retângulo simples com uma barra
+ * de título, lembrando uma janela. */
+static void glyph_generic_window(cairo_t *cr, double s) {
+	cairo_rectangle(cr, s * 0.08, s * 0.14, s * 0.84, s * 0.72);
+	cairo_move_to(cr, s * 0.08, s * 0.32);
+	cairo_line_to(cr, s * 0.92, s * 0.32);
+	cairo_stroke(cr);
+}
+
+void swl_desktop_draw_glyph_for_title(cairo_t *cr, const char *title,
+		double x, double y, double size) {
+	enum swl_icon_kind kind = SWL_ICON_MONITOR;
+	bool matched = false;
+
+	for (size_t i = 0; i < N_DEFAULT_ICONS && !matched; i++) {
+		if (ci_contains(title, default_icons[i].label)) {
+			kind = default_icons[i].kind;
+			matched = true;
+		}
+	}
+
+	cairo_save(cr);
+	cairo_translate(cr, x, y);
+	cairo_set_line_width(cr, 1.3);
+
+	if (!matched) {
+		SWL_SET(cr, SWL_COL_TEXT_DIM);
+		glyph_generic_window(cr, size);
+		cairo_restore(cr);
+		return;
+	}
+
+	switch (kind) {
+	case SWL_ICON_TERMINAL: SWL_SET(cr, SWL_COL_ACCENT_CYAN);   glyph_terminal(cr, size); break;
+	case SWL_ICON_EDITOR:   SWL_SET(cr, SWL_COL_TEXT);          glyph_editor(cr, size);   break;
+	case SWL_ICON_FOLDER:   SWL_SET(cr, SWL_COL_ACCENT_GOLD);   glyph_folder(cr, size);   break;
+	case SWL_ICON_BOOK:     SWL_SET(cr, SWL_COL_ACCENT_PURPLE); glyph_book(cr, size);     break;
+	case SWL_ICON_CONFIG:   SWL_SET(cr, SWL_COL_TEXT_DIM);      glyph_config(cr, size);   break;
+	case SWL_ICON_CHIP:     SWL_SET(cr, SWL_COL_ACCENT_CYAN);   glyph_chip(cr, size);     break;
+	case SWL_ICON_NETWORK:  SWL_SET(cr, SWL_COL_ACCENT_CYAN);   glyph_network(cr, size);  break;
+	case SWL_ICON_MONITOR:  SWL_SET(cr, SWL_COL_TEXT);          glyph_monitor(cr, size);  break;
+	case SWL_ICON_MEDIA:    SWL_SET(cr, SWL_COL_ACCENT_PURPLE); glyph_media(cr, size);    break;
+	case SWL_ICON_IMAGE:    SWL_SET(cr, SWL_COL_TEXT);          glyph_image(cr, size);    break;
+	case SWL_ICON_GAME:     SWL_SET(cr, SWL_COL_ACCENT_GOLD);   glyph_game(cr, size);     break;
+	case SWL_ICON_ARCHIVE:  SWL_SET(cr, SWL_COL_TEXT_DIM);      glyph_archive(cr, size);  break;
+	case SWL_ICON_TRASH:    SWL_SET(cr, SWL_COL_TEXT_DIM);      glyph_trash(cr, size);    break;
+	}
+	cairo_restore(cr);
 }
 
 int swl_desktop_app_count(void) {

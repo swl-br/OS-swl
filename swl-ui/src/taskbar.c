@@ -1,9 +1,11 @@
 #define _POSIX_C_SOURCE 200809L
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include "taskbar.h"
+#include "desktop.h"
 #include "swl_buffer.h"
 #include "swl_draw_util.h"
 #include "theme.h"
@@ -12,6 +14,63 @@
 #define SWL_TASKBAR_MENU_W  90
 #define SWL_TASKBAR_WIN_W   170
 #define SWL_TASKBAR_GAP     6
+#define SWL_TASKBAR_ICON_SZ 16
+
+/* --- ícones da bandeja do sistema (vetoriais, tamanho fixo ~16px) ---
+ * Puramente decorativos por enquanto — não tem fonte real de volume/wifi/
+ * bateria ligada ainda (não existe backend de áudio/rede/energia no
+ * projeto). Mesma natureza do que já era (texto ")))" / "NET" também
+ * era só decorativo) — só troca a forma de mostrar isso. */
+static void icon_volume(cairo_t *cr, double x, double y, double s) {
+	cairo_save(cr);
+	cairo_translate(cr, x, y);
+	cairo_set_line_width(cr, 1.3);
+	/* corpo do alto-falante (trapézio) */
+	cairo_move_to(cr, 0, s * 0.35);
+	cairo_line_to(cr, s * 0.30, s * 0.35);
+	cairo_line_to(cr, s * 0.55, s * 0.10);
+	cairo_line_to(cr, s * 0.55, s * 0.90);
+	cairo_line_to(cr, s * 0.30, s * 0.65);
+	cairo_line_to(cr, 0, s * 0.65);
+	cairo_close_path(cr);
+	cairo_stroke(cr);
+	/* ondas de som */
+	cairo_arc(cr, s * 0.30, s * 0.5, s * 0.42, -M_PI / 4, M_PI / 4);
+	cairo_stroke(cr);
+	cairo_restore(cr);
+}
+
+static void icon_wifi(cairo_t *cr, double x, double y, double s) {
+	cairo_save(cr);
+	cairo_translate(cr, x, y + s * 0.9);
+	cairo_set_line_width(cr, 1.3);
+	cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
+	for (int i = 0; i < 3; i++) {
+		double bw = s * 0.16;
+		double bh = s * (0.28 + i * 0.30);
+		double bx = i * (bw + s * 0.08);
+		cairo_move_to(cr, bx, 0);
+		cairo_line_to(cr, bx, -bh);
+		cairo_stroke(cr);
+	}
+	cairo_restore(cr);
+}
+
+static void icon_battery(cairo_t *cr, double x, double y, double s) {
+	cairo_save(cr);
+	cairo_translate(cr, x, y);
+	cairo_set_line_width(cr, 1.2);
+	double w = s * 0.9, h = s * 0.55, top = (s - h) / 2.0;
+	cairo_rectangle(cr, 0, top, w, h);
+	cairo_stroke(cr);
+	/* terminal (+) do lado direito */
+	cairo_rectangle(cr, w, top + h * 0.25, s * 0.08, h * 0.5);
+	cairo_fill(cr);
+	/* nível — decorativo, ~80% */
+	cairo_rectangle(cr, s * 0.08, top + s * 0.08, (w - s * 0.16) * 0.8, h - s * 0.16);
+	cairo_fill(cr);
+	cairo_restore(cr);
+}
 
 static void taskbar_draw(cairo_t *cr, int width, int height, void *data) {
 	struct swl_taskbar *tb = data;
@@ -41,10 +100,14 @@ static void taskbar_draw(cairo_t *cr, int width, int height, void *data) {
 		cairo_rectangle(cr, x, 4, w, height - 8);
 		cairo_stroke(cr);
 
+		const char *title = tb->titles[i] ? tb->titles[i] : "janela";
+		swl_desktop_draw_glyph_for_title(cr, title,
+			x + 8, height / 2.0 - SWL_TASKBAR_ICON_SZ / 2.0, SWL_TASKBAR_ICON_SZ);
+
 		SWL_SET(cr, focused ? SWL_COL_TEXT : SWL_COL_TEXT_DIM);
 		char label[48];
-		snprintf(label, sizeof(label), "%.20s", tb->titles[i] ? tb->titles[i] : "janela");
-		swl_draw_text(cr, label, x + 10, cy, 10, SWL_FONT_MONO, false);
+		snprintf(label, sizeof(label), "%.20s", title);
+		swl_draw_text(cr, label, x + 8 + SWL_TASKBAR_ICON_SZ + 6, cy, 10, SWL_FONT_MONO, false);
 
 		tb->win_btn_x[i] = (int)x;
 		tb->win_btn_w[i] = (int)w;
@@ -52,14 +115,17 @@ static void taskbar_draw(cairo_t *cr, int width, int height, void *data) {
 		x += w + SWL_TASKBAR_GAP;
 	}
 
-	/* Bandeja do sistema — placeholders visuais (volume/rede) */
+	/* Bandeja do sistema — ícones vetoriais (ver nota acima: ainda
+	 * decorativos, sem backend real de áudio/rede/energia por trás). */
 	double tray_x = width - 230;
 	if (tray_x < x + 20) {
 		tray_x = x + 20;
 	}
 	SWL_SET(cr, SWL_COL_TEXT_DIM);
-	swl_draw_text(cr, ")))", tray_x, cy, 10, SWL_FONT_MONO, false);
-	swl_draw_text(cr, "NET", tray_x + 60, cy, 10, SWL_FONT_MONO, false);
+	double tray_icon_y = height / 2.0 - 8;
+	icon_volume(cr, tray_x, tray_icon_y, 16);
+	icon_wifi(cr, tray_x + 30, tray_icon_y, 16);
+	icon_battery(cr, tray_x + 60, tray_icon_y, 16);
 
 	/* Relógio */
 	time_t now = time(NULL);
