@@ -4,6 +4,19 @@ Registro diário das rodadas de orquestração. Entrada mais recente em
 cima. **Conferir sempre o repo real** — este diário é um índice, não a
 verdade de fonte.
 
+## 2026-09-08 — Revisão geral + docs sincronizadas (admin)
+
+Revisão geral do estado real (repo é a fonte de verdade) e atualização
+das docs que estavam defasadas — nenhum código alterado:
+
+- `PROJECT_STATE.md`: "Revisões/QA" reflete R-01..R-07 e R-12
+  corrigidos; "Em investigação" passa B1 (ícones PNG) e B2 (reset do
+  cursor) para **encerrados no código atual**; árvore do swl-ui ganhou
+  `context_menu.c/h`; próximos passos GUI atualizados (ícones saem).
+- `AFAZERES.md`: B1/B2 → encerrados no código; A8 → CONCLUÍDA (R-12
+  CORRIGIDO desde 09-05, README conferido); R-06 registrado como em
+  curso (Grok) fechando o A2 parcial.
+
 ## 2026-09-08 — A2 (swl-ui bugs médios) parcial corrigida e verificada (admin)
 
 Usuário colocou em `revisao-de-entrada_LOCAL/swl-ui-A2-files/` a correção

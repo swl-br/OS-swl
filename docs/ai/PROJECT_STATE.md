@@ -1,8 +1,8 @@
 # PROJECT_STATE — SWL OS
 
-Última atualização: 2026-09-08 (orquestrador — boot GUI real funcional,
-recuperação da pasta, push no `main`; ver
-`docs/ai/sessions/2026-09-07-recuperacao-pasta-boot-gui.md`)
+Última atualização: 2026-09-08 (orquestrador — A1 e A2 parciais
+integradas, revisão geral; ver `docs/orquestracao/DIARIO.md` e
+`docs/revisao/2026-09-05-revisao-01.md`)
 
 ## Repositório (higiene)
 
@@ -71,11 +71,14 @@ O que funciona (testado e confirmado em 2026-09-07):
   visual; arrastar título desmaximiza.
 - Menu iniciar, maximizar/minimizar, fechar pela decoração (herdados).
 
-Em investigação (outras IAs, 2026-09-07):
-- Ícones PNG do desktop caem no glifo vetorial (forma difere do asset;
-  wallpaper carrega — falha específica dos ícones).
-- Cursor de resize "gruda" dentro da janela se o reset pra `default`
-  for removido (fix aplicado e confirmado pelo usuário; ver sessão).
+Em investigação (2026-09-08):
+- Ícones PNG do desktop: IMPLEMENTADOS (2026-09-08, Claude) —
+  `desktop.c` com `resolve_icon_path()` + 13 PNGs em
+  `swl-ui/assets/icons/` (path inglês, DEC-005). Ver sessão
+  `2026-09-08-claude-assets-visuais.md`. B1 encerrado no código atual.
+- Reset do cursor de resize: presente em `swlwm.c`
+  (`else → "default"`, processo_cursor_motion) — B2 encerrado no código
+  atual; não remover de novo.
 - 1 segfault em libxkbcommon aos ~60 s de uso, sem reprodução até aqui.
 
 Base adotada: `swl-ui/` — compositor Wayland baseado em wlroots 0.17.1,
@@ -90,6 +93,7 @@ swl-ui/src/
 ├── taskbar.c/h          (barra inferior: janelas abertas)
 ├── decorations.c/h      (barra de título das janelas, botões)
 ├── desktop.c/h          (ícones da área de trabalho + catálogo de apps)
+├── context_menu.c/h     (menu de contexto do desktop: abrir/remover)
 ├── menu.c/h             (menu iniciar — popup acima da taskbar)
 ├── swl_buffer.c/h       (integração cairo → wlr_scene_buffer)
 └── swl_draw_util.c/h    (utilitários de desenho)
@@ -206,8 +210,10 @@ STATUS: FUNCIONAL NO BOOT REAL (2026-09-07).
 - Revisão de código estática periódica feita pelos orquestradores.
   Achados ficam em `docs/revisao/` com responsáveis e status.
   Ver `docs/revisao/2026-09-05-revisao-01.md` (R-01 a R-14).
-  Críticos atuais: corrupção de memória e null deref no parser/startup
-  do TSWL (R-01 a R-03), abertos — pedido de correção à OpenHands.
+  Status atual (2026-09-08): R-01/R-02/R-03 CORRIGIDOS (Grok, A1),
+  R-04/R-05/R-07 CORRIGIDOS (Grok, A2 parcial), R-12 CORRIGIDO,
+  R-08 SUPERADO (histórico recomeçado). Em aberto: R-06 (TSWL shm,
+  Grok em curso), R-09/R-10/R-11 (A7 leveza), R-13, R-14.
 
 ## Espaço de orquestração
 
@@ -216,6 +222,8 @@ STATUS: FUNCIONAL NO BOOT REAL (2026-09-07).
   Área exclusiva dos orquestradores (admin + GPT); implementação não edita.
 
 ## Próximos passos sugeridos (GUI)
-1. Ícones PNG do desktop (caem no glifo vetorial — em investigação).
-2. Readaptar janelas maximizadas quando o output redimensiona.
-3. Fullscreen real (protocolo já responde, falta lógica).
+1. Readaptar janelas maximizadas quando o output redimensiona (A5).
+2. Fullscreen real (protocolo já responde, falta lógica — A6).
+3. R-06 (TSWL shm double-buffer) — Grok em curso; A2 fecha quando subir.
+4. Resto do catálogo de apps (hoje só TSWL/SWLPAD reais; os outros são
+   placeholders) e as fases longas do roadmap.

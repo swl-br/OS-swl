@@ -10,15 +10,15 @@ começar agora, sem depender de outra coisa. Owner = quem sugerimos pegar
 |---|---|---|---|
 | A1 | **Corrigir bugs críticos do TSWL** (corrupção de memória via `CSI r`; null deref do `xkb_ctx` no startup; CSI sem clamp → DoS). Ver `docs/revisao/2026-09-05-revisao-01.md` R-01/R-02/R-03 | CONCLUÍDA em 2026-09-08: Grok corrigiu (sessão no repo), orquestrador verificou com build + harness ASan/UBSan (antigo crashava, novo passa). R-01/R-02/R-03 → CORRIGIDO. | — |
 | A2 | **Corrigir bugs médios do swl-ui** (hit-test de decoração com minimizada/montada; foco da taskbar após minimizar/fechar; `read_cpu_usage` com variável não inicializada; `mem_available` ausente). Ver R-04/R-05/R-06/R-07 | PARCIAL em 2026-09-08: Grok corrigiu R-04/R-05/R-07 (sessão no repo; orquestrador verificou com build + harness; R-04/05/07 → CORRIGIDO). **Falta R-06** (`apps/tswl` shm double-buffer — fora do swl-ui; ver R-06). | — |
-| B1 | **Ícones PNG do desktop caem no glifo vetorial** (confirmado por IoU 0,04; wallpaper carrega — falha específica). Em investigação por outra IA (paths + `term.c`/resize). Ver `docs/ai/sessions/2026-09-07-recuperacao-pasta-boot-gui.md` | Regressão visual central: desktop deveria mostrar os 13 PNGs. | Quem está em `swl-ui/src/desktop.c` |
-| B2 | **REGRESSÃO SINALIZADA: reset do cursor de resize removido** (`swlwm.c`, bloco `else → "default"`). Sem ele a setinha "gruda" dentro da janela (bug confirmado pelo usuário em 2026-09-07 e corrigido; remoção reabre). Reaplicar antes de fechar. | Reabre bug validado pelo usuário. | Quem está em `swl-ui/src/swlwm.c` |
+| B1 | **Ícones PNG do desktop caem no glifo vetorial** — caso encerrado no código atual (2026-09-08, Claude): `desktop.c` tem `resolve_icon_path()` + 13 PNGs em `swl-ui/assets/icons/` (ver sessão `2026-09-08-claude-assets-visuais.md`). | — | — |
+| B2 | **Reset do cursor de resize** (`else → "default"` em `swlwm.c`) — presente no código atual (`process_cursor_motion`); bug do "gruda" permanece fechado desde 2026-09-07. Não re-remover. | — | — |
 | B3 | **`fetch-deps.sh` gera bash/busybox do host (x86_64)** — num clone limpo em máquina 64-bit, `/bin/sh` nasce quebrado de novo (ver sessão 2026-09-07 §3). Precisa busybox i386 estático reproduzível (ex.: `gcc -m32` com checagem, ou binário pinado). | Quebra o boot de qualquer clone limpo. | Admin ou quem pegar build |
 | A3 | **Remover artefatos de build commitados do git** — SUPERADA em 2026-09-07: o histórico foi recomeçado limpo (só fontes; tag `main-arquivo` guarda o antigo com kernel/rootfs). Nada a fazer. | — | — |
 | A4 | **Integrar a GUI ao boot real (DRM/KMS)** — CONCLUÍDA em 2026-09-07: swlwm como sessão principal no initramfs, verificado headless e pelo usuário. | — | — |
 | A5 | **Readaptar janelas maximizadas quando o output redimensiona** | Bug conhecido documentado desde a sessão de maximizar/minimizar. | swl-ui |
 | A6 | **Fullscreen real** (hoje só responde ao protocolo, sem lógica) | Pequeno, independente. | swl-ui |
 | A7 | **Correções de build/leveza** (tswl: remover `-lm`/`-lrt` sem uso; swl-ui: remover `wayland-protocols` não usada, ordenar wlroots 0.18 antes de 0.19 no fallback, remover `xdg-shell-protocol.c` morto de 72KB) — ver R-09/R-10/R-11 | README §20 obriga dependência só com uso real. | swl-ui / tswl |
-| A8 | **Atualizar `swl-ui/README.md`** (diz que menu e maximizar/minimizar "não existem", mas já estão implementados) — ver R-12 | Documentação divergindo do código confunde as IAs seguintes (é uma causa conhecida de retrabalho no projeto). | Admin (docs) |
+| A8 | **Atualizar `swl-ui/README.md`** (diz que menu e maximizar/minimizar "não existem", mas já estão implementados) — ver R-12 | CONCLUÍDA: R-12 CORRIGIDO desde 2026-09-05; README atual já lista menu/maximizar/minimizar como implementados e a seção de TODO reescrita (conferido em 2026-09-08). | — |
 
 ## 🚧 EM CURSO / AGUARDANDO
 
@@ -28,6 +28,7 @@ começar agora, sem depender de outra coisa. Owner = quem sugerimos pegar
 | — | Deps externas | `userland/fetch-deps.sh` criado por outra IA (kernel + bash/busybox estáticos). | Não commitar a árvore do kernel no futuro |
 | — | Documento mestre / estado | Admin edita (esta pasta + `docs/ai/*`) | Contínuo |
 | — | Sessões de implementação 09-05 | Usuário ainda não subiu documentos de sessão do dia | A gente atualiza este arquivo quando subirem |
+| — | R-06 (TSWL shm double-buffer) | Grok em curso (2026-09-08) — encerra o A2 parcial quando subir | Orquestrador verifica antes de fechar |
 
 ## 🧭 PLANEJADAS (próximas fases — não bloqueadas por nada, só por ordem)
 
