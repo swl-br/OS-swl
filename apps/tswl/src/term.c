@@ -24,6 +24,7 @@ enum parser_state {
 struct tswl_term {
     int cols, rows;
     tswl_cell *grid;          /* cols*rows, tela visível */
+    tswl_cell *main_save;     /* cópia da tela principal enquanto alt-screen */
     tswl_cell *back;          /* ring buffer: TSWL_SCROLLBACK * cols */
     int back_head;            /* próxima posição de escrita no ring */
     int back_count;           /* linhas válidas no ring (<= TSWL_SCROLLBACK) */
@@ -31,6 +32,7 @@ struct tswl_term {
 
     int cx, cy;               /* cursor */
     int saved_cx, saved_cy;
+    bool alt_screen;          /* CSI ? 1049 h/l — buffer alternativo */
     uint16_t cur_fg, cur_bg;
     uint8_t cur_attrs;
     bool cursor_visible;
@@ -57,9 +59,10 @@ tswl_term *tswl_term_new(int cols, int rows) {
     tswl_term *t = calloc(1, sizeof(*t));
     if (!t) return NULL;
     t->grid = malloc((size_t)cols * rows * sizeof(tswl_cell));
+    t->main_save = malloc((size_t)cols * rows * sizeof(tswl_cell));
     t->back = malloc((size_t)TSWL_SCROLLBACK * cols * sizeof(tswl_cell));
     t->dirty = malloc((size_t)rows);
-    if (!t->grid || !t->back || !t->dirty) {
+    if (!t->grid || !t->main_save || !t->back || !t->dirty) {
         tswl_term_free(t);
         return NULL;
     }
@@ -71,7 +74,10 @@ tswl_term *tswl_term_new(int cols, int rows) {
     t->scroll_top = 0;
     t->scroll_bot = rows - 1;
     tswl_cell b = blank_cell(TSWL_COL_DEFAULT_BG);
-    for (int i = 0; i < cols * rows; i++) t->grid[i] = b;
+    for (int i = 0; i < cols * rows; i++) {
+        t->grid[i] = b;
+        t->main_save[i] = b;
+    }
     memset(t->dirty, 1, (size_t)rows);
     return t;
 }
@@ -79,6 +85,7 @@ tswl_term *tswl_term_new(int cols, int rows) {
 void tswl_term_free(tswl_term *t) {
     if (!t) return;
     free(t->grid);
+    free(t->main_save);
     free(t->back);
     free(t->dirty);
     free(t);
@@ -143,7 +150,7 @@ static void scroll_up(tswl_term *t, int n) {
     if (t->scroll_top > t->scroll_bot) return;  /* região inválida: no-op */
     int span = t->scroll_bot - t->scroll_top;   /* linhas a mover (>= 0) */
     for (int k = 0; k < n; k++) {
-        if (t->scroll_top == 0 && t->scroll_bot == t->rows - 1) {
+        if (t->scroll_top == 0 && t->scroll_bot == t->rows - 1 && !t->alt_screen) {
             memcpy(&t->back[(size_t)t->back_head * t->cols],
                    &t->grid[0], (size_t)t->cols * sizeof(tswl_cell));
             t->back_head = (t->back_head + 1) % TSWL_SCROLLBACK;
@@ -375,17 +382,30 @@ static void csi_dispatch(tswl_term *t, char final) {
                 /* DECCKM: application cursor keys (R-14) */
                 t->app_cursor = set;
             } else if (t->csi_private && t->csi_params[i] == 1049) {
-                /* alt screen: primeira versão = limpa a tela e vai,
-                 * sai restaurando cursor. Suficiente pro htop/top não
-                 * sujarem o histórico. */
-                if (set) {
-                    t->saved_cx = t->cx; t->saved_cy = t->cy;
-                    for (int r = 0; r < t->rows; r++) erase_range(t, r, 0, t->cols - 1);
-                    t->cx = 0; t->cy = 0;
-                } else {
-                    for (int r = 0; r < t->rows; r++) erase_range(t, r, 0, t->cols - 1);
-                    t->cx = t->saved_cx; t->cy = t->saved_cy;
+                /* Alt screen real: salva a tela principal em main_save,
+                 * limpa grid para o app (vim/htop); ao sair restaura.
+                 * Em alt, scroll não alimenta o scrollback. */
+                if (set && !t->alt_screen) {
+                    memcpy(t->main_save, t->grid,
+                           (size_t)t->cols * t->rows * sizeof(tswl_cell));
+                    t->saved_cx = t->cx;
+                    t->saved_cy = t->cy;
+                    for (int r = 0; r < t->rows; r++)
+                        erase_range(t, r, 0, t->cols - 1);
+                    t->cx = 0;
+                    t->cy = 0;
+                    t->scroll_offset = 0;
+                    t->alt_screen = true;
+                    t->changed = true;
+                } else if (!set && t->alt_screen) {
+                    memcpy(t->grid, t->main_save,
+                           (size_t)t->cols * t->rows * sizeof(tswl_cell));
+                    t->cx = t->saved_cx;
+                    t->cy = t->saved_cy;
                     clamp_cursor(t);
+                    t->alt_screen = false;
+                    t->changed = true;
+                    mark_all_dirty(t);
                 }
             }
         }
@@ -561,14 +581,18 @@ bool tswl_term_feed(tswl_term *t, const char *data, size_t len) {
 void tswl_term_resize(tswl_term *t, int cols, int rows) {
     if (cols == t->cols && rows == t->rows) return;
     tswl_cell *new_grid = malloc((size_t)cols * rows * sizeof(tswl_cell));
+    tswl_cell *new_main_save = malloc((size_t)cols * rows * sizeof(tswl_cell));
     uint8_t *new_dirty = malloc((size_t)rows);
     tswl_cell *new_back = malloc((size_t)TSWL_SCROLLBACK * cols * sizeof(tswl_cell));
-    if (!new_grid || !new_dirty || !new_back) {
-        free(new_grid); free(new_dirty); free(new_back);
+    if (!new_grid || !new_main_save || !new_dirty || !new_back) {
+        free(new_grid); free(new_main_save); free(new_dirty); free(new_back);
         return;  /* falha de memória: mantém o grid antigo (não crasha) */
     }
     tswl_cell b = blank_cell(t->cur_bg);
-    for (int i = 0; i < cols * rows; i++) new_grid[i] = b;
+    for (int i = 0; i < cols * rows; i++) {
+        new_grid[i] = b;
+        new_main_save[i] = b;
+    }
 
     /* Preserva o conteúdo ancorado no TOPO: quando a janela cresce, o
      * prompt continua no topo (espaço vazio embaixo, como xterm/foot).
@@ -591,6 +615,9 @@ found_used:;
     for (int r = 0; r < copy_rows; r++) {
         memcpy(&new_grid[(size_t)(dst_row + r) * cols],
                &t->grid[(size_t)(src_row + r) * t->cols],
+               (size_t)copy_cols * sizeof(tswl_cell));
+        memcpy(&new_main_save[(size_t)(dst_row + r) * cols],
+               &t->main_save[(size_t)(src_row + r) * t->cols],
                (size_t)copy_cols * sizeof(tswl_cell));
     }
 
@@ -615,8 +642,9 @@ found_used:;
     if (new_count == 0)
         new_head = 0;
 
-    free(t->grid); free(t->dirty); free(t->back);
+    free(t->grid); free(t->main_save); free(t->dirty); free(t->back);
     t->grid = new_grid;
+    t->main_save = new_main_save;
     t->dirty = new_dirty;
     t->back = new_back;
     t->cols = cols;

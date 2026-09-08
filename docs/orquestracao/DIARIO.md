@@ -4,6 +4,14 @@ Registro diário das rodadas de orquestração. Entrada mais recente em
 cima. **Conferir sempre o repo real** — este diário é um índice, não a
 verdade de fonte.
 
+## 2026-09-08 — Alt-screen real no TSWL (admin)
+
+Entrega do Grok: buffer `main_save` (`?1049h` salva+limpa, `?1049l`
+restaura; scroll em alt não alimenta histórico; resize migra junto;
+entradas/saídas repetidas idempotentes). Verificação: alloc/free
+tratados, lógica conferida, suíte 19/19 com e sem sanitizer (rodada
+no repo). Aprovado pelo usuário e integrado.
+
 ## 2026-09-08 — Scrollback sobrevive ao resize (admin)
 
 Entrega do Grok (`term.c` + 2 asserts): ring de histórico migra no
