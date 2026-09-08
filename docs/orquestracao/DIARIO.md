@@ -4,6 +4,27 @@ Registro diário das rodadas de orquestração. Entrada mais recente em
 cima. **Conferir sempre o repo real** — este diário é um índice, não a
 verdade de fonte.
 
+## 2026-09-08 — A5 + B3 integradas (admin)
+
+Duas frentes do Grok em `revisao-de-entrada_LOCAL/`, verificadas e
+aprovadas pelo usuário:
+
+**A5** (maximizadas no resize do output): `toplevel_apply_maximized_layout()`
+extraída e reaplicada em `output_request_state` + `server_new_output`
+(`maximized && !minimized`, `saved_geo` intacto). Build `meson`+`ninja`
+OK sem warnings novos; B2 intacto. A5 → CONCLUÍDA.
+
+**B3** (`fetch-deps.sh` i386): script refeito (`-m32 -static`,
+`require_i386_cc`, `assert_elf32`, `ensure_elf32_or_rebuild`,
+`--host=i386-pc-linux-gnu`, flags i386 no busybox, validação final).
+Verificação: `bash -n` OK; funções testadas isoladamente (require OK,
+assert aceita ELF32 e rejeita 64-bit, ensure nos 3 caminhos); veredito:
+**resolve o B3** — nenhum 64-bit chega ao rootfs em nenhum caminho.
+Ressalva registrada no AFAZERES: detalhe de locale no `ensure`
+(readelf pt_BR imprime `Classe:`, grep espera `Class:`, `elif`
+inalcançável) causa rebuild redundante em sistema pt_BR, sem impacto
+no resultado; correção futura de 1 linha. B3 → CONCLUÍDA.
+
 ## 2026-09-08 — Revisão completa: builds + testes (admin)
 
 Rodada de verificação geral do sistema (builds em `/tmp`, repo intacto):

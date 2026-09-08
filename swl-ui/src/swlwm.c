@@ -292,6 +292,28 @@ static void focus_toplevel(struct tinywl_toplevel *toplevel, struct wlr_surface 
 	}
 }
 
+/* Aplica geometria maximizada ao tamanho *atual* do output (painel +
+ * taskbar + titlebar reservados). Não mexe em saved_geo — usado no
+ * maximize inicial e quando o output redimensiona (A5). */
+static void toplevel_apply_maximized_layout(struct tinywl_toplevel *toplevel) {
+	struct tinywl_server *server = toplevel->server;
+	int avail_w = server->screen_width;
+	int avail_h = server->screen_height - SWL_PANEL_HEIGHT -
+		SWL_TASKBAR_HEIGHT - SWL_TITLEBAR_HEIGHT;
+	if (avail_w < 1) {
+		avail_w = 1;
+	}
+	if (avail_h < 1) {
+		avail_h = 1;
+	}
+	wlr_scene_node_set_position(&toplevel->scene_tree->node, 0, SWL_PANEL_HEIGHT);
+	wlr_xdg_toplevel_set_size(toplevel->xdg_toplevel, avail_w, avail_h);
+	wlr_xdg_toplevel_set_maximized(toplevel->xdg_toplevel, true);
+	if (toplevel->decoration) {
+		swl_decoration_resize(toplevel->decoration, avail_w);
+	}
+}
+
 /* Maximiza (ou restaura) o toplevel. `maximize` é o estado desejado; chamar
  * de novo com o mesmo estado atual não faz nada (idempotente). A área
  * disponível é a tela inteira menos o painel (topo) e a taskbar (rodapé) —
@@ -300,7 +322,6 @@ static void toplevel_set_maximized(struct tinywl_toplevel *toplevel, bool maximi
 	if (maximize == toplevel->maximized) {
 		return;
 	}
-	struct tinywl_server *server = toplevel->server;
 
 	if (maximize) {
 		/* Salva geometria atual antes de sobrescrever. A posição vem do nó
@@ -312,19 +333,7 @@ static void toplevel_set_maximized(struct tinywl_toplevel *toplevel, bool maximi
 		toplevel->saved_geo.y = toplevel->scene_tree->node.y;
 		toplevel->saved_geo.width = geo.width;
 		toplevel->saved_geo.height = geo.height;
-
-		int avail_w = server->screen_width;
-		int avail_h = server->screen_height - SWL_PANEL_HEIGHT -
-			SWL_TASKBAR_HEIGHT - SWL_TITLEBAR_HEIGHT;
-		if (avail_h < 1) {
-			avail_h = 1;
-		}
-		wlr_scene_node_set_position(&toplevel->scene_tree->node, 0, SWL_PANEL_HEIGHT);
-		wlr_xdg_toplevel_set_size(toplevel->xdg_toplevel, avail_w, avail_h);
-		wlr_xdg_toplevel_set_maximized(toplevel->xdg_toplevel, true);
-		if (toplevel->decoration) {
-			swl_decoration_resize(toplevel->decoration, avail_w);
-		}
+		toplevel_apply_maximized_layout(toplevel);
 	} else {
 		wlr_scene_node_set_position(&toplevel->scene_tree->node,
 			toplevel->saved_geo.x, toplevel->saved_geo.y);
@@ -1249,6 +1258,16 @@ static void output_request_state(struct wl_listener *listener, void *data) {
 			swl_taskbar_resize(server->taskbar, ow, oh - SWL_TASKBAR_HEIGHT);
 			swl_menu_resize(server->menu, oh);
 		}
+		/* A5: janelas maximizadas precisam acompanhar o novo tamanho do
+		 * output. Antes só o shell (painel/taskbar/fundo) era
+		 * redimensionado — a janela maximizada ficava no tamanho antigo.
+		 * saved_geo não é tocado (restauração continua válida). */
+		struct tinywl_toplevel *t;
+		wl_list_for_each(t, &server->toplevels, link) {
+			if (t->maximized && !t->minimized) {
+				toplevel_apply_maximized_layout(t);
+			}
+		}
 	}
 }
 
@@ -1352,6 +1371,13 @@ static void server_new_output(struct wl_listener *listener, void *data) {
 			swl_panel_resize(server->panel, ow);
 			swl_taskbar_resize(server->taskbar, ow, oh - SWL_TASKBAR_HEIGHT);
 			swl_menu_resize(server->menu, oh);
+			/* Mesmo reflow de maximizadas que em output_request_state (A5). */
+			struct tinywl_toplevel *t;
+			wl_list_for_each(t, &server->toplevels, link) {
+				if (t->maximized && !t->minimized) {
+					toplevel_apply_maximized_layout(t);
+				}
+			}
 		}
 	}
 }

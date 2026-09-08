@@ -1,8 +1,7 @@
 # PROJECT_STATE — SWL OS
 
-Última atualização: 2026-09-08 (orquestrador — A2 completa com R-06,
-integração; ver `docs/orquestracao/DIARIO.md` e
-`docs/revisao/2026-09-05-revisao-01.md`)
+Última atualização: 2026-09-08 (orquestrador — A5 e B3 integradas;
+ver `docs/orquestracao/DIARIO.md`)
 
 ## Repositório (higiene)
 
@@ -223,7 +222,6 @@ STATUS: FUNCIONAL NO BOOT REAL (2026-09-07).
   Área exclusiva dos orquestradores (admin + GPT); implementação não edita.
 
 ## Próximos passos sugeridos (GUI)
-1. Readaptar janelas maximizadas quando o output redimensiona (A5).
-2. Fullscreen real (protocolo já responde, falta lógica — A6).
-3. Resto do catálogo de apps (hoje só TSWL/SWLPAD reais; os outros são
+1. Fullscreen real (protocolo já responde, falta lógica — A6).
+2. Resto do catálogo de apps (hoje só TSWL/SWLPAD reais; os outros são
    placeholders) e as fases longas do roadmap.
