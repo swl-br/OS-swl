@@ -63,11 +63,13 @@ compromisso.
 
 - **Neo em ASCII na abertura do terminal + `swlfetch`**: mascote
   (`swl-ui/assets/mascot/cat.png`) convertido em arte ANSI colorida
-  (blocos, 72 col) + script que imprime arte + versão/kernel/mem/uptime
-  lidos do `/proc`. Protótipo testado pelo usuário em `/tmp` (fora do
-  repo); se aprovado, virar pacote "identidade do shell" (prompt
-  `SWL:~$`, help, clear com cabeçalho, spinner/progresso como funções
-  shell — tudo sem binário novo).
+  (rosto, 52 col) + script que imprime infos à esquerda e Neo à direita
+  (versão/kernel/mem/uptime do `/proc`). Protótipo testado e aprovado
+  pelo usuário em `/tmp` (fora do repo); usuário pediu versão nativa
+  em **C/Assembly** do `swlfetch` (arte embutida, sem shell) como
+  desdobramento — para um implementador, quando a identidade virar
+  tarefa. Conversor PNG→ANSI em Python foi ferramenta pontual (fora do
+  repo), não parte da entrega.
 - **Biblioteca C `swl_ui_*` e boot com OK**: futuro (quando houver 2+
   apps precisando; boot mexe em área sensível).
 
