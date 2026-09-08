@@ -1,0 +1,14 @@
+; hex_demo.swl -- hex printing for debugging
+module main
+
+global flags: i32 = 31
+
+fn main() -> i32
+    swl_print_hex(0)
+    swl_print_hex(255)
+    swl_print_hex(-1)
+    swl_print_hex(flags)
+    flags = flags + 128
+    swl_print_hex(flags)
+    return 0
+end

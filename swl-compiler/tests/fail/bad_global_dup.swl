@@ -1,0 +1,9 @@
+; bad_global_dup.swl -- duplicate global name
+module main
+
+global x: i32 = 1
+global x: i32 = 2
+
+fn main() -> i32
+    return 0
+end

@@ -8,9 +8,9 @@ emite assembly compatível com o NASM usado no restante do SWL OS.
 Estado atual:
 
 - **MVP + M2 + M3 + M4 + M5 + M6 + M7 completos e verificados de ponta a
-  ponta** (2026-09-07): a linguagem compila, monta (NASM), linka (ld) e
-  roda um conjunto de 19 programas de exemplo e um conjunto de 27
-  programas inválidos definidos no repositório (46 verificações no
+  ponta** (2026-09-08): a linguagem compila, monta (NASM), linka (ld) e
+  roda um conjunto de 22 programas de exemplo e um conjunto de 29
+  programas inválidos definidos no repositório (51 verificações no
   total).
 - O `swlc` funciona como um compilador de um arquivo por execução:
   `swlc <arquivo>.swl` emite `<arquivo>.asm` na mesma pasta, e
@@ -76,9 +76,10 @@ ld -m elf_i386 -o exemplo exemplo.o swl-compiler/build/swlrt.o
 - Builtins do runtime: `swl_print_i32` (decimal + newline),
   `swl_print_u32` (decimal sem sinal + newline), `swl_print_char` e
   `swl_putchar` (um byte cru), `swl_print_str`, `swl_strlen`,
-  `swl_strcmp`, `swl_memset8` (preenche n bytes), `swl_time_s` (segundos
-  desde a época), `swl_rand`/`swl_srand` (PRNG xorshift32 determinístico
-  com semente) e `swl_exit`.
+  `swl_strcmp`, `swl_memset8` (preenche n bytes), `swl_print_hex`
+  (hexadecimal `0x` +8 dígitos), `swl_time_s` (segundos desde a época),
+  `swl_rand`/`swl_srand` (PRNG xorshift32 determinístico com semente) e
+  `swl_exit`.
 
 ## Limitações
 
@@ -105,7 +106,8 @@ Exemplos disponíveis:
 
 - `hello`, `fib`, `demo`, `bool`, `loops`, `ops`, `swap`, `structs`,
   `casts`, `unsigned`, `wide`, `layout`, `pointers`, `arrays`, `strcmp`,
-  `putchar_demo`, `ptr_arith`, `u32_print`, `rand_demo`.
+  `putchar_demo`, `ptr_arith`, `u32_print`, `rand_demo`, `for_loop`,
+  `globals`, `hex_demo`.
 
 ## Testes negativos
 

@@ -122,6 +122,8 @@ static void gen_conv(Ctx *c, int t)
 }
 
 /* load the value at [ebp+disp] (type t) into eax, extended to 32 bits */
+#define GLOBAL_DISP (-999999999)
+
 static void gen_load_offs(Ctx *c, int t, int disp)
 {
     Buf *b = c->out;
@@ -135,6 +137,20 @@ static void gen_load_offs(Ctx *c, int t, int disp)
         bput(b, "dword ");
     emit_mem_ebp(b, disp);
     bput(b, "\n");
+}
+
+/* load from a global variable by name */
+static void gen_load_global(Ctx *c, int t, const char *name)
+{
+    Buf *b = c->out;
+    bfmt(b, "    %s eax, ", t == T_I8 ? "movsx" : t == T_U8 ? "movzx"
+             : t == T_I16 ? "movsx" : t == T_U16 ? "movzx" : "mov");
+    if (type_size(t) == 1)
+        bfmt(b, "byte [swl_g_%s]\n", name);
+    else if (type_size(t) == 2)
+        bfmt(b, "word [swl_g_%s]\n", name);
+    else
+        bfmt(b, "dword [swl_g_%s]\n", name);
 }
 
 /* load the value pointed to by eax (type t) into eax */
@@ -168,6 +184,18 @@ static void gen_store_offs(Ctx *c, int t, int disp)
         bput(b, ", ax\n");
     else
         bput(b, ", eax\n");
+}
+
+/* store eax to a global variable by name */
+static void gen_store_global(Ctx *c, int t, const char *name)
+{
+    Buf *b = c->out;
+    if (type_size(t) == 1)
+        bfmt(b, "    mov byte [swl_g_%s], al\n", name);
+    else if (type_size(t) == 2)
+        bfmt(b, "    mov word [swl_g_%s], ax\n", name);
+    else
+        bfmt(b, "    mov dword [swl_g_%s], eax\n", name);
 }
 
 /* store ecx (low bits) through the address in eax, typed t */
@@ -294,12 +322,19 @@ static void gen_expr(Ctx *c, Expr *e, StrTable *strs)
         break;
     }
     case E_LVAL:
-        gen_load_offs(c, e->u.lv.type, e->u.lv.disp);
+        if (e->u.lv.disp == GLOBAL_DISP)
+            gen_load_global(c, e->u.lv.type, e->u.lv.varname);
+        else
+            gen_load_offs(c, e->u.lv.type, e->u.lv.disp);
         break;
     case E_ADDR:
-        bfmt(b, "    lea eax, ");
-        emit_mem_ebp(b, e->u.lv.disp);
-        bput(b, "\n");
+        if (e->u.lv.disp == GLOBAL_DISP)
+            bfmt(b, "    mov eax, swl_g_%s\n", e->u.lv.varname);
+        else {
+            bfmt(b, "    lea eax, ");
+            emit_mem_ebp(b, e->u.lv.disp);
+            bput(b, "\n");
+        }
         break;
     case E_STR: {
         int idx = str_index(strs, e->u.str.bytes, e->u.str.len);
@@ -509,6 +544,74 @@ static void gen_stmt(Ctx *c, Stmt *s, int retlabel, StrTable *strs)
         c->loop_end = save_end;
         break;
     }
+    case S_FOR: {
+        int lstep = new_label(c);
+        int lcheck = new_label(c);
+        int lend = new_label(c);
+        int save_cont = c->loop_cont;
+        int save_end = c->loop_end;
+        c->loop_cont = lstep;   /* continue → step */
+        c->loop_end = lend;
+
+        /* evaluate start, store in loop variable */
+        gen_expr(c, s->u.fors.start, strs);
+        VarSym *fv = var_of(c, s->u.fors.varname);
+        if (!fv) die_at(s->pos, "internal: for loop variable not found");
+        gen_store_offs(c, s->u.fors.type, fv->disp);
+
+        /* determine step direction at codegen time */
+        Expr *step = s->u.fors.step;
+        int step_sign = 1;
+        if (step) {
+            if (step->kind == E_INT)
+                step_sign = step->u.ival >= 0 ? 1 : -1;
+            else if (step->kind == E_UN && step->u.un.op == T_MINUS &&
+                     step->u.un.a->kind == E_INT)
+                step_sign = -1;
+            else
+                die_at(step->pos, "for loop step must be a constant integer");
+        }
+
+        /* jump to first comparison */
+        bfmt(b, "    jmp L%d\n", lcheck);
+
+        /* step label */
+        bfmt(b, "L%d:\n", lstep);
+        if (step) {
+            gen_expr(c, step, strs);
+            bput(b, "    add dword ");
+            emit_mem_ebp(b, fv->disp);
+            bput(b, ", eax\n");
+        } else {
+            bput(b, "    inc dword ");
+            emit_mem_ebp(b, fv->disp);
+            bput(b, "\n");
+        }
+
+        /* comparison: evaluate limit, push, load loop var, pop, compare */
+        bfmt(b, "L%d:\n", lcheck);
+        gen_expr(c, s->u.fors.limit, strs);
+        bput(b, "    push eax\n");
+        gen_load_offs(c, s->u.fors.type, fv->disp);
+        bput(b, "    pop ecx\n");
+        bput(b, "    cmp eax, ecx\n");
+        if (step_sign >= 0)
+            bfmt(b, "    jge L%d\n", lend);
+        else
+            bfmt(b, "    jle L%d\n", lend);
+
+        /* body */
+        int i;
+        for (i = 0; i < s->u.fors.nbody; i++)
+            gen_stmt(c, s->u.fors.body[i], retlabel, strs);
+
+        /* back to step */
+        bfmt(b, "    jmp L%d\n", lstep);
+        bfmt(b, "L%d:\n", lend);
+        c->loop_cont = save_cont;
+        c->loop_end = save_end;
+        break;
+    }
     case S_BREAK:
         bfmt(b, "    jmp L%d\n", c->loop_end);
         break;
@@ -546,7 +649,10 @@ static void gen_stmt(Ctx *c, Stmt *s, int retlabel, StrTable *strs)
             gen_store_deref(c, lv->type);
         } else {
             gen_expr(c, s->u.assign.val, strs);
-            gen_store_offs(c, lv->type, lv->disp);
+            if (lv->disp == GLOBAL_DISP)
+                gen_store_global(c, lv->type, lv->varname);
+            else
+                gen_store_offs(c, lv->type, lv->disp);
         }
         break;
     }
@@ -707,8 +813,35 @@ void codegen(Program *p, const char *outpath)
     for (i = 0; i < p->nfuncs; i++)
         gen_fn(&c, &p->funcs[i], &strs);
 
-    if (strs.ndefs > 0) {
+    /* emit globals in .data section */
+    if (p->nglobals > 0) {
         bput(&out, "\nsection .data\n");
+        for (i = 0; i < p->nglobals; i++) {
+            GlobalDecl *g = &p->globals[i];
+            bfmt(&out, "swl_g_%s:\n", g->name);
+            if (type_is_array(g->type) && g->init && g->init->kind == E_STR) {
+                int alen = array_len(g->type);
+                int blen = g->init->u.str.len;
+                int k;
+                bput(&out, "    db ");
+                for (k = 0; k < alen; k++) {
+                    unsigned char bv = k < blen
+                        ? (unsigned char)g->init->u.str.bytes[k] : 0;
+                    bfmt(&out, "%s0x%02X", k ? "," : "", bv);
+                }
+                bput(&out, "\n");
+            } else if (g->init && g->init->kind == E_INT) {
+                bfmt(&out, "    dd %lld\n", g->init->u.ival);
+            } else {
+                /* zero-init */
+                int sz = type_size(g->type);
+                if (sz <= 0) sz = 4;
+                bfmt(&out, "    times %d db 0\n", sz);
+            }
+        }
+    }
+    if (strs.ndefs > 0) {
+        if (p->nglobals == 0) bput(&out, "\nsection .data\n");
         for (i = 0; i < strs.ndefs; i++) {
             bfmt(&out, "swl_str_%d:\n    db ", i);
             int k;

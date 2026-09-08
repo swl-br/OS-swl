@@ -1,0 +1,35 @@
+; for_loop.swl -- ascending and descending for loops with break
+module main
+
+fn main() -> i32
+    ; ascending: sum 0..9
+    var sum: i32 = 0
+    for var i : i32 = 0 to 10
+        sum = sum + i
+    end
+    swl_print_i32(sum)          ; 45
+
+    ; descending: 5 to 1
+    for var j : i32 = 5 to 0 by -1
+        swl_print_i32(j)
+    end
+
+    ; break out early
+    var last: i32 = 0
+    for var k : i32 = 0 to 100
+        if k == 7
+            break
+        end
+        last = k
+    end
+    swl_print_i32(last)         ; 6
+
+    ; step by 2
+    var n: i32 = 0
+    for var m : i32 = 0 to 20 by 2
+        n = n + 1
+    end
+    swl_print_i32(n)            ; 10 (0,2,4,...,18)
+
+    return 0
+end

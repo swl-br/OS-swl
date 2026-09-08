@@ -1,0 +1,28 @@
+; globals.swl -- global integer and string-array variables
+module main
+
+global counter: i32 = 0
+global greeting: [u8, 13] = "hello, world"
+
+fn bump() -> i32
+    counter = counter + 1
+    return counter
+end
+
+fn main() -> i32
+    swl_print_i32(counter)       ; 0
+    bump()
+    bump()
+    swl_print_i32(counter)       ; 2
+
+    swl_print_str(greeting)
+    swl_putchar(10)              ; newline after string
+
+    var i: i32 = 0
+    while i < 3
+        bump()
+        i = i + 1
+    end
+    swl_print_i32(counter)       ; 5
+    return 0
+end

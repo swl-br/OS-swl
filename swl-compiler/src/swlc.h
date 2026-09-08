@@ -33,6 +33,7 @@ typedef enum {
     T_MODULE, T_FN, T_STRUCT, T_VAR, T_IF, T_ELSE, T_WHILE, T_END,
     T_RETURN, T_AND, T_OR, T_NOT,
     T_CONST, T_AS, T_BREAK, T_CONTINUE, T_SIZEOF,
+    T_FOR, T_TO, T_BY, T_GLOBAL,
     T_LPAREN, T_RPAREN, T_COMMA, T_COLON, T_ARROW, T_DOT, T_ASSIGN,
     T_PLUS, T_MINUS, T_STAR, T_SLASH, T_PERCENT,
     T_EQ, T_NE, T_LT, T_GT, T_LE, T_GE,
@@ -122,6 +123,12 @@ typedef struct ConstDecl {
     long long val;
 } ConstDecl;
 
+typedef struct GlobalDecl {
+    char *name;
+    int type;
+    struct Expr *init;  /* NULL means zero-initialized */
+} GlobalDecl;
+
 typedef struct Param {
     char *name;
     int type;
@@ -159,7 +166,7 @@ typedef struct LVal {
 } LVal;
 
 typedef enum {
-    S_VAR, S_RETURN, S_IF, S_WHILE, S_BREAK, S_CONTINUE, S_ASSIGN, S_EXPR
+    S_VAR, S_RETURN, S_IF, S_WHILE, S_FOR, S_BREAK, S_CONTINUE, S_ASSIGN, S_EXPR
 } StmtKind;
 
 typedef struct Stmt {
@@ -170,6 +177,7 @@ typedef struct Stmt {
         struct { struct Expr *val; } ret;
         struct { struct Expr *cond; struct Stmt **then, **els; int nthen, nels; } ifs;
         struct { struct Expr *cond; struct Stmt **body; int n; } whiles;
+        struct { char *varname; int type; struct Expr *start, *limit, *step; struct Stmt **body; int nbody; } fors;
         struct { LVal lv; struct Expr *val; } assign;
         struct { struct Expr *call; } estmt;
     } u;
@@ -204,6 +212,8 @@ typedef struct Program {
     int nfuncs, capfuncs;
     ConstDecl *consts;
     int nconsts, capconsts;
+    GlobalDecl *globals;
+    int nglobals, capglobals;
     StructDecl *structs;
     int nstructs, capstructs;
     PtrType *ptrs;

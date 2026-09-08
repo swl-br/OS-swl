@@ -1,6 +1,6 @@
 # PROJECT_STATE — SWL OS
 
-Última atualização: 2026-09-07 (orquestrador — boot GUI real funcional,
+Última atualização: 2026-09-08 (orquestrador — boot GUI real funcional,
 recuperação da pasta, push no `main`; ver
 `docs/ai/sessions/2026-09-07-recuperacao-pasta-boot-gui.md`)
 
@@ -155,7 +155,38 @@ só engana visualmente por rodar fora do nosso compositor. Desde
 
 ## Linguagem SWL / Compilador swlc
 
-STATUS: NÃO INICIADO.
+STATUS: FUNCIONAL — v2 completa (2026-09-08).
+
+Compilador C → NASM x86-32 com runtime em Assembly puro. Pipeline:
+`swlc <arquivo>.swl` → `.asm` → NASM → `ld -m elf_i386` → executável.
+
+### Módulos implementados
+- **MVP**: tipos inteiros, ponteiros, structs, controle de fluxo,
+  chamadas ao runtime.
+- **M2**: ponteiros, strings literais, aritmética de ponteiro.
+- **M3**: arrays locais `[T, N]`, decay array→ponteiro.
+- **M4**: structs locais/parâmetros, acesso a campo.
+- **M5**: limpeza, revisão de erros, alinhamento de docs.
+- **M6**: `sizeof(T)`, casts `as`, aritmética de ponteiro escalada.
+- **M7**: builtins extras — `swl_print_u32`, `swl_print_char`,
+  `swl_memset8`, `swl_print_hex`, `swl_time_s`, `swl_rand`/`swl_srand`.
+- **V2**: `for var i : T = start to limit [by step]`, variáveis globais
+  `global name: T = init`.
+
+### Verificação
+- `make -C swl-compiler test` → 51 verificações (22 exemplos + 29
+  rejeições), tudo passando.
+- Exemplos com saída verificada byte a byte (`.out` fixtures).
+
+### Limitações conhecidas
+- Compilador de um único arquivo; sem múltiplas unidades.
+- Runtime 32-bit; sem GC, `for` sem `var`, `switch`.
+- Structs não são valores completos.
+
+### Links
+- `swl-compiler/README.md` — visão geral.
+- `swl-compiler/spec/mvp-subset.md` — subconjunto da linguagem.
+- `docs/ai/sessions/2026-09-07-buffy-swlc-m7-v1-final.md` — sessão M7.
 
 ## Aplicativos
 

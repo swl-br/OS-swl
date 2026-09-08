@@ -58,18 +58,36 @@ frontend em C com runtime em Assembly.
   comportamento de `swl_putchar`).
 - `swl_memset8(dst: *u8, val: i32, n: i32)` — preenche n bytes com
   `val & 0xff`; arrays decaem para `*u8` no argumento.
+- `swl_print_hex(x: i32)` — imprime como `0x` + 8 dígitos hex
+  maiúsculos + newline (ex.: 255 → `0x000000ff`).
 - `swl_time_s() -> i32` — segundos desde a época (sys_time).
 - `swl_srand(seed: i32)` e `swl_rand() -> i32` — PRNG xorshift32;
   saída determinística após `swl_srand`, e auto-seed pelo relógio no
   primeiro `swl_rand()` sem semente. `%` em valores negativos segue
   semântica C (resultado pode ser negativo).
 
+## V2 — for, globais e hex
+
+- `for var i : T = start to limit [by step]` — loop com variável de
+  loop declarada e tipada; `step` deve ser constante; suporta
+  ascendente (step > 0, padrão) e descendente (step < 0); `break` e
+  `continue` funcionam (`continue` vai direto pro step).
+- `global name: T = init` — variável global no nível do módulo;
+  inicialização por literal inteiro ou literal de string para arrays
+  de `u8`; ausência de init → zero-init. Acessada por nome absoluto
+  (`swl_g_<name>`) no assembly, sem frame de função.
+- `- [ ]` switch
+- `- [ ]` for sem var (reutilizar variável existente)
+- `- [ ]` structs por valor completo
+
 ## Exemplo principal
 
 `examples/arrays.swl`, `examples/strcmp.swl`,
 `examples/ptr_arith.swl`, `examples/pointers.swl`,
 `examples/structs.swl`, `examples/u32_print.swl`,
-`examples/rand_demo.swl` e outros no diretório `examples/`.
+`examples/rand_demo.swl`, `examples/for_loop.swl`,
+`examples/globals.swl`, `examples/hex_demo.swl` e outros no
+ diretorio `examples/`.
 
 ## Status e dokumentação
 

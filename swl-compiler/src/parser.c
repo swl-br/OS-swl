@@ -501,6 +501,9 @@ static Expr *parse_expr(Parser *p)
     }
 }
 
+/* for var i = start to limit [by step] */
+static Stmt *parse_for_stmt(Parser *p);
+
 /* ---- statements ---- */
 
 static Stmt *new_stmt(Parser *p, StmtKind k, SrcPos pos)
@@ -643,6 +646,7 @@ static Stmt *parse_assignment_target(Parser *p, Token *first)
 
 static void parse_stmt_list(Parser *p, Stmt ***list, int *n)
 {
+    /* (parse_for_stmt is defined after this function) */
     *list = NULL;
     *n = 0;
     for (;;) {
@@ -713,6 +717,9 @@ static void parse_stmt_list(Parser *p, Stmt ***list, int *n)
             s->u.whiles.n = nb;
             break;
         }
+        case T_FOR:
+            s = parse_for_stmt(p);
+            break;
         case T_IDENT:
             s = parse_assignment_target(p, t);
             break;
@@ -722,7 +729,7 @@ static void parse_stmt_list(Parser *p, Stmt ***list, int *n)
             break;
         default:
             die_at(t->pos,
-                   "a statement must start with var, return, if, while, "
+                   "a statement must start with var, return, if, while, for, "
                    "break, continue, an assignment or a function call "
                    "(found %s)", tok_name(t->kind));
             return; /* unreachable */
@@ -738,6 +745,46 @@ static void parse_stmt_list(Parser *p, Stmt ***list, int *n)
                    tok_name(q->kind));
         }
     }
+}
+
+/* for var i = start to limit [by step] */
+static Stmt *parse_for_stmt(Parser *p)
+{
+    Token *kw = next(p); /* 'for' */
+    Token *vartok = next(p); /* 'var' */
+    if (vartok->kind != T_VAR)
+        die_at(vartok->pos, "expected 'var' after 'for'");
+    Token *name = peek(p);
+    if (name->kind != T_IDENT)
+        die_at(name->pos, "expected variable name after 'var'");
+    next(p);
+    expect(p, T_COLON, "':' after variable name in 'for'");
+    int type = parse_type(p, 1);
+    expect(p, T_ASSIGN, "'=' after type in 'for'");
+    Expr *start = parse_expr(p);
+    expect(p, T_TO, "'to' after start expression in 'for'");
+    Expr *limit = parse_expr(p);
+    Expr *step = NULL;
+    if (at(p, T_BY)) {
+        next(p);
+        step = parse_expr(p);
+    }
+    if (!at(p, T_NL))
+        die_at(peek(p)->pos, "expected end of line after 'for' header");
+    expect_nl(p);
+    Stmt **body = NULL;
+    int nb;
+    parse_stmt_list(p, &body, &nb);
+    expect(p, T_END, "'end' to close 'for' statement");
+    Stmt *s = new_stmt(p, S_FOR, kw->pos);
+    s->u.fors.varname = name->text;
+    s->u.fors.type = type;
+    s->u.fors.start = start;
+    s->u.fors.limit = limit;
+    s->u.fors.step = step;
+    s->u.fors.body = body;
+    s->u.fors.nbody = nb;
+    return s;
 }
 
 /* ---- toplevel ---- */
@@ -772,6 +819,36 @@ static void parse_const_decl(Parser *p)
     c->name = name->text;
     c->type = type;
     c->val = lit->ival;
+    (void)kw;
+}
+
+static void parse_global_decl(Parser *p)
+{
+    Token *kw = next(p); /* 'global' */
+    Token *name = peek(p);
+    if (name->kind != T_IDENT)
+        die_at(name->pos, "expected variable name after 'global'");
+    next(p);
+    int i;
+    for (i = 0; i < p->prog->nglobals; i++)
+        if (strcmp(p->prog->globals[i].name, name->text) == 0)
+            die_at(name->pos, "duplicate global '%s'", name->text);
+    expect(p, T_COLON, "':' after global variable name");
+    int type = parse_type(p, 1);
+    Expr *init = NULL;
+    if (at(p, T_ASSIGN)) {
+        next(p);
+        init = parse_expr(p);
+    }
+    if (p->prog->nglobals == p->prog->capglobals) {
+        p->prog->capglobals = p->prog->capglobals ? p->prog->capglobals * 2 : 4;
+        p->prog->globals = xrealloc(p->prog->globals,
+                                    sizeof(GlobalDecl) * p->prog->capglobals);
+    }
+    GlobalDecl *g = &p->prog->globals[p->prog->nglobals++];
+    g->name = name->text;
+    g->type = type;
+    g->init = init;
     (void)kw;
 }
 
@@ -928,6 +1005,12 @@ void parse_program(Token *toks, int ntok, Program *p)
                 die_at(peek(p_)->pos,
                        "expected end of line after constant declaration");
             expect_nl(p_);
+        } else if (t->kind == T_GLOBAL) {
+            parse_global_decl(p_);
+            if (!at(p_, T_NL))
+                die_at(peek(p_)->pos,
+                       "expected end of line after global declaration");
+            expect_nl(p_);
         } else if (t->kind == T_FN) {
             parse_fn_decl(p_);
             if (!at(p_, T_NL))
@@ -935,7 +1018,7 @@ void parse_program(Token *toks, int ntok, Program *p)
                        "expected end of line after function declaration");
             expect_nl(p_);
         } else {
-            die_at(t->pos, "expected 'struct', 'const' or 'fn' at top "
+            die_at(t->pos, "expected 'struct', 'const', 'global' or 'fn' at top "
                    "level, found %s", tok_name(t->kind));
         }
     }

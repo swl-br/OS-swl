@@ -331,5 +331,63 @@ swl_rand:
     mov [swl_rand_seed], eax
     ret
 
+; ----------------------------------------------------------------
+; swl_print_hex(i32 x) -- prints x as 0x prefix +8 hex digits + newline
+; ----------------------------------------------------------------
+global swl_print_hex
+swl_print_hex:
+    push ebp
+    mov ebp, esp
+    sub esp, 16
+
+    ; print "0x" prefix
+    mov word [ebp-16], 0x7830  ; '0','x' in little-endian
+    mov edx, 2
+    lea ecx, [ebp-16]
+    mov ebx, 1
+    mov eax, 4
+    int 0x80
+
+    ; convert 8 nibbles MSB -> LSB
+    mov esi, [ebp+8]           ; value
+    xor edi, edi               ; output index
+.hexloop:
+    mov ecx, 7
+    sub ecx, edi
+    shl ecx, 2                 ; ecx = (7 - i) * 4
+    mov eax, esi
+    shr eax, cl
+    and eax, 0xF
+    cmp al, 10
+    jb .is_digit
+    add al, 'a' - 10
+    jmp .store
+.is_digit:
+    add al, '0'
+.store:
+    mov [ebp - 8 + edi], al
+    inc edi
+    cmp edi, 8
+    jl .hexloop
+
+    ; print 8 hex digits
+    mov edx, 8
+    lea ecx, [ebp-8]
+    mov ebx, 1
+    mov eax, 4
+    int 0x80
+
+    ; newline
+    mov byte [ebp-16], 10
+    mov edx, 1
+    lea ecx, [ebp-16]
+    mov ebx, 1
+    mov eax, 4
+    int 0x80
+
+    add esp, 16
+    pop ebp
+    ret
+
 section .bss
 swl_rand_seed: resd 1

@@ -77,6 +77,7 @@ const char *tok_name(int kind)
         "module", "fn", "struct", "var", "if", "else", "while", "end",
         "return", "and", "or", "not",
         "const", "as", "break", "continue", "sizeof",
+        "for", "to", "by", "global",
         "'('", "')'", "','", "':'", "'->'", "'.'", "'=', ';'",
         "+", "-", "*", "/", "%",
         "=='", "!=", "<'", ">'", "<=", ">=',",
@@ -99,6 +100,8 @@ static const struct kw keywords[] = {
     { "const", T_CONST }, { "as", T_AS },
     { "break", T_BREAK }, { "continue", T_CONTINUE },
     { "sizeof", T_SIZEOF },
+    { "for", T_FOR }, { "to", T_TO }, { "by", T_BY },
+    { "global", T_GLOBAL },
     { NULL, 0 }
 };
 

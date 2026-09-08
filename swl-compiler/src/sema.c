@@ -317,11 +317,30 @@ static void require_value(Ctx *c, Expr *e, const char *what)
                "(got %s)", what, tyname(c, e->type));
 }
 
+static int global_index(Program *p, const char *name)
+{
+    int i;
+    for (i = 0; i < p->nglobals; i++)
+        if (strcmp(p->globals[i].name, name) == 0)
+            return i;
+    return -1;
+}
+
+#define GLOBAL_DISP (-999999999)
+
 static void resolve_var_chain(Ctx *c, LVal *lv)
 {
     VarSym *v = find_var(c, lv->varname);
-    if (!v)
+    if (!v) {
+        /* check program globals */
+        int gi = global_index(c->p, lv->varname);
+        if (gi >= 0 && lv->nchain == 0) {
+            lv->type = c->p->globals[gi].type;
+            lv->disp = GLOBAL_DISP;
+            lv->resolved = 1;
+        }
         return; /* caller decides between const fallback and error */
+    }
 
     int type = v->type;
     int disp = v->disp;
@@ -396,6 +415,7 @@ static const Builtin builtins[] = {
     { "swl_time_s",    0, T_I32,  0,         0,        0 },
     { "swl_rand",      0, T_I32,  0,         0,        0 },
     { "swl_srand",     1, T_VOID, BP_I32,    0,        0 },
+    { "swl_print_hex", 1, T_VOID, BP_I32,    0,        0 },
     { NULL, 0, 0, 0, 0, 0 }
 };
 
@@ -843,13 +863,28 @@ static void sema_stmt(Ctx *c, Stmt *s)
             sema_stmt(c, s->u.whiles.body[i]);
         c->loop_depth--;
         break;
+    case S_FOR: {
+        sema_expr(c, s->u.fors.start, T_UNKNOWN);
+        sema_expr(c, s->u.fors.limit, T_UNKNOWN);
+        if (s->u.fors.step)
+            sema_expr(c, s->u.fors.step, T_UNKNOWN);
+        /* declare loop variable as a function-local (stays in fn->vars
+         * so codegen can find it; occupies one stack slot for the
+         * entire function — negligible cost). */
+        declare_local(c, s->pos, s->u.fors.varname, s->u.fors.type);
+        c->loop_depth++;
+        for (i = 0; i < s->u.fors.nbody; i++)
+            sema_stmt(c, s->u.fors.body[i]);
+        c->loop_depth--;
+        break;
+    }
     case S_BREAK:
         if (c->loop_depth == 0)
-            die_at(s->pos, "'break' outside a while loop");
+            die_at(s->pos, "'break' outside a loop");
         break;
     case S_CONTINUE:
         if (c->loop_depth == 0)
-            die_at(s->pos, "'continue' outside a while loop");
+            die_at(s->pos, "'continue' outside a loop");
         break;
     case S_ASSIGN: {
         LVal *lv = &s->u.assign.lv;
@@ -937,6 +972,26 @@ void sema_check(Program *p)
             die_at((SrcPos){ 0, 0 },
                    "constant '%s': value %lld does not fit %s",
                    k->name, k->val, type_name(k->type));
+    }
+
+    /* globals: type-check init expressions */
+    for (i = 0; i < p->nglobals; i++) {
+        GlobalDecl *g = &p->globals[i];
+        if (g->init) {
+            /* for the MVP, init must be an integer literal, a string
+             * literal (for [u8, N] globals), or a constant name. */
+            if (type_is_array(g->type) && g->init->kind == E_STR) {
+                /* string init for array -- OK */
+            } else if (type_is_int(g->type) && g->init->kind == E_INT) {
+                /* integer literal -- OK */
+            } else if (g->init->kind == E_LVAL) {
+                /* constant reference */
+            } else {
+                die_at(g->init->pos,
+                       "global '%s': initializer must be a literal or "
+                       "constant", g->name);
+            }
+        }
     }
 
     /* functions: parameters are pre-declared at [ebp+8..], locals are
