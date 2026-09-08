@@ -167,12 +167,12 @@ struct tinywl_toplevel {
 	char *deco_title;
 	int deco_width;
 
-	/* Estado de maximizar/minimizar (implementado nesta sessão). saved_geo
-	 * guarda posição (do wrapper) + tamanho (do conteúdo) de antes de
-	 * maximizar, pra restaurar exatamente igual ao desmaximizar. Só é
-	 * válido quando maximized == true. */
+	/* Estado de maximizar/minimizar/fullscreen. saved_geo guarda posição
+	 * (wrapper) + tamanho (conteúdo) de antes de maximizar ou fullscreen,
+	 * pra restaurar. Válido quando maximized || fullscreen. */
 	bool maximized;
 	bool minimized;
+	bool fullscreen;
 	struct wlr_box saved_geo;
 	bool initial_configure_sent; /* wlroots 0.18: ver xdg_toplevel_commit */
 
@@ -292,9 +292,8 @@ static void focus_toplevel(struct tinywl_toplevel *toplevel, struct wlr_surface 
 	}
 }
 
-/* Aplica geometria maximizada ao tamanho *atual* do output (painel +
- * taskbar + titlebar reservados). Não mexe em saved_geo — usado no
- * maximize inicial e quando o output redimensiona (A5). */
+/* Aplica layout maximizado ao tamanho atual do output. Não mexe em
+ * saved_geo. Usado no maximize e no reflow quando o output muda (A5). */
 static void toplevel_apply_maximized_layout(struct tinywl_toplevel *toplevel) {
 	struct tinywl_server *server = toplevel->server;
 	int avail_w = server->screen_width;
@@ -307,44 +306,120 @@ static void toplevel_apply_maximized_layout(struct tinywl_toplevel *toplevel) {
 		avail_h = 1;
 	}
 	wlr_scene_node_set_position(&toplevel->scene_tree->node, 0, SWL_PANEL_HEIGHT);
+	wlr_scene_node_set_position(&toplevel->content_tree->node, 0, SWL_TITLEBAR_HEIGHT);
 	wlr_xdg_toplevel_set_size(toplevel->xdg_toplevel, avail_w, avail_h);
 	wlr_xdg_toplevel_set_maximized(toplevel->xdg_toplevel, true);
 	if (toplevel->decoration) {
+		wlr_scene_node_set_enabled(&toplevel->decoration->tree->node, true);
 		swl_decoration_resize(toplevel->decoration, avail_w);
 	}
 }
 
-/* Maximiza (ou restaura) o toplevel. `maximize` é o estado desejado; chamar
- * de novo com o mesmo estado atual não faz nada (idempotente). A área
- * disponível é a tela inteira menos o painel (topo) e a taskbar (rodapé) —
- * a barra de título própria do SWL OS continua visível mesmo maximizado. */
+/* Fullscreen real (A6): cobre o output inteiro, sem titlebar. */
+static void toplevel_apply_fullscreen_layout(struct tinywl_toplevel *toplevel) {
+	struct tinywl_server *server = toplevel->server;
+	int w = server->screen_width;
+	int h = server->screen_height;
+	if (w < 1) {
+		w = 1;
+	}
+	if (h < 1) {
+		h = 1;
+	}
+	wlr_scene_node_set_position(&toplevel->scene_tree->node, 0, 0);
+	/* Conteúdo colado no topo do wrapper — sem espaço pra titlebar. */
+	wlr_scene_node_set_position(&toplevel->content_tree->node, 0, 0);
+	if (toplevel->decoration) {
+		wlr_scene_node_set_enabled(&toplevel->decoration->tree->node, false);
+	}
+	wlr_xdg_toplevel_set_size(toplevel->xdg_toplevel, w, h);
+	wlr_xdg_toplevel_set_fullscreen(toplevel->xdg_toplevel, true);
+}
+
+static void toplevel_save_geometry(struct tinywl_toplevel *toplevel) {
+	struct wlr_box geo;
+	wlr_xdg_surface_get_geometry(toplevel->xdg_toplevel->base, &geo);
+	toplevel->saved_geo.x = toplevel->scene_tree->node.x;
+	toplevel->saved_geo.y = toplevel->scene_tree->node.y;
+	toplevel->saved_geo.width = geo.width;
+	toplevel->saved_geo.height = geo.height;
+}
+
+static void toplevel_restore_geometry(struct tinywl_toplevel *toplevel) {
+	wlr_scene_node_set_position(&toplevel->scene_tree->node,
+		toplevel->saved_geo.x, toplevel->saved_geo.y);
+	wlr_scene_node_set_position(&toplevel->content_tree->node, 0, SWL_TITLEBAR_HEIGHT);
+	wlr_xdg_toplevel_set_size(toplevel->xdg_toplevel,
+		toplevel->saved_geo.width, toplevel->saved_geo.height);
+	if (toplevel->decoration) {
+		wlr_scene_node_set_enabled(&toplevel->decoration->tree->node, true);
+		if (toplevel->saved_geo.width > 0) {
+			swl_decoration_resize(toplevel->decoration, toplevel->saved_geo.width);
+		}
+	}
+}
+
+/* Maximiza (ou restaura) o toplevel. Idempotente. A área disponível é a
+ * tela menos painel e taskbar; a titlebar SWL continua visível. */
 static void toplevel_set_maximized(struct tinywl_toplevel *toplevel, bool maximize) {
 	if (maximize == toplevel->maximized) {
 		return;
 	}
+	/* Fullscreen e maximizado são mutuamente exclusivos na UI. */
+	if (maximize && toplevel->fullscreen) {
+		toplevel->fullscreen = false;
+		wlr_xdg_toplevel_set_fullscreen(toplevel->xdg_toplevel, false);
+	}
 
 	if (maximize) {
-		/* Salva geometria atual antes de sobrescrever. A posição vem do nó
-		 * wrapper (scene_tree); o tamanho vem da geometria xdg do
-		 * conteúdo (não do wrapper, que inclui a barra de título). */
-		struct wlr_box geo;
-		wlr_xdg_surface_get_geometry(toplevel->xdg_toplevel->base, &geo);
-		toplevel->saved_geo.x = toplevel->scene_tree->node.x;
-		toplevel->saved_geo.y = toplevel->scene_tree->node.y;
-		toplevel->saved_geo.width = geo.width;
-		toplevel->saved_geo.height = geo.height;
+		if (!toplevel->fullscreen) {
+			toplevel_save_geometry(toplevel);
+		}
 		toplevel_apply_maximized_layout(toplevel);
 	} else {
-		wlr_scene_node_set_position(&toplevel->scene_tree->node,
-			toplevel->saved_geo.x, toplevel->saved_geo.y);
-		wlr_xdg_toplevel_set_size(toplevel->xdg_toplevel,
-			toplevel->saved_geo.width, toplevel->saved_geo.height);
 		wlr_xdg_toplevel_set_maximized(toplevel->xdg_toplevel, false);
-		if (toplevel->decoration && toplevel->saved_geo.width > 0) {
-			swl_decoration_resize(toplevel->decoration, toplevel->saved_geo.width);
-		}
+		toplevel_restore_geometry(toplevel);
 	}
 	toplevel->maximized = maximize;
+}
+
+/* Fullscreen real (A6). Cobre o output inteiro; titlebar some. Ao sair,
+ * se estava maximizado restaura maximizado; senão restored_geo. */
+static void toplevel_set_fullscreen(struct tinywl_toplevel *toplevel, bool fs) {
+	if (fs == toplevel->fullscreen) {
+		return;
+	}
+
+	if (fs) {
+		if (!toplevel->maximized) {
+			toplevel_save_geometry(toplevel);
+		}
+		/* Sai do modo maximizado "lógico" na geometria, mas lembra a flag
+		 * pra voltar maximizado ao sair do fullscreen. */
+		if (toplevel->maximized) {
+			wlr_xdg_toplevel_set_maximized(toplevel->xdg_toplevel, false);
+		}
+		toplevel_apply_fullscreen_layout(toplevel);
+		/* Por cima de painel/taskbar/desktop — fullscreen cobre tudo. */
+		wlr_scene_node_raise_to_top(&toplevel->scene_tree->node);
+		toplevel->fullscreen = true;
+	} else {
+		wlr_xdg_toplevel_set_fullscreen(toplevel->xdg_toplevel, false);
+		toplevel->fullscreen = false;
+		if (toplevel->maximized) {
+			toplevel_apply_maximized_layout(toplevel);
+		} else {
+			toplevel_restore_geometry(toplevel);
+		}
+		/* Shell de volta por cima das janelas (mesmo que focus_toplevel). */
+		struct tinywl_server *server = toplevel->server;
+		if (server->panel) {
+			wlr_scene_node_raise_to_top(&server->panel->tree->node);
+		}
+		if (server->taskbar) {
+			wlr_scene_node_raise_to_top(&server->taskbar->tree->node);
+		}
+	}
 }
 
 /* Minimiza (esconde, mas mantém na taskbar) ou restaura o toplevel.
@@ -760,11 +835,11 @@ static void process_cursor_motion(struct tinywl_server *server, uint32_t time) {
 		 * default. This is what makes the cursor image appear when you move it
 		 * around the screen, not over any toplevels. */
 		wlr_cursor_set_xcursor(server->cursor, server->cursor_mgr, "default");
-	} else if (!toplevel->maximized) {
+	} else if (!toplevel->maximized && !toplevel->fullscreen) {
 		/* Resize visual: cursor sobre o anel de borda da janela vira a
 		 * setinha de resize correspondente (mesmo hit-test do clique,
-		 * SWL_RESIZE_MARGIN). Janela maximizada não mostra (a borda está
-		 * fora da tela e resize nela não faz sentido). */
+		 * SWL_RESIZE_MARGIN). Maximizada/fullscreen não mostram (borda
+		 * fora da tela / tela cheia). */
 		struct wlr_box geo2;
 		wlr_xdg_surface_get_geometry(toplevel->xdg_toplevel->base, &geo2);
 		double wx2 = server->cursor->x - toplevel->scene_tree->node.x;
@@ -1067,7 +1142,7 @@ static void server_cursor_button(struct wl_listener *listener, void *data) {
 	 *    o primeiro hit em Z-order é o correto. */
 	struct tinywl_toplevel *t_iter;
 	wl_list_for_each(t_iter, &server->toplevels, link) {
-		if (t_iter->minimized || !t_iter->decoration) {
+		if (t_iter->minimized || t_iter->fullscreen || !t_iter->decoration) {
 			continue;
 		}
 		double lx = server->cursor->x - t_iter->scene_tree->node.x;
@@ -1108,7 +1183,8 @@ static void server_cursor_button(struct wl_listener *listener, void *data) {
 	 *      process_cursor_motion. Janela maximizada é ignorada (a borda
 	 *      está fora da tela; pra redimensionar, desmaximize arrastando
 	 *      a barra de título primeiro). */
-	if (toplevel && event->button == BTN_LEFT && !toplevel->maximized) {
+	if (toplevel && event->button == BTN_LEFT &&
+			!toplevel->maximized && !toplevel->fullscreen) {
 		struct wlr_box geo;
 		wlr_xdg_surface_get_geometry(toplevel->xdg_toplevel->base, &geo);
 		double wx = server->cursor->x - toplevel->scene_tree->node.x;
@@ -1258,13 +1334,15 @@ static void output_request_state(struct wl_listener *listener, void *data) {
 			swl_taskbar_resize(server->taskbar, ow, oh - SWL_TASKBAR_HEIGHT);
 			swl_menu_resize(server->menu, oh);
 		}
-		/* A5: janelas maximizadas precisam acompanhar o novo tamanho do
-		 * output. Antes só o shell (painel/taskbar/fundo) era
-		 * redimensionado — a janela maximizada ficava no tamanho antigo.
-		 * saved_geo não é tocado (restauração continua válida). */
+		/* Reflow maximizadas (A5) e fullscreen (A6). */
 		struct tinywl_toplevel *t;
 		wl_list_for_each(t, &server->toplevels, link) {
-			if (t->maximized && !t->minimized) {
+			if (t->minimized) {
+				continue;
+			}
+			if (t->fullscreen) {
+				toplevel_apply_fullscreen_layout(t);
+			} else if (t->maximized) {
 				toplevel_apply_maximized_layout(t);
 			}
 		}
@@ -1371,13 +1449,6 @@ static void server_new_output(struct wl_listener *listener, void *data) {
 			swl_panel_resize(server->panel, ow);
 			swl_taskbar_resize(server->taskbar, ow, oh - SWL_TASKBAR_HEIGHT);
 			swl_menu_resize(server->menu, oh);
-			/* Mesmo reflow de maximizadas que em output_request_state (A5). */
-			struct tinywl_toplevel *t;
-			wl_list_for_each(t, &server->toplevels, link) {
-				if (t->maximized && !t->minimized) {
-					toplevel_apply_maximized_layout(t);
-				}
-			}
 		}
 	}
 }
@@ -1554,10 +1625,14 @@ static void xdg_toplevel_request_maximize(
 
 static void xdg_toplevel_request_fullscreen(
 		struct wl_listener *listener, void *data) {
-	/* Just as with request_maximize, we must send a configure here. */
+	/* Pedido de fullscreen vindo do cliente (ex.: vídeo, jogo, F11).
+	 * requested.fullscreen já vem preenchido pelo wlroots. A6: aplica
+	 * layout real, não só schedule_configure vazio. */
+	(void)data;
 	struct tinywl_toplevel *toplevel =
 		wl_container_of(listener, toplevel, request_fullscreen);
-	wlr_xdg_surface_schedule_configure(toplevel->xdg_toplevel->base);
+	toplevel_set_fullscreen(toplevel,
+		toplevel->xdg_toplevel->requested.fullscreen);
 }
 
 /* Cria a subárvore de cena de um popup xdg, pendurada no nó do popup pai.

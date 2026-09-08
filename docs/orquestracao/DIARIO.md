@@ -4,6 +4,20 @@ Registro diário das rodadas de orquestração. Entrada mais recente em
 cima. **Conferir sempre o repo real** — este diário é um índice, não a
 verdade de fonte.
 
+## 2026-09-08 — A6 (fullscreen) integrada com ressalva + aviso ao Grok (admin)
+
+Entrega do Grok em `revisao-de-entrada_LOCAL/a6-files/` (`swlwm.c` +
+sessão). Verificação no código: lógica do fullscreen correta (flag,
+layout tela cheia sem titlebar, salva/restaura, exclusão mútua com
+maximize, guards de resize/decor, commit não desfaz posição); build
+`meson`+`ninja` OK sem warnings novos. Aprovada pelo usuário e
+integrada — **com um "mas"**: o arquivo veio de base pré-A5 e não traz
+o reflow do `server_new_output` (mergeado no A5); subir direto
+regrediria esse caminho. Para não travar o fullscreen, subiu assim
+mesmo e ficou registrado o complemento pendente em
+`docs/revisao/2026-09-08-aviso-grok-a6.md` (repor bloco estendido p/
+fullscreen + detalhe opcional de z-order). A6 → PARCIAL.
+
 ## 2026-09-08 — A5 + B3 integradas (admin)
 
 Duas frentes do Grok em `revisao-de-entrada_LOCAL/`, verificadas e

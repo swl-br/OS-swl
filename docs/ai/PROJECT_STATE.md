@@ -1,7 +1,7 @@
 # PROJECT_STATE — SWL OS
 
-Última atualização: 2026-09-08 (orquestrador — A5 e B3 integradas;
-ver `docs/orquestracao/DIARIO.md`)
+Última atualização: 2026-09-08 (orquestrador — A6 integrada com
+ressalva + aviso ao Grok; ver `docs/orquestracao/DIARIO.md`)
 
 ## Repositório (higiene)
 
@@ -222,6 +222,7 @@ STATUS: FUNCIONAL NO BOOT REAL (2026-09-07).
   Área exclusiva dos orquestradores (admin + GPT); implementação não edita.
 
 ## Próximos passos sugeridos (GUI)
-1. Fullscreen real (protocolo já responde, falta lógica — A6).
+1. Complemento do A6 (reflow no `server_new_output` — aviso ao Grok em
+   `docs/revisao/2026-09-08-aviso-grok-a6.md`).
 2. Resto do catálogo de apps (hoje só TSWL/SWLPAD reais; os outros são
    placeholders) e as fases longas do roadmap.
