@@ -42,5 +42,5 @@ fez na saída do fullscreen.
 Usar o `main` atual (pós `f1c4662`, que já contém A5 + este A6),
 não o pré-A5.
 
-Status: PENDENTE (A6 marcada como parcial no `AFAZERES.md` até o
-complemento subir).
+Status: ATENDIDO em 2026-09-08 — complemento verificado (só os 2
+itens, build 11/11) e integrado. A6 → CONCLUÍDA.

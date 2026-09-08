@@ -4,6 +4,21 @@ Registro diário das rodadas de orquestração. Entrada mais recente em
 cima. **Conferir sempre o repo real** — este diário é um índice, não a
 verdade de fonte.
 
+## 2026-09-08 — A6 concluída + conserto do build A7 (admin)
+
+**A6 complemento** (Grok, resposta ao aviso): diff com exatamente os 2
+itens pedidos (reflow no `server_new_output` estendido p/ fullscreen +
+re-raise do shell ao cancelar fullscreen via maximize), build 11/11 sem
+warnings novos. Integrado: A6 → CONCLUÍDA, aviso marcado ATENDIDO.
+
+**Conserto A7** (erro da revisão do orquestrador): a deleção do par
+`xdg-shell-protocol` quebrou o build — o header do wlroots faz
+`#include "xdg-shell-protocol.h"` (só o `.c` era morto). O teste do A7
+passou porque o `.h` ainda estava no disco na hora. `.h` restaurado do
+histórico (`git show`), `.c` segue deletado; build 11/11 confirmado
+antes de subir. Lição registrada: testar deleção deletando de verdade
+(em `/tmp` limpo).
+
 ## 2026-09-08 — A7 parcial (R-09/R-10) integrada (admin)
 
 Entrega do Grok em `revisao-de-entrada_LOCAL/a7-files/` (2 `meson.build`

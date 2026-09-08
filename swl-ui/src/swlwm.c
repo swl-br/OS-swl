@@ -366,9 +366,11 @@ static void toplevel_set_maximized(struct tinywl_toplevel *toplevel, bool maximi
 		return;
 	}
 	/* Fullscreen e maximizado são mutuamente exclusivos na UI. */
+	bool left_fullscreen = false;
 	if (maximize && toplevel->fullscreen) {
 		toplevel->fullscreen = false;
 		wlr_xdg_toplevel_set_fullscreen(toplevel->xdg_toplevel, false);
+		left_fullscreen = true;
 	}
 
 	if (maximize) {
@@ -381,6 +383,18 @@ static void toplevel_set_maximized(struct tinywl_toplevel *toplevel, bool maximi
 		toplevel_restore_geometry(toplevel);
 	}
 	toplevel->maximized = maximize;
+
+	/* Aviso A6 item 2: ao sair de fullscreen via maximize, re-raise do
+	 * shell (painel/taskbar) — senão só volta no próximo focus. */
+	if (left_fullscreen) {
+		struct tinywl_server *server = toplevel->server;
+		if (server->panel) {
+			wlr_scene_node_raise_to_top(&server->panel->tree->node);
+		}
+		if (server->taskbar) {
+			wlr_scene_node_raise_to_top(&server->taskbar->tree->node);
+		}
+	}
 }
 
 /* Fullscreen real (A6). Cobre o output inteiro; titlebar some. Ao sair,
@@ -1449,6 +1463,20 @@ static void server_new_output(struct wl_listener *listener, void *data) {
 			swl_panel_resize(server->panel, ow);
 			swl_taskbar_resize(server->taskbar, ow, oh - SWL_TASKBAR_HEIGHT);
 			swl_menu_resize(server->menu, oh);
+			/* Mesmo reflow de maximizadas/fullscreen que em
+			 * output_request_state (A5 + complemento A6 —
+			 * docs/revisao/2026-09-08-aviso-grok-a6.md). */
+			struct tinywl_toplevel *t;
+			wl_list_for_each(t, &server->toplevels, link) {
+				if (t->minimized) {
+					continue;
+				}
+				if (t->fullscreen) {
+					toplevel_apply_fullscreen_layout(t);
+				} else if (t->maximized) {
+					toplevel_apply_maximized_layout(t);
+				}
+			}
 		}
 	}
 }
