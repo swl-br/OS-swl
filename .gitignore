@@ -23,3 +23,6 @@
 *.swp
 *~
 .DS_Store
+
+# Caixa de entrada local p/ revisão (só nesta máquina, não sobe)
+/revisao-de-entrada_LOCAL/

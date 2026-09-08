@@ -228,6 +228,13 @@ static void keyboard_keymap(void *data, struct wl_keyboard *kb,
         close(fd);
         return;
     }
+    /* Defesa: se xkb_ctx ainda não existir (ordem de eventos), ignora
+     * em vez de null-deref. O caminho normal cria o contexto antes do
+     * primeiro roundtrip. */
+    if (!a->xkb_ctx) {
+        close(fd);
+        return;
+    }
     char *map = mmap(NULL, size, PROT_READ, MAP_PRIVATE, fd, 0);
     if (map == MAP_FAILED) {
         close(fd);
@@ -447,6 +454,17 @@ int main(int argc, char *argv[]) {
             getenv("WAYLAND_DISPLAY") ? getenv("WAYLAND_DISPLAY") : "(vazio)");
         return 1;
     }
+
+    /* xkb_ctx ANTES do primeiro roundtrip: o seat pode entregar
+     * wl_keyboard.keymap imediatamente no bind (capabilities), e o
+     * listener chama xkb_keymap_new_from_string com o contexto.
+     * Criar depois → null deref (R-02). */
+    a.xkb_ctx = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
+    if (!a.xkb_ctx) {
+        fprintf(stderr, "tswl: falha ao criar xkb_context\n");
+        return 1;
+    }
+
     a.registry = wl_display_get_registry(a.display);
     wl_registry_add_listener(a.registry, &registry_listener, &a);
     wl_display_roundtrip(a.display);
@@ -487,8 +505,6 @@ int main(int argc, char *argv[]) {
     xdg_toplevel_set_app_id(a.toplevel, "tswl");
     wl_surface_commit(a.surface);
     wl_display_roundtrip(a.display);  /* processa o primeiro configure */
-
-    a.xkb_ctx = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
 
     /* loop principal: Wayland fd + PTY fd, com timeout do blink */
     int wl_fd = wl_display_get_fd(a.display);

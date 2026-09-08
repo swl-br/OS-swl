@@ -4,6 +4,17 @@ Registro diário das rodadas de orquestração. Entrada mais recente em
 cima. **Conferir sempre o repo real** — este diário é um índice, não a
 verdade de fonte.
 
+## 2026-09-08 — A1 (TSWL bugs críticos) corrigida e verificada (admin)
+
+Usuário colocou em `revisao-de-entrada_LOCAL/tswl-A1-files/` a correção
+da **A1** pelo Grok (`term.c` + `main.c` + sessão). Orquestrador:
+compilou o tswl com os fontes novos (`meson`+`ninja`, OK) e rodou um
+harness de parser ANSI com ASan/UBSan — o `term.c` antigo reproduzia o
+crash R-01 (`negative-size-param` no `memmove`), o novo passa limpo em
+todas as sequências maliciosas (R-01/R-03) sem UB. R-02 confirmado por
+leitura (xkb_ctx antes do primeiro roundtrip + guard). Aprovado pelo
+usuário e integrado: R-01/R-02/R-03 → CORRIGIDO, A1 concluída.
+
 ## 2026-09-08 — swlc v1 reconciliado + verificado (admin)
 
 Notebook subiu `swl-compiler/` (MVP–M7) + sessão de fechamento.

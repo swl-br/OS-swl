@@ -137,6 +137,9 @@ static void clamp_cursor(tswl_term *t) {
 /* empurra a linha do topo da região de scroll pro ring de histórico
  * (só quando a região é a tela inteira, senão a linha morre). */
 static void scroll_up(tswl_term *t, int n) {
+    if (n <= 0) return;
+    if (t->scroll_top > t->scroll_bot) return;  /* região inválida: no-op */
+    int span = t->scroll_bot - t->scroll_top;   /* linhas a mover (>= 0) */
     for (int k = 0; k < n; k++) {
         if (t->scroll_top == 0 && t->scroll_bot == t->rows - 1) {
             memcpy(&t->back[(size_t)t->back_head * t->cols],
@@ -144,9 +147,11 @@ static void scroll_up(tswl_term *t, int n) {
             t->back_head = (t->back_head + 1) % TSWL_SCROLLBACK;
             if (t->back_count < TSWL_SCROLLBACK) t->back_count++;
         }
-        memmove(&t->grid[(size_t)t->scroll_top * t->cols],
-                &t->grid[(size_t)(t->scroll_top + 1) * t->cols],
-                (size_t)(t->scroll_bot - t->scroll_top) * t->cols * sizeof(tswl_cell));
+        if (span > 0) {
+            memmove(&t->grid[(size_t)t->scroll_top * t->cols],
+                    &t->grid[(size_t)(t->scroll_top + 1) * t->cols],
+                    (size_t)span * t->cols * sizeof(tswl_cell));
+        }
         tswl_cell b = blank_cell(t->cur_bg);
         for (int x = 0; x < t->cols; x++) {
             t->grid[(size_t)t->scroll_bot * t->cols + x] = b;
@@ -158,10 +163,15 @@ static void scroll_up(tswl_term *t, int n) {
 }
 
 static void scroll_down(tswl_term *t, int n) {
+    if (n <= 0) return;
+    if (t->scroll_top > t->scroll_bot) return;  /* região inválida: no-op */
+    int span = t->scroll_bot - t->scroll_top;
     for (int k = 0; k < n; k++) {
-        memmove(&t->grid[(size_t)(t->scroll_top + 1) * t->cols],
-                &t->grid[(size_t)t->scroll_top * t->cols],
-                (size_t)(t->scroll_bot - t->scroll_top) * t->cols * sizeof(tswl_cell));
+        if (span > 0) {
+            memmove(&t->grid[(size_t)(t->scroll_top + 1) * t->cols],
+                    &t->grid[(size_t)t->scroll_top * t->cols],
+                    (size_t)span * t->cols * sizeof(tswl_cell));
+        }
         tswl_cell b = blank_cell(t->cur_bg);
         for (int x = 0; x < t->cols; x++) {
             t->grid[(size_t)t->scroll_top * t->cols + x] = b;
@@ -200,9 +210,17 @@ static void erase_range(tswl_term *t, int row, int x0, int x1) {
     dirty_row(t, row);
 }
 
+/* Limite seguro para parâmetros CSI numéricos. Terminais reais clampam
+ * contagens grandes (evita overflow de int e laços de milhões de
+ * memmove). 9999 cobre qualquer tela razoável e evita UB. */
+#define CSI_PARAM_MAX 9999
+
 static int param(tswl_term *t, int i, int def) {
     if (i >= t->csi_nparams || t->csi_params[i] == 0) return def;
-    return t->csi_params[i];
+    int v = t->csi_params[i];
+    if (v < 0) return def;          /* overflow → valor negativo: ignora */
+    if (v > CSI_PARAM_MAX) return CSI_PARAM_MAX;
+    return v;
 }
 
 static void csi_sgr(tswl_term *t) {
@@ -269,6 +287,9 @@ static void csi_dispatch(tswl_term *t, char final) {
         break;
     case 'L': {  /* insert lines */
         int cnt = param(t, 0, 1);
+        int region = t->scroll_bot - t->scroll_top + 1;
+        if (region < 1) region = 1;
+        if (cnt > region) cnt = region;
         if (t->cy >= t->scroll_top && t->cy <= t->scroll_bot) {
             int save_top = t->scroll_top;
             t->scroll_top = t->cy;
@@ -279,6 +300,9 @@ static void csi_dispatch(tswl_term *t, char final) {
     }
     case 'M': {  /* delete lines */
         int cnt = param(t, 0, 1);
+        int region = t->scroll_bot - t->scroll_top + 1;
+        if (region < 1) region = 1;
+        if (cnt > region) cnt = region;
         if (t->cy >= t->scroll_top && t->cy <= t->scroll_bot) {
             int save_top = t->scroll_top;
             t->scroll_top = t->cy;
@@ -297,8 +321,22 @@ static void csi_dispatch(tswl_term *t, char final) {
         erase_range(t, t->cy, t->cols - cnt, t->cols - 1);
         break;
     }
-    case 'S': scroll_up(t, param(t, 0, 1)); break;
-    case 'T': scroll_down(t, param(t, 0, 1)); break;
+    case 'S': {
+        int cnt = param(t, 0, 1);
+        int region = t->scroll_bot - t->scroll_top + 1;
+        if (region < 1) region = 1;
+        if (cnt > region) cnt = region;
+        scroll_up(t, cnt);
+        break;
+    }
+    case 'T': {
+        int cnt = param(t, 0, 1);
+        int region = t->scroll_bot - t->scroll_top + 1;
+        if (region < 1) region = 1;
+        if (cnt > region) cnt = region;
+        scroll_down(t, cnt);
+        break;
+    }
     case 'X': {  /* erase chars */
         int cnt = param(t, 0, 1);
         erase_range(t, t->cy, t->cx, t->cx + cnt - 1);
@@ -307,10 +345,20 @@ static void csi_dispatch(tswl_term *t, char final) {
     case 'd': t->cy = param(t, 0, 1) - 1; clamp_cursor(t); break;
     case 'm': csi_sgr(t); break;
     case 'r':  /* set scroll region */
+        /* CSI Pt ; Pb r — região inclusiva. Região inválida
+         * (top > bot ou fora dos limites) → tela inteira.
+         * Sem este clamp, ESC[9999;1r + CSI S gera memmove com
+         * tamanho negativo (size_t gigante) → corrupção de memória. */
         t->scroll_top = param(t, 0, 1) - 1;
         t->scroll_bot = param(t, 1, t->rows) - 1;
         if (t->scroll_top < 0) t->scroll_top = 0;
+        if (t->scroll_top >= t->rows) t->scroll_top = t->rows - 1;
+        if (t->scroll_bot < 0) t->scroll_bot = 0;
         if (t->scroll_bot >= t->rows) t->scroll_bot = t->rows - 1;
+        if (t->scroll_top > t->scroll_bot) {
+            t->scroll_top = 0;
+            t->scroll_bot = t->rows - 1;
+        }
         t->cx = 0; t->cy = 0;
         break;
     case 's': t->saved_cx = t->cx; t->saved_cy = t->cy; break;
@@ -453,8 +501,14 @@ bool tswl_term_feed(tswl_term *t, const char *data, size_t len) {
         if (t->state == ST_CSI) {
             if (b >= '0' && b <= '9') {
                 if (t->csi_nparams == 0) t->csi_nparams = 1;
-                t->csi_params[t->csi_nparams - 1] =
-                    t->csi_params[t->csi_nparams - 1] * 10 + (b - '0');
+                int *p = &t->csi_params[t->csi_nparams - 1];
+                /* Evita overflow de int (UB). Para de acumular além
+                 * de CSI_PARAM_MAX — terminais reais fazem o mesmo. */
+                if (*p <= CSI_PARAM_MAX / 10) {
+                    *p = *p * 10 + (b - '0');
+                } else {
+                    *p = CSI_PARAM_MAX;
+                }
             } else if (b == ';') {
                 if (t->csi_nparams < MAX_CSI_PARAMS) t->csi_nparams++;
             } else if (b == '?') {
