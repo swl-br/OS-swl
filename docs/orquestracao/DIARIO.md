@@ -38,6 +38,14 @@ XML validado, sintaxe OK) integrada. `render.c` do T3 NÃO entrou
 aviso em `docs/revisao/2026-09-09-aviso-t3-fontline.md` (PENDENTE).
 Aprovado pelo usuário.
 
+## 2026-09-09 — T2 (scroll) integrada; T2 nunca tinha subido (admin)
+
+Usuário testou scroll no QEMU e não rolava — porque o T2 aguardava
+aprovação e o disco foi construído sem o código (confirmado: 0 refs
+no repo; compositor repassa axis, ok). Aprovado agora e integrado:
+`wl_pointer` + teclas KP/shift. T2 → CONCLUÍDA (validação no QEMU
+pendente; reconstruir disco com o código novo).
+
 ## 2026-09-09 — T1 (cursor barra) testada em pixel e integrada (admin)
 
 Entrega do Grok (`render.c` + sessão): barra 2–3px sobreposta em vez

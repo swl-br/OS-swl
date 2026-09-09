@@ -64,6 +64,7 @@ struct app {
     struct xdg_surface *xsurface;
     struct xdg_toplevel *toplevel;
     struct wl_keyboard *keyboard;
+    struct wl_pointer *pointer;
 
     struct xkb_context *xkb_ctx;
     struct xkb_keymap *keymap;
@@ -431,14 +432,23 @@ static void keyboard_key(void *data, struct wl_keyboard *kb,
     xkb_mod_mask_t shift = xkb_state_mod_name_is_active(a->xkb_state,
         "Shift", XKB_STATE_MODS_EFFECTIVE);
 
-    /* Shift+PageUp/Down: scrollback do terminal (não vai pro shell) */
-    if (shift && sym == XKB_KEY_Page_Up) {
-        tswl_term_scroll_view(a->term, tswl_term_rows(a->term) / 2);
+    /* T2: scrollback — Shift+PageUp/Down (+ keypad) e Shift+Up/Down.
+     * KP_* cobre layouts/QEMU que não emitem Page_Up "normal". */
+    if (shift && (sym == XKB_KEY_Page_Up || sym == XKB_KEY_KP_Page_Up ||
+                  sym == XKB_KEY_Up || sym == XKB_KEY_KP_Up)) {
+        int step = (sym == XKB_KEY_Up || sym == XKB_KEY_KP_Up)
+                   ? 3 : (tswl_term_rows(a->term) / 2);
+        if (step < 1) step = 1;
+        tswl_term_scroll_view(a->term, step);
         a->need_redraw = true;
         return;
     }
-    if (shift && sym == XKB_KEY_Page_Down) {
-        tswl_term_scroll_view(a->term, -tswl_term_rows(a->term) / 2);
+    if (shift && (sym == XKB_KEY_Page_Down || sym == XKB_KEY_KP_Page_Down ||
+                  sym == XKB_KEY_Down || sym == XKB_KEY_KP_Down)) {
+        int step = (sym == XKB_KEY_Down || sym == XKB_KEY_KP_Down)
+                   ? 3 : (tswl_term_rows(a->term) / 2);
+        if (step < 1) step = 1;
+        tswl_term_scroll_view(a->term, -step);
         a->need_redraw = true;
         return;
     }
@@ -481,6 +491,70 @@ static const struct wl_keyboard_listener keyboard_listener = {
     .repeat_info = keyboard_repeat_info,
 };
 
+
+/* ---------------- pointer (T2: wheel → scrollback) ---------------- */
+
+static void pointer_enter(void *data, struct wl_pointer *p, uint32_t serial,
+        struct wl_surface *surface, wl_fixed_t sx, wl_fixed_t sy) {
+    (void)data; (void)p; (void)serial; (void)surface; (void)sx; (void)sy;
+}
+static void pointer_leave(void *data, struct wl_pointer *p, uint32_t serial,
+        struct wl_surface *surface) {
+    (void)data; (void)p; (void)serial; (void)surface;
+}
+static void pointer_motion(void *data, struct wl_pointer *p, uint32_t time,
+        wl_fixed_t sx, wl_fixed_t sy) {
+    (void)data; (void)p; (void)time; (void)sx; (void)sy;
+}
+static void pointer_button(void *data, struct wl_pointer *p, uint32_t serial,
+        uint32_t time, uint32_t button, uint32_t state) {
+    (void)data; (void)p; (void)serial; (void)time; (void)button; (void)state;
+}
+static void pointer_axis(void *data, struct wl_pointer *p, uint32_t time,
+        uint32_t axis, wl_fixed_t value) {
+    struct app *a = data;
+    (void)p; (void)time;
+    if (!a->term) return;
+    if (axis != WL_POINTER_AXIS_VERTICAL_SCROLL) return;
+    double d = wl_fixed_to_double(value);
+    /* Wayland: value > 0 = scroll "para baixo" (histórico mais recente).
+     * scroll_offset maior = olhar para o passado. */
+    int lines = 3;
+    if (d > 0.0)
+        tswl_term_scroll_view(a->term, -lines);
+    else if (d < 0.0)
+        tswl_term_scroll_view(a->term, lines);
+    a->need_redraw = true;
+}
+static void pointer_frame(void *data, struct wl_pointer *p) {
+    (void)data; (void)p;
+}
+static void pointer_axis_source(void *data, struct wl_pointer *p, uint32_t src) {
+    (void)data; (void)p; (void)src;
+}
+static void pointer_axis_stop(void *data, struct wl_pointer *p, uint32_t time,
+        uint32_t axis) {
+    (void)data; (void)p; (void)time; (void)axis;
+}
+static void pointer_axis_discrete(void *data, struct wl_pointer *p,
+        uint32_t axis, int32_t discrete) {
+    /* Ignorado de propósito: o evento axis já cobre wheel e touchpad.
+     * Tratar os dois dobraria o scroll em compositors que emitem ambos. */
+    (void)data; (void)p; (void)axis; (void)discrete;
+}
+
+static const struct wl_pointer_listener pointer_listener = {
+    .enter = pointer_enter,
+    .leave = pointer_leave,
+    .motion = pointer_motion,
+    .button = pointer_button,
+    .axis = pointer_axis,
+    .frame = pointer_frame,
+    .axis_source = pointer_axis_source,
+    .axis_stop = pointer_axis_stop,
+    .axis_discrete = pointer_axis_discrete,
+};
+
 /* ---------------- seat / registry ---------------- */
 
 static void seat_capabilities(void *data, struct wl_seat *seat, uint32_t caps) {
@@ -491,6 +565,13 @@ static void seat_capabilities(void *data, struct wl_seat *seat, uint32_t caps) {
     } else if (!(caps & WL_SEAT_CAPABILITY_KEYBOARD) && a->keyboard) {
         wl_keyboard_destroy(a->keyboard);
         a->keyboard = NULL;
+    }
+    if ((caps & WL_SEAT_CAPABILITY_POINTER) && !a->pointer) {
+        a->pointer = wl_seat_get_pointer(seat);
+        wl_pointer_add_listener(a->pointer, &pointer_listener, a);
+    } else if (!(caps & WL_SEAT_CAPABILITY_POINTER) && a->pointer) {
+        wl_pointer_destroy(a->pointer);
+        a->pointer = NULL;
     }
 }
 
@@ -677,6 +758,7 @@ int main(int argc, char *argv[]) {
     for (int i = 0; i < TSWL_BUF_COUNT; i++) {
         shm_buf_free_resources(&a.bufs[i]);
     }
+    if (a.pointer) wl_pointer_destroy(a.pointer);
     if (a.keyboard) wl_keyboard_destroy(a.keyboard);
     if (a.keymap) xkb_keymap_unref(a.keymap);
     if (a.xkb_state) xkb_state_unref(a.xkb_state);
