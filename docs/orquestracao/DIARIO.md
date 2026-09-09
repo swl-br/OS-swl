@@ -19,6 +19,15 @@ Donos a definir.
 Merge limpo, sem conflitos. Verificação do admin: suite rodada
 aqui → 19 passed. Subido.
 
+## 2026-09-08 — Reconciliação no main + app novo avistado (admin)
+
+Outra máquina fez merge `901b3667d` (lote notebook: Neo, T4/M1/S1) no
+`main`; `main` local em fast-forward, tudo sincronizado. Doc de
+sugestão do Claude pendente de envio (usuário avisa depois).
+Novo na pasta: `apps/swlsysinfo/` (~1000 linhas, monitor de sistema
+Wayland direto, com `build/` — ainda untracked, testes do usuário;
+revisão formal quando pedirem).
+
 ## 2026-09-08 — Alt-screen real no TSWL (admin)
 
 Entrega do Grok: buffer `main_save` (`?1049h` salva+limpa, `?1049l`
