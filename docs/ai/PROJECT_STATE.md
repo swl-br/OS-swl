@@ -206,6 +206,9 @@ STATUS: FUNCIONAL NO BOOT REAL (2026-09-07).
   e instalado em `/bin` — abre no boot real com shell funcional
   (exigia `/dev/pts` montado no init; ver sessão 2026-09-07).
 - **SWLPAD** (`apps/swlpad/`): mesmo fluxo de build/instalação; abre.
+- **SWLSYSINFO** (`apps/swlsysinfo/`, 2026-09-09): monitor do sistema
+  (CPU/MEM, janela 640x400). Mesmo fluxo i386 (incluído no chroot em
+  2026-09-09). Bugs conhecidos: ver S2 em `AFAZERES.md`.
 - Os outros 11 itens do catálogo continuam placeholders (comando
   aponta pra binário inexistente).
 
