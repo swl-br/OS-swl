@@ -27,4 +27,4 @@ E, se possível, o teste sugerido na sua sessão (nested X11 ou boot
 real) para o arrasto até o mínimo e o atraso da titlebar, que aqui não
 tem como validar sem display.
 
-Status: PENDENTE.
+Status: SUPERADO em 2026-09-08 — rebase chegou como `janelas-icones-bandeja/` e foi integrado; ressalva restante (R-13) em `2026-09-08-aviso-janelas-r13.md`.

@@ -21,7 +21,7 @@
  * bateria ligada ainda (não existe backend de áudio/rede/energia no
  * projeto). Mesma natureza do que já era (texto ")))" / "NET" também
  * era só decorativo) — só troca a forma de mostrar isso. */
-static void icon_volume(cairo_t *cr, double x, double y, double s) {
+static void icon_volume(cairo_t *cr, double x, double y, double s, int percent) {
 	cairo_save(cr);
 	cairo_translate(cr, x, y);
 	cairo_set_line_width(cr, 1.3);
@@ -34,21 +34,42 @@ static void icon_volume(cairo_t *cr, double x, double y, double s) {
 	cairo_line_to(cr, 0, s * 0.65);
 	cairo_close_path(cr);
 	cairo_stroke(cr);
-	/* ondas de som */
-	cairo_arc(cr, s * 0.30, s * 0.5, s * 0.42, -M_PI / 4, M_PI / 4);
-	cairo_stroke(cr);
+	if (percent < 0) {
+		/* Sem leitura (amixer ausente ou sem placa de som — comum em VM/
+		 * container): um traço diagonal simples avisa "sem info", em vez
+		 * de fingir uma onda de som que não corresponde a nada real. */
+		cairo_move_to(cr, s * 0.05, s * 0.05);
+		cairo_line_to(cr, s * 0.75, s * 0.75);
+		cairo_stroke(cr);
+	} else if (percent == 0) {
+		/* Mudo: sem onda nenhuma. */
+	} else {
+		/* Onda de som — uma curva se volume baixo/médio, duas se alto. */
+		cairo_arc(cr, s * 0.30, s * 0.5, s * 0.42, -M_PI / 4, M_PI / 4);
+		cairo_stroke(cr);
+		if (percent > 60) {
+			cairo_arc(cr, s * 0.30, s * 0.5, s * 0.62, -M_PI / 5, M_PI / 5);
+			cairo_stroke(cr);
+		}
+	}
 	cairo_restore(cr);
 }
 
-static void icon_wifi(cairo_t *cr, double x, double y, double s) {
+static void icon_wifi(cairo_t *cr, double x, double y, double s, int percent) {
 	cairo_save(cr);
 	cairo_translate(cr, x, y + s * 0.9);
 	cairo_set_line_width(cr, 1.3);
 	cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
+	/* 3 barrinhas, cada uma "acende" (cor normal) se o sinal alcança o
+	 * limiar dela; senão fica esmaecida (SWL_COL_PANEL_BORDER). Sem
+	 * interface wifi (percent < 0): as três ficam esmaecidas. */
+	int thresholds[3] = { 1, 34, 67 };
 	for (int i = 0; i < 3; i++) {
 		double bw = s * 0.16;
 		double bh = s * (0.28 + i * 0.30);
 		double bx = i * (bw + s * 0.08);
+		bool lit = percent >= thresholds[i];
+		SWL_SET(cr, lit ? SWL_COL_TEXT_DIM : SWL_COL_PANEL_BORDER);
 		cairo_move_to(cr, bx, 0);
 		cairo_line_to(cr, bx, -bh);
 		cairo_stroke(cr);
@@ -56,7 +77,7 @@ static void icon_wifi(cairo_t *cr, double x, double y, double s) {
 	cairo_restore(cr);
 }
 
-static void icon_battery(cairo_t *cr, double x, double y, double s) {
+static void icon_battery(cairo_t *cr, double x, double y, double s, double frac) {
 	cairo_save(cr);
 	cairo_translate(cr, x, y);
 	cairo_set_line_width(cr, 1.2);
@@ -66,10 +87,114 @@ static void icon_battery(cairo_t *cr, double x, double y, double s) {
 	/* terminal (+) do lado direito */
 	cairo_rectangle(cr, w, top + h * 0.25, s * 0.08, h * 0.5);
 	cairo_fill(cr);
-	/* nível — decorativo, ~80% */
-	cairo_rectangle(cr, s * 0.08, top + s * 0.08, (w - s * 0.16) * 0.8, h - s * 0.16);
-	cairo_fill(cr);
+	/* nível — real (lido de /sys/class/power_supply), não mais fixo.
+	 * frac < 0 (sem bateria detectada — comum em desktop/VM): não
+	 * preenche nada, só o contorno, deixando claro que não tem leitura
+	 * em vez de mentir uma porcentagem qualquer. */
+	if (frac >= 0) {
+		if (frac > 1) frac = 1;
+		cairo_rectangle(cr, s * 0.08, top + s * 0.08,
+			(w - s * 0.16) * frac, h - s * 0.16);
+		cairo_fill(cr);
+	}
 	cairo_restore(cr);
+}
+
+/* --- leituras reais da bandeja (bateria/wifi/volume) -----------------
+ * Mesmo espírito das leituras de CPU/MEM do painel: direto de /proc e
+ * /sys, sem linkar biblioteca nenhuma — exceto o volume, que não tem
+ * uma leitura de "porcentagem atual" confiável só em sysfs; usa o
+ * utilitário `amixer` (pacote alsa-utils) via popen, com fallback
+ * gracioso se não existir ou não tiver placa de som (comum neste
+ * ambiente de dev em container, e possivelmente no SWL OS mínimo
+ * também, até decidirem empacotar alsa-utils no rootfs — ver ressalva
+ * na entrega). Todas as três retornam -1 quando a informação não está
+ * disponível — quem desenha decide o que mostrar nesse caso. */
+
+static int read_battery_percent(bool *out_charging) {
+	static const char *bases[] = {
+		"/sys/class/power_supply/BAT0",
+		"/sys/class/power_supply/BAT1",
+	};
+	for (size_t i = 0; i < sizeof(bases) / sizeof(bases[0]); i++) {
+		char path[128];
+		snprintf(path, sizeof(path), "%s/capacity", bases[i]);
+		FILE *f = fopen(path, "r");
+		if (!f) {
+			continue;
+		}
+		int pct = -1;
+		if (fscanf(f, "%d", &pct) != 1) {
+			pct = -1;
+		}
+		fclose(f);
+		if (pct < 0) {
+			continue;
+		}
+		if (out_charging) {
+			*out_charging = false;
+			snprintf(path, sizeof(path), "%s/status", bases[i]);
+			FILE *fs = fopen(path, "r");
+			if (fs) {
+				char status[32] = {0};
+				if (fgets(status, sizeof(status), fs)) {
+					*out_charging = (strncmp(status, "Charging", 8) == 0);
+				}
+				fclose(fs);
+			}
+		}
+		return pct;
+	}
+	return -1; /* sem bateria (desktop/VM) — resultado válido, não é erro */
+}
+
+static int read_wifi_percent(void) {
+	FILE *f = fopen("/proc/net/wireless", "r");
+	if (!f) {
+		return -1;
+	}
+	char line[256];
+	int result = -1;
+	/* 2 linhas de cabeçalho, depois uma linha por interface —
+	 * "wlan0: 0000   NN.  ..." onde o 2º campo é a qualidade do link.
+	 * A escala varia por driver (comum: 0-70), normaliza pra 0-100. */
+	for (int i = 0; i < 2 && fgets(line, sizeof(line), f); i++) {
+		/* descarta cabeçalho */
+	}
+	if (fgets(line, sizeof(line), f)) {
+		char iface[32];
+		unsigned status;
+		double quality;
+		if (sscanf(line, " %31[^:]: %x %lf", iface, &status, &quality) == 3) {
+			double pct = (quality / 70.0) * 100.0;
+			if (pct > 100) pct = 100;
+			if (pct < 0) pct = 0;
+			result = (int)pct;
+		}
+	}
+	fclose(f);
+	return result;
+}
+
+static int read_volume_percent(void) {
+	FILE *f = popen("amixer get Master 2>/dev/null", "r");
+	if (!f) {
+		return -1;
+	}
+	char line[256];
+	int result = -1;
+	while (fgets(line, sizeof(line), f)) {
+		char *bracket = strchr(line, '[');
+		if (bracket && strchr(bracket, '%')) {
+			int pct;
+			if (sscanf(bracket, "[%d%%]", &pct) == 1) {
+				result = pct;
+				break;
+			}
+		}
+	}
+	pclose(f);
+	return result;
 }
 
 static void taskbar_draw(cairo_t *cr, int width, int height, void *data) {
@@ -131,17 +256,25 @@ static void taskbar_draw(cairo_t *cr, int width, int height, void *data) {
 		x += w + SWL_TASKBAR_GAP;
 	}
 
-	/* Bandeja do sistema — ícones vetoriais (ver nota acima: ainda
-	 * decorativos, sem backend real de áudio/rede/energia por trás). */
+	/* Bandeja do sistema — volume via amixer (best-effort, ver nota
+	 * acima), wifi/bateria direto de /proc e /sys. Lido a cada desenho
+	 * (chamado no máximo 1x/segundo pelo timer da taskbar — não é caro
+	 * o bastante pra precisar de cache). */
 	double tray_x = width - 230;
 	if (tray_x < x + 20) {
 		tray_x = x + 20;
 	}
 	SWL_SET(cr, SWL_COL_TEXT_DIM);
 	double tray_icon_y = height / 2.0 - 8;
-	icon_volume(cr, tray_x, tray_icon_y, 16);
-	icon_wifi(cr, tray_x + 30, tray_icon_y, 16);
-	icon_battery(cr, tray_x + 60, tray_icon_y, 16);
+	int vol_pct = read_volume_percent();
+	int wifi_pct = read_wifi_percent();
+	bool charging = false;
+	int bat_pct = read_battery_percent(&charging);
+	icon_volume(cr, tray_x, tray_icon_y, 16, vol_pct);
+	icon_wifi(cr, tray_x + 30, tray_icon_y, 16, wifi_pct);
+	SWL_SET(cr, charging ? SWL_COL_ACCENT_CYAN : SWL_COL_TEXT_DIM);
+	icon_battery(cr, tray_x + 60, tray_icon_y, 16,
+		bat_pct < 0 ? -1.0 : bat_pct / 100.0);
 
 	/* Relógio */
 	time_t now = time(NULL);

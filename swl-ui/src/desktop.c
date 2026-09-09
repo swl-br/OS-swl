@@ -55,6 +55,9 @@ struct swl_desktop {
 	struct wlr_scene_tree *tree;
 	struct swl_desktop_icon_node icons[N_DEFAULT_ICONS];
 	int count;
+	int top_offset; /* y onde a grade começa (abaixo do painel) — guardado
+	                  * pra swl_desktop_find_free_slot() recalcular linhas
+	                  * da grade sem precisar receber de novo por fora. */
 };
 
 /* ---------------------------------------------------------------------
@@ -322,6 +325,7 @@ struct swl_desktop *swl_desktop_create(struct wlr_scene_tree *parent, int top_of
 	struct swl_desktop *desktop = calloc(1, sizeof(*desktop));
 	desktop->tree = wlr_scene_tree_create(parent);
 	desktop->count = (int)N_DEFAULT_ICONS;
+	desktop->top_offset = top_offset;
 
 	for (size_t i = 0; i < N_DEFAULT_ICONS; i++) {
 		int col = (int)(i % ICON_COLS);
@@ -386,6 +390,68 @@ const char *swl_desktop_icon_command(struct swl_desktop *desktop, int index) {
 		return NULL;
 	}
 	return desktop->icons[index].command;
+}
+
+static bool rects_overlap(int ax, int ay, int aw, int ah,
+		int bx, int by, int bw, int bh) {
+	return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
+}
+
+/* Acha a célula de grade livre mais próxima de (want_x, want_y) — usada
+ * ao SOLTAR um ícone arrastado (não durante o arrasto: o ícone segue o
+ * mouse livremente enquanto arrasta, só "encaixa" na grade no
+ * WLR_BUTTON_RELEASED, em swlwm.c). Antes disso, dava pra soltar um
+ * ícone literalmente em cima de outro (mesma posição exata) — agora
+ * sempre acha a célula livre mais próxima em espiral a partir do ponto
+ * onde soltou, ignorando o próprio ícone que está sendo movido na
+ * checagem de colisão. */
+void swl_desktop_find_free_slot(struct swl_desktop *desktop, int moving_index,
+		int want_x, int want_y, int *out_x, int *out_y) {
+	int base_col = (want_x - ICON_MARGIN_X + ICON_CELL_W / 2) / ICON_CELL_W;
+	int base_row = (want_y - desktop->top_offset - ICON_MARGIN_Y + ICON_CELL_H / 2) / ICON_CELL_H;
+	if (base_col < 0) base_col = 0;
+	if (base_row < 0) base_row = 0;
+
+	for (int radius = 0; radius <= 12; radius++) {
+		for (int dc = -radius; dc <= radius; dc++) {
+			for (int dr = -radius; dr <= radius; dr++) {
+				/* só o "anel" externo do raio atual — o miolo já foi
+				 * checado em raios menores. */
+				if (radius > 0 && abs(dc) != radius && abs(dr) != radius) {
+					continue;
+				}
+				int col = base_col + dc;
+				int row = base_row + dr;
+				if (col < 0 || row < 0) {
+					continue;
+				}
+				int cx = ICON_MARGIN_X + col * ICON_CELL_W;
+				int cy = desktop->top_offset + ICON_MARGIN_Y + row * ICON_CELL_H;
+				bool occupied = false;
+				for (int i = 0; i < desktop->count; i++) {
+					if (i == moving_index || desktop->icons[i].hidden) {
+						continue;
+					}
+					if (rects_overlap(cx, cy, ICON_CELL_W, ICON_CELL_H,
+							desktop->icons[i].x, desktop->icons[i].y,
+							desktop->icons[i].w, desktop->icons[i].h)) {
+						occupied = true;
+						break;
+					}
+				}
+				if (!occupied) {
+					*out_x = cx;
+					*out_y = cy;
+					return;
+				}
+			}
+		}
+	}
+	/* Raio esgotado (bem improvável com a quantidade de ícones que o
+	 * catálogo tem hoje) — usa a célula base mesmo, sobrepondo; melhor
+	 * que travar sem devolver posição nenhuma. */
+	*out_x = ICON_MARGIN_X + base_col * ICON_CELL_W;
+	*out_y = desktop->top_offset + ICON_MARGIN_Y + base_row * ICON_CELL_H;
 }
 
 void swl_desktop_move_icon(struct swl_desktop *desktop, int index, int x, int y) {

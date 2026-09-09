@@ -126,17 +126,25 @@ struct tinywl_server {
 	double desktop_drag_press_x, desktop_drag_press_y;
 	int desktop_drag_icon_orig_x, desktop_drag_icon_orig_y;
 
-	/* Throttle do redesenho da decoração durante resize interativo — ver
-	 * process_cursor_resize()/output_frame(). Sem isso, swl_decoration_
-	 * resize() (realoca buffer + redesenha tudo com Cairo/Pango) roda a
-	 * cada evento de motion do mouse, que pode disparar muito mais rápido
-	 * que a taxa de frame real — o trabalho de redesenho vira fila e a
-	 * decoração visualmente "atrasa" alguns quadros atrás do cursor.
-	 * Aqui só marcamos "precisa redesenhar com esta largura" no motion, e
-	 * o redesenho de verdade acontece no máximo uma vez por frame, dentro
-	 * de output_frame(), logo antes do commit. */
-	bool resize_deco_dirty;
-	int resize_deco_pending_width;
+	/* Throttle do resize interativo — ver process_cursor_resize()/
+	 * output_frame(). Posição, tamanho pedido ao cliente e redesenho da
+	 * decoração são aplicados JUNTOS, no máximo uma vez por frame, nunca
+	 * separadamente. A primeira versão deste fix throttava só a
+	 * decoração e deixava a posição instantânea — isso criava um
+	 * descompasso visível entre os dois (ao arrastar a borda esquerda/de
+	 * cima, um lado da janela "atrasava" em relação ao outro, porque
+	 * posição e largura mudavam em momentos diferentes). Motion events
+	 * podem disparar muito mais rápido que a taxa real de frame; sem
+	 * throttle nenhum, swl_decoration_resize() (realoca buffer + redesenha
+	 * tudo com Cairo/Pango) enfileira trabalho mais rápido do que
+	 * consegue processar. */
+	bool resize_pending;
+	int resize_pending_scene_x, resize_pending_scene_y;
+	int resize_pending_width, resize_pending_height;
+
+	/* Arrastar janela até encostar no painel = maximizar (soltar aplica,
+	 * ver process_cursor_move() e o handler de WLR_BUTTON_RELEASED). */
+	bool move_snap_maximize;
 
 	struct wlr_scene_buffer *background;
 	int screen_width, screen_height;
@@ -694,11 +702,6 @@ static struct tinywl_toplevel *desktop_toplevel_at(
 	while (tree != NULL && tree->node.data == NULL) {
 		tree = tree->node.parent;
 	}
-	/* R-13: se o buffer não está sob um toplevel (painel, desktop,
-	 * menu…), tree pode ser NULL — não ler tree->node.data. */
-	if (tree == NULL) {
-		return NULL;
-	}
 	return tree->node.data;
 }
 
@@ -708,12 +711,53 @@ static void reset_cursor_mode(struct tinywl_server *server) {
 	server->grabbed_toplevel = NULL;
 }
 
+/* Margem mínima de janela que sempre fica visível/agarrável na tela
+ * durante um arrasto — sem isso, dava pra arrastar uma janela pra fora
+ * da tela por completo e não ter como trazer de volta (não tem atalho
+ * de teclado nem "organizar janelas" ainda). */
+#define SWL_DRAG_VISIBLE_MARGIN 60
+
 static void process_cursor_move(struct tinywl_server *server, uint32_t time) {
 	/* Move the grabbed toplevel to the new position. */
 	struct tinywl_toplevel *toplevel = server->grabbed_toplevel;
-	wlr_scene_node_set_position(&toplevel->scene_tree->node,
-		server->cursor->x - server->grab_x,
-		server->cursor->y - server->grab_y);
+	if (toplevel->maximized || toplevel->fullscreen) {
+		/* Não faz sentido arrastar a posição de uma janela maximizada ou
+		 * em fullscreen — as duas ocupam a área inteira por definição. */
+		return;
+	}
+
+	double new_x = server->cursor->x - server->grab_x;
+	double new_y = server->cursor->y - server->grab_y;
+
+	struct wlr_box geo;
+	wlr_xdg_surface_get_geometry(toplevel->xdg_toplevel->base, &geo);
+	int width = geo.width > 0 ? geo.width : 200;
+
+	/* Nunca deixa a janela sair da tela por completo — sempre sobra pelo
+	 * menos SWL_DRAG_VISIBLE_MARGIN de barra de título visível pra
+	 * conseguir arrastar de volta depois. */
+	if (new_x + width < SWL_DRAG_VISIBLE_MARGIN) {
+		new_x = SWL_DRAG_VISIBLE_MARGIN - width;
+	}
+	if (new_x > server->screen_width - SWL_DRAG_VISIBLE_MARGIN) {
+		new_x = server->screen_width - SWL_DRAG_VISIBLE_MARGIN;
+	}
+	/* Nunca deixa a barra de título atravessar o painel por cima — pode
+	 * encostar nele, não passar por trás. */
+	if (new_y < SWL_PANEL_HEIGHT) {
+		new_y = SWL_PANEL_HEIGHT;
+	}
+	/* Não deixa sumir embaixo da taskbar por completo. */
+	if (new_y > server->screen_height - SWL_TASKBAR_HEIGHT - SWL_DRAG_VISIBLE_MARGIN) {
+		new_y = server->screen_height - SWL_TASKBAR_HEIGHT - SWL_DRAG_VISIBLE_MARGIN;
+	}
+
+	wlr_scene_node_set_position(&toplevel->scene_tree->node, new_x, new_y);
+
+	/* "Encostou" no painel — arma o snap-pra-maximizar (estilo "Aero
+	 * Snap"), aplicado só no release (ver WLR_BUTTON_RELEASED). Não
+	 * aplica aqui: soltar o grab no meio do arrasto ficaria estranho. */
+	server->move_snap_maximize = (new_y <= SWL_PANEL_HEIGHT);
 }
 
 static void process_cursor_resize(struct tinywl_server *server, uint32_t time) {
@@ -781,18 +825,18 @@ static void process_cursor_resize(struct tinywl_server *server, uint32_t time) {
 
 	struct wlr_box geo_box;
 	wlr_xdg_surface_get_geometry(toplevel->xdg_toplevel->base, &geo_box);
-	wlr_scene_node_set_position(&toplevel->scene_tree->node,
-		new_left - geo_box.x, new_top - geo_box.y - SWL_TITLEBAR_HEIGHT);
 
-	int new_width = new_right - new_left;
-	int new_height = new_bottom - new_top;
-	wlr_xdg_toplevel_set_size(toplevel->xdg_toplevel, new_width, new_height);
-	if (toplevel->decoration && new_width > 0) {
-		/* NÃO redesenha aqui — só marca. Ver comentário do campo
-		 * resize_deco_dirty no struct do servidor. */
-		server->resize_deco_dirty = true;
-		server->resize_deco_pending_width = new_width;
-	}
+	/* Posição, tamanho pedido ao cliente e redesenho da decoração NÃO são
+	 * aplicados aqui — só guardados. Os três precisam mudar juntos, no
+	 * mesmo instante, ou um fica visualmente "atrasado" em relação ao
+	 * outro. Tudo isso é aplicado de uma vez só, no máximo uma vez por
+	 * frame, em output_frame() (ou no release, se soltar entre um frame e
+	 * outro). Ver campo resize_pending no struct do servidor. */
+	server->resize_pending = true;
+	server->resize_pending_scene_x = new_left - geo_box.x;
+	server->resize_pending_scene_y = new_top - geo_box.y - SWL_TITLEBAR_HEIGHT;
+	server->resize_pending_width = new_right - new_left;
+	server->resize_pending_height = new_bottom - new_top;
 }
 
 static void process_cursor_motion(struct tinywl_server *server, uint32_t time) {
@@ -986,21 +1030,42 @@ static void server_cursor_button(struct wl_listener *listener, void *data) {
 						_exit(1);
 					}
 				}
+			} else if (server->desktop) {
+				/* Foi um arrasto de verdade (não clique) — encaixa na
+				 * célula de grade livre mais próxima de onde soltou, em
+				 * vez de deixar na posição de pixel exata (que podia
+				 * ficar em cima de outro ícone). */
+				int cur_x = 0, cur_y = 0;
+				swl_desktop_icon_pos(server->desktop, icon, &cur_x, &cur_y);
+				int snap_x, snap_y;
+				swl_desktop_find_free_slot(server->desktop, icon,
+					cur_x, cur_y, &snap_x, &snap_y);
+				swl_desktop_move_icon(server->desktop, icon, snap_x, snap_y);
 			}
 		}
-		/* Descarrega o redesenho pendente da decoração (ver
-		 * resize_deco_dirty) ANTES de soltar server->grabbed_toplevel —
-		 * reset_cursor_mode() zera esse ponteiro, e output_frame() usa
-		 * exatamente ele pra saber qual decoração redesenhar. Sem isso,
-		 * soltar o botão entre o último motion e o próximo frame perderia
-		 * o redesenho final pra sempre (decoração ficaria com a largura
-		 * de alguns instantes atrás até outra interação acontecer). */
-		if (server->resize_deco_dirty && server->grabbed_toplevel &&
-				server->grabbed_toplevel->decoration) {
-			swl_decoration_resize(server->grabbed_toplevel->decoration,
-				server->resize_deco_pending_width);
-			server->resize_deco_dirty = false;
+		/* Descarrega o resize pendente (posição+tamanho+decoração juntos)
+		 * ANTES de soltar server->grabbed_toplevel — reset_cursor_mode()
+		 * zera esse ponteiro, e é ele quem output_frame() usa pra saber
+		 * qual toplevel aplicar. Sem isso, soltar o botão entre o último
+		 * motion e o próximo frame perderia o ajuste final pra sempre. */
+		if (server->resize_pending && server->grabbed_toplevel) {
+			struct tinywl_toplevel *t = server->grabbed_toplevel;
+			wlr_scene_node_set_position(&t->scene_tree->node,
+				server->resize_pending_scene_x, server->resize_pending_scene_y);
+			wlr_xdg_toplevel_set_size(t->xdg_toplevel,
+				server->resize_pending_width, server->resize_pending_height);
+			if (t->decoration && server->resize_pending_width > 0) {
+				swl_decoration_resize(t->decoration, server->resize_pending_width);
+			}
+			server->resize_pending = false;
 		}
+		/* Snap-pra-maximizar: se estava movendo (não redimensionando) e a
+		 * janela ficou encostada no painel quando soltou o botão. */
+		if (server->cursor_mode == TINYWL_CURSOR_MOVE &&
+				server->move_snap_maximize && server->grabbed_toplevel) {
+			toplevel_set_maximized(server->grabbed_toplevel, true);
+		}
+		server->move_snap_maximize = false;
 		/* If you released any buttons, we exit interactive move/resize mode. */
 		reset_cursor_mode(server);
 		return;
@@ -1310,15 +1375,20 @@ static void output_frame(struct wl_listener *listener, void *data) {
 	struct tinywl_output *output = wl_container_of(listener, output, frame);
 	struct wlr_scene *scene = output->server->scene;
 
-	/* Redesenho da decoração pendente de um resize interativo (ver
-	 * process_cursor_resize) — no máximo uma vez por frame, aqui, nunca
-	 * síncrono por evento de motion. */
+	/* Resize interativo pendente (ver process_cursor_resize) — posição,
+	 * pedido de tamanho ao cliente e redesenho da decoração aplicados
+	 * juntos, no máximo uma vez por frame, nunca separadamente. */
 	struct tinywl_server *server = output->server;
-	if (server->resize_deco_dirty && server->grabbed_toplevel &&
-			server->grabbed_toplevel->decoration) {
-		swl_decoration_resize(server->grabbed_toplevel->decoration,
-			server->resize_deco_pending_width);
-		server->resize_deco_dirty = false;
+	if (server->resize_pending && server->grabbed_toplevel) {
+		struct tinywl_toplevel *t = server->grabbed_toplevel;
+		wlr_scene_node_set_position(&t->scene_tree->node,
+			server->resize_pending_scene_x, server->resize_pending_scene_y);
+		wlr_xdg_toplevel_set_size(t->xdg_toplevel,
+			server->resize_pending_width, server->resize_pending_height);
+		if (t->decoration && server->resize_pending_width > 0) {
+			swl_decoration_resize(t->decoration, server->resize_pending_width);
+		}
+		server->resize_pending = false;
 	}
 
 	struct wlr_scene_output *scene_output = wlr_scene_get_scene_output(

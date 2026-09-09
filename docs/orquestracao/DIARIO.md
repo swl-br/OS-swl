@@ -28,6 +28,17 @@ Novo na pasta: `apps/swlsysinfo/` (~1000 linhas, monitor de sistema
 Wayland direto, com `build/` — ainda untracked, testes do usuário;
 revisão formal quando pedirem).
 
+## 2026-09-08 — Pacote janelas-icones-bandeja integrado, C1 concluída (admin)
+
+Entrega sem sessão (`janelas-icones-bandeja/`: swlwm+desktop+taskbar+header):
+resize unificado, snap-maximizar, margens, encaixe de ícones, bandeja
+real. Verificação: build OK sem warnings novos; encaixe 4/4 sanitizer;
+leitores da bandeja conferidos (fallbacks); base A5/A6/B2 intacta, só
+R-13 a repor (aviso novo). Aprovado pelo usuário e integrado: C1 →
+CONCLUÍDA; aviso resize antigo SUPERADO. Sessão da entrega pendente
+(autor gera). Caixa de entrada limpa do já-integrado (resta c2 do
+Buffy + swlpad aguardando decisão).
+
 ## 2026-09-08 — Alt-screen real no TSWL (admin)
 
 Entrega do Grok: buffer `main_save` (`?1049h` salva+limpa, `?1049l`

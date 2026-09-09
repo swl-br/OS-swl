@@ -53,6 +53,12 @@ void swl_desktop_move_icon(struct swl_desktop *desktop, int index, int x, int y)
  * Não escreve em out_x/out_y se index for inválido. */
 void swl_desktop_icon_pos(struct swl_desktop *desktop, int index, int *out_x, int *out_y);
 
+/* Acha a célula de grade livre mais próxima de (want_x, want_y) — ver
+ * comentário da implementação em desktop.c. Usada ao soltar um ícone
+ * arrastado, pra nunca deixar dois ícones sobrepostos. */
+void swl_desktop_find_free_slot(struct swl_desktop *desktop, int moving_index,
+	int want_x, int want_y, int *out_x, int *out_y);
+
 /* Esconde/restaura um ícone (usado pelo menu de contexto: "Remover do
  * desktop" / "Restaurar ícones removidos"). Ícone escondido não
  * aparece, não recebe clique nem hit-test — mas continua existindo
