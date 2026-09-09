@@ -28,6 +28,14 @@ Novo na pasta: `apps/swlsysinfo/` (~1000 linhas, monitor de sistema
 Wayland direto, com `build/` — ainda untracked, testes do usuário;
 revisão formal quando pedirem).
 
+## 2026-09-09 — T1 (cursor barra) testada em pixel e integrada (admin)
+
+Entrega do Grok (`render.c` + sessão): barra 2–3px sobreposta em vez
+de bloco invertido. Verificação além do build: harness headless que
+desenha e lê pixels (barra presente, resto da célula vazio, `off`
+limpo — blink ok). Aprovado pelo usuário (condicionado ao teste) e
+integrado: T1 → CONCLUÍDA (visual no QEMU pendente).
+
 ## 2026-09-08 — Pacote janelas-icones-bandeja integrado, C1 concluída (admin)
 
 Entrega sem sessão (`janelas-icones-bandeja/`: swlwm+desktop+taskbar+header):

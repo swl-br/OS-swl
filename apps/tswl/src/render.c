@@ -254,52 +254,23 @@ void tswl_render_draw(tswl_render *r, tswl_term *t, bool cursor_on) {
     }
     g_object_unref(layout);
 
-    /* cursor */
+    /* cursor — T1: barra vertical piscando (não bloco invertido) */
     if (cursor_on && tswl_term_cursor_visible(t) && offset == 0) {
         int cx = tswl_term_cursor_x(t);
         int cy = tswl_term_cursor_y(t);
         const tswl_cell *cell = tswl_term_cell(t, cx, cy);
-        /* cursor: bloco com cor do fg da célula (ou default), texto fica
-         * com a cor de fundo por cima — efeito de inversão clássico */
         rgb_t cc = color_for(cell->fg == TSWL_COL_DEFAULT_FG
                              ? (uint16_t)7 : cell->fg, 0, true);
-        cairo_set_source_rgba(cr, cc.r, cc.g, cc.b, 0.85);
-        cairo_rectangle(cr, TSWL_RENDER_PAD + cx * r->cw,
-                        TSWL_RENDER_PAD + cy * r->ch, r->cw, r->ch);
+        /* largura ~1/8 da célula, mínimo 2px — posição no início da célula */
+        int bar_w = r->cw / 8;
+        if (bar_w < 2) bar_w = 2;
+        if (bar_w > 3) bar_w = 3;
+        cairo_set_source_rgba(cr, cc.r, cc.g, cc.b, 0.95);
+        cairo_rectangle(cr,
+                        TSWL_RENDER_PAD + cx * r->cw,
+                        TSWL_RENDER_PAD + cy * r->ch,
+                        bar_w, r->ch);
         cairo_fill(cr);
-        if (cell->ch > 0x20) {
-            char buf[8];
-            int blen = 0;
-            uint32_t cp = cell->ch;
-            if (cp < 0x80) buf[blen++] = (char)cp;
-            else if (cp < 0x800) {
-                buf[blen++] = (char)(0xC0 | (cp >> 6));
-                buf[blen++] = (char)(0x80 | (cp & 0x3F));
-            } else if (cp < 0x10000) {
-                buf[blen++] = (char)(0xE0 | (cp >> 12));
-                buf[blen++] = (char)(0x80 | ((cp >> 6) & 0x3F));
-                buf[blen++] = (char)(0x80 | (cp & 0x3F));
-            } else {
-                buf[blen++] = (char)(0xF0 | (cp >> 18));
-                buf[blen++] = (char)(0x80 | ((cp >> 12) & 0x3F));
-                buf[blen++] = (char)(0x80 | ((cp >> 6) & 0x3F));
-                buf[blen++] = (char)(0x80 | (cp & 0x3F));
-            }
-            buf[blen] = 0;
-            PangoLayout *cl = pango_cairo_create_layout(cr);
-            char desc[128];
-            snprintf(desc, sizeof(desc), "%s%s %.0f", TSWL_FONT,
-                (cell->attrs & TSWL_ATTR_BOLD) ? " Bold" : "", TSWL_FONT_SIZE);
-            PangoFontDescription *fd = pango_font_description_from_string(desc);
-            pango_layout_set_font_description(cl, fd);
-            pango_font_description_free(fd);
-            pango_layout_set_text(cl, buf, blen);
-            cairo_set_source_rgb(cr, palette[17].r, palette[17].g, palette[17].b);
-            cairo_move_to(cr, TSWL_RENDER_PAD + cx * r->cw,
-                          TSWL_RENDER_PAD + cy * r->ch + r->baseline);
-            pango_cairo_show_layout(cr, cl);
-            g_object_unref(cl);
-        }
     }
 
     cairo_destroy(cr);
