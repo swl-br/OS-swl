@@ -4,6 +4,12 @@ Registro diário das rodadas de orquestração. Entrada mais recente em
 cima. **Conferir sempre o repo real** — este diário é um índice, não a
 verdade de fonte.
 
+## 2026-09-09 — KVM resolve a fluidez (admin)
+
+`make run-gui` com `-accel kvm` (fallback TCG): usuário confirma
+boot e uso "voando". Travamentos eram emulação pura, não o sistema.
+QEMU 8.2 rejeita a sintaxe `kvm:tcg` — Makefile usa `||` com fallback.
+
 ## 2026-09-08 — Tarefas T4/M1/S1 (pedidos do usuário no QEMU) (admin)
 
 Usuário testando no sistema pediu: terminal completo (T4, absorve T1+T2:
