@@ -26,3 +26,6 @@
 
 # Caixa de entrada local p/ revisão (só nesta máquina, não sobe)
 /revisao-de-entrada_LOCAL/
+
+# Pasta de entrada (inbox local de análise — nunca commitar)
+ /arquivos-de-entrada/
