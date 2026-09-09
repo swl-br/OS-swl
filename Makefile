@@ -34,11 +34,11 @@ run: $(BUILD)/disk.img
 # A4: -vga std expõe o dispositivo "Bochs VGA" que o driver de kernel
 # CONFIG_DRM_BOCHS sabe dirigir via KMS (/dev/dri/card0) — sem isso não
 # existe placa nenhuma pro compositor abrir, mesmo com o driver certo.
-# -accel kvm:tcg usa KVM quando há /dev/kvm (10–50x mais rápido que a
-# emulação pura) e cai pro TCG sozinho quando não há — sem KVM, os
-# warnings "your system is too slow" do libinput são esperados.
+# Tenta KVM primeiro (10–50x mais rápido que a emulação pura; sem ele,
+# os warnings "your system is too slow" do libinput são esperados) e
+# cai pra emulação pura se o QEMU não aceitar/suportar.
 run-gui: $(BUILD)/disk.img
-	qemu-system-i386 -hda $(BUILD)/disk.img -vga std -display gtk -serial mon:stdio -m 512 -accel kvm:tcg
+	qemu-system-i386 -hda $(BUILD)/disk.img -vga std -display gtk -serial mon:stdio -m 512 -accel kvm || qemu-system-i386 -hda $(BUILD)/disk.img -vga std -display gtk -serial mon:stdio -m 512
 
 # A4/A4.1: monta o chroot Debian trixie i386, compila wlroots mínimo
 # (sem X11/GLES2/Vulkan/GBM) + swlwm + udev, e deixa os artefatos em
