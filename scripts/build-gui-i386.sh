@@ -117,7 +117,7 @@ PKG_CONFIG_PATH=/usr/local/lib/i386-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig
 ninja -C build
 
 # --- apps nativas (tswl, swlpad) — mesmos clientes Wayland do desktop ---
-for app in tswl swlpad; do
+for app in tswl swlpad swlsysinfo; do
     cd /root/apps/$app
     rm -rf build
     meson setup build
@@ -135,7 +135,7 @@ ldd build/swlwm | wc -l
 # --- coleta os artefatos: binário + todas as .so carregadas ---
 mkdir -p /root/gui-artifacts/lib /root/gui-artifacts/apps
 cp build/swlwm /root/gui-artifacts/swlwm
-for app in tswl swlpad; do
+for app in tswl swlpad swlsysinfo; do
     cp /root/apps/$app/build/$app /root/gui-artifacts/apps/$app
 done
 
@@ -159,7 +159,7 @@ ldd build/swlwm | awk '/=>/ {print $3} !/=>/ && /\// {print $1}' \
     | grep -v '^$' | sort -u | while read -r lib; do
         [ -f "$lib" ] && cp -L "$lib" /root/gui-artifacts/lib/
 done
-for app in tswl swlpad; do
+for app in tswl swlpad swlsysinfo; do
     ldd /root/apps/$app/build/$app | awk '/=>/ {print $3} !/=>/ && /\// {print $1}' \
         | grep -v '^$' | sort -u | while read -r lib; do
             [ -f "$lib" ] && cp -L "$lib" /root/gui-artifacts/lib/
@@ -198,7 +198,7 @@ cp -r "$CHROOT/root/gui-artifacts/." "$OUT/"
 
 log "artefatos prontos em: $OUT"
 log "  $OUT/swlwm             — binário i386"
-log "  $OUT/apps/tswl,swlpad  — apps nativas i386"
+log "  $OUT/apps/tswl,swlpad,swlsysinfo — apps nativas i386"
 log "  $OUT/lib/*.so*         — todas as libs carregadas (i386)"
 log "  $OUT/fonts/*.ttf       — fonte mínima pro Pango"
 log "  $OUT/udev/             — udevadm/systemd-udevd + regras de input (A4.1)"
