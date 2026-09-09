@@ -16,6 +16,10 @@ elif [ -f "$_ART_CAND3" ]; then ART="$_ART_CAND3"
 else ART=""
 fi
 
+# Gato desativado por enquanto (usuário achou feio; volta quando o Neo
+# ficar bom — ver T3). Com ART vazio o layout cai em "info".
+ART=""
+
 esc=$(printf '\033')
 C="${esc}[36m"; G="${esc}[32m"; N="${esc}[0m"
 
