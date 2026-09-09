@@ -1,5 +1,8 @@
 # AVISO ao OpenHands — menubar TSWL precisa de rebase (2026-09-09, orquestrador)
 
+> SUPERADO em 2026-09-09: tarefa passada ao Grok (ver M1 no quadro).
+> Mantido como registro.
+
 ## Veredito: `swlappkit/` APROVADA e integra; `apps/tswl/` PENDENTE
 
 A biblioteca (`include/menubar.h`, `src/menubar.c`, `tests/`) é nova,
