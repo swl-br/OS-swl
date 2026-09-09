@@ -117,9 +117,52 @@ cat > "$ROOTFS/etc/fonts/fonts.conf" << 'EOF'
 <fontconfig>
 	<dir>/usr/share/fonts</dir>
 	<cachedir>/var/cache/fontconfig</cachedir>
+	<!-- T3: monospace e default com cobertura de block elements (Neo) -->
+	<alias>
+		<family>monospace</family>
+		<prefer>
+			<family>DejaVu Sans Mono</family>
+			<family>DejaVu Sans</family>
+			<family>JetBrains Mono</family>
+		</prefer>
+	</alias>
+	<alias>
+		<family>sans-serif</family>
+		<prefer>
+			<family>DejaVu Sans</family>
+		</prefer>
+	</alias>
 </fontconfig>
 EOF
 mkdir -p "$ROOTFS/var/cache/fontconfig"
+
+# T3: se o pacote de artefatos não trouxe Mono, tenta o host (Debian/Ubuntu)
+if ! ls "$ROOTFS/usr/share/fonts"/DejaVuSansMono*.ttf >/dev/null 2>&1; then
+    for hostf in \
+        /usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf \
+        /usr/share/fonts/dejavu/DejaVuSansMono.ttf \
+        /usr/share/fonts/TTF/DejaVuSansMono.ttf
+    do
+        if [ -f "$hostf" ]; then
+            cp "$hostf" "$ROOTFS/usr/share/fonts/"
+            echo "  fonte Mono do host: $hostf"
+            break
+        fi
+    done
+fi
+if ! ls "$ROOTFS/usr/share/fonts"/DejaVuSans.ttf >/dev/null 2>&1 \
+   && ! ls "$ROOTFS/usr/share/fonts"/DejaVuSans*.ttf >/dev/null 2>&1; then
+    for hostf in \
+        /usr/share/fonts/truetype/dejavu/DejaVuSans.ttf \
+        /usr/share/fonts/dejavu/DejaVuSans.ttf
+    do
+        if [ -f "$hostf" ]; then
+            cp "$hostf" "$ROOTFS/usr/share/fonts/"
+            echo "  fonte Sans do host: $hostf"
+            break
+        fi
+    done
+fi
 
 # A4.1: udev — sem isso /dev/input/event* existe mas o libinput não
 # reconhece nenhum como teclado/mouse. O mesmo binário serve como

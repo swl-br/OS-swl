@@ -28,6 +28,16 @@ Novo na pasta: `apps/swlsysinfo/` (~1000 linhas, monitor de sistema
 Wayland direto, com `build/` — ainda untracked, testes do usuário;
 revisão formal quando pedirem).
 
+## 2026-09-09 — T4-autofit + base T3 integrados; aviso de 1 linha (admin)
+
+`swlfetch` v5 (3 layouts: lado, estreito, pilha — todos testados com
+`COLUMNS` simulado + sintaxe) integrado. Base do T3
+(`build-gui-rootfs.sh`: `fonts.conf` com aliases + cópia do host;
+XML validado, sintaxe OK) integrada. `render.c` do T3 NÃO entrou
+(viria pré-T1 e apagaria a barra): falta só a linha `TSWL_FONT` —
+aviso em `docs/revisao/2026-09-09-aviso-t3-fontline.md` (PENDENTE).
+Aprovado pelo usuário.
+
 ## 2026-09-09 — T1 (cursor barra) testada em pixel e integrada (admin)
 
 Entrega do Grok (`render.c` + sessão): barra 2–3px sobreposta em vez
