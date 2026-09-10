@@ -87,6 +87,15 @@ fica a lição: `git add -A` só com `git status` conferido antes, e
 commit de docs nunca carrega código. Aviso T3 marcado ATENDIDO;
 pastas fontline (1) e (2) removidas da entrada (resolvidas).
 
+## 2026-09-10 — swlconfig (S1 casca) integrado (admin)
+
+Bloqueador resolvido (`apps/swlappkit/` no repo): entrega do Claude
+re-verificada e integrada — `apps/swlconfig/` (casca 12 seções, Sobre
+funcional, menu Arquivo/Ajuda via swlappkit), screenshots, entrada de
+diário adaptada. Verificação no repo: build 10/10 + sysinfo 8/8. S1 →
+CONCLUÍDA (casca); seções seguintes por etapa. (É avanço sim: quarto
+app real no catálogo.)
+
 ## 2026-09-10 — OSC title (rebase) integrado, aviso atendido (admin)
 
 Rebase exato (só adições do aviso) verificado: suíte 27/27 com e sem

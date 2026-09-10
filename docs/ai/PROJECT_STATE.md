@@ -209,7 +209,11 @@ STATUS: FUNCIONAL NO BOOT REAL (2026-09-07).
 - **SWLSYSINFO** (`apps/swlsysinfo/`, 2026-09-09): monitor do sistema
   (CPU/MEM, janela 640x400). Mesmo fluxo i386 (incluído no chroot em
   2026-09-09). Bugs conhecidos: ver S2 em `AFAZERES.md`.
-- Os outros 11 itens do catálogo continuam placeholders (comando
+- **SWLCONFIG** (`apps/swlconfig/`, 2026-09-10): Configurações, casca
+  navegável por teclado com 12 seções (só Sobre funcional: kernel,
+  hostname, uptime, memória, disco); usa `swlappkit` (M1) pro menu.
+  Testes sysinfo 8/8. Demais seções por etapa (S1).
+- Os outros 10 itens do catálogo continuam placeholders (comando
   aponta pra binário inexistente).
 
 ## Revisões / QA
@@ -231,5 +235,5 @@ STATUS: FUNCIONAL NO BOOT REAL (2026-09-07).
   Área exclusiva dos orquestradores (admin + GPT); implementação não edita.
 
 ## Próximos passos sugeridos (GUI)
-1. Resto do catálogo de apps (hoje só TSWL/SWLPAD reais; os outros são
+1. Resto do catálogo de apps (hoje TSWL/SWLPAD/SWLSYSINFO/SWLCONFIG reais; os outros são
    placeholders) e as fases longas do roadmap.
