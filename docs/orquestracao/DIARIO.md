@@ -59,6 +59,24 @@ no repo; compositor repassa axis, ok). Aprovado agora e integrado:
 `wl_pointer` + teclas KP/shift. T2 → CONCLUÍDA (validação no QEMU
 pendente; reconstruir disco com o código novo).
 
+## 2026-09-09 — C1 duplicado recusado (conta Claude errada) (admin)
+
+Outra conta do Claude refez o C1 (`files/swlwm.c`) a partir do aviso
+antigo — mas o C1 já está integrado COM MAIS (snap, margens, launcher,
+icon-snap). O arquivo é bom (R-13/A5 intactos, `apply_pending_resize`
+bem fatorado), porém redundante e menor: integrar apagaria o resto.
+RECUSADO sem aviso (nada a corrigir, só não é preciso). Lição p/
+usuário nomear as contas.
+
+## 2026-09-09 — Catalog integrado; render do rebase rejeitado (admin)
+
+Pacote `rebase-avisos-files/`: `desktop.c` (só `/bin`), `swlwm.c` (só
+helper + 3 usos) e `build-gui-rootfs.sh` (só checagem + PATH) exatos —
+build 12/12, sintaxe OK, integrados; aviso-tswl-catalog ATENDIDO. O
+`render.c` do mesmo pacote veio de outra linhagem (menubar
+inexistente, sem T1, encoding quebrado) — rejeitado com aviso novo
+(`aviso-render-linhagem.md`); t4-dirty segue pendente.
+
 ## 2026-09-09 — Correção de processo: fontline entrou sem rito (admin)
 
 Auditoria achou que a linha TSWL_FONT entrou no repo via varredura de
