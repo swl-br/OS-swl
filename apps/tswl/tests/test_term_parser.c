@@ -201,6 +201,20 @@ static void test_osc_title(void)
     tswl_term_free(t);
 }
 
+
+static void test_sgr_truecolor(void)
+{
+    tswl_term *t = tswl_term_new(20, 5);
+    feed(t, "\033[38;2;255;0;0mR\033[0m");
+    const tswl_cell *c = tswl_term_cell(t, 0, 0);
+    expect(c->ch == 'R', "truecolor escreve R");
+    expect(c->fg >= 16 && c->fg <= 255, "fg no range 256");
+    feed(t, "\033[48;2;0;0;255m \033[0m");
+    c = tswl_term_cell(t, 1, 0);
+    expect(c->bg >= 16 && c->bg <= 255, "bg truecolor quantizado");
+    tswl_term_free(t);
+}
+
 int main(void)
 {
     printf("tswl term parser unit tests\n");
@@ -216,6 +230,7 @@ int main(void)
     test_alt_screen_restores();
     test_sgr_256();
     test_osc_title();
+    test_sgr_truecolor();
     printf("\nsummary: %d passed, %d failed\n", passes, fails);
     return fails ? 1 : 0;
 }

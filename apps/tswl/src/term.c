@@ -351,6 +351,34 @@ static int param(tswl_term *t, int i, int def) {
     return v;
 }
 
+
+/* Aproxima RGB 24-bit no cubo 256 (xterm) — truecolor leve sem expandir a celula. */
+static int rgb_to_256(int r, int g, int b)
+{
+    if (r < 0) r = 0;
+    if (r > 255) r = 255;
+    if (g < 0) g = 0;
+    if (g > 255) g = 255;
+    if (b < 0) b = 0;
+    if (b > 255) b = 255;
+    int avg = (r + g + b) / 3;
+    int dr = r > avg ? r - avg : avg - r;
+    int dg = g > avg ? g - avg : avg - g;
+    int db = b > avg ? b - avg : avg - b;
+    if (dr < 8 && dg < 8 && db < 8) {
+        if (avg < 8) return 16;
+        if (avg > 248) return 231;
+        return 232 + (avg - 8) / 10;
+    }
+    int ri = (r * 5 + 127) / 255;
+    int gi = (g * 5 + 127) / 255;
+    int bi = (b * 5 + 127) / 255;
+    if (ri > 5) ri = 5;
+    if (gi > 5) gi = 5;
+    if (bi > 5) bi = 5;
+    return 16 + 36 * ri + 6 * gi + bi;
+}
+
 static void csi_sgr(tswl_term *t) {
     if (t->csi_nparams == 0) {  /* CSI m = reset */
         t->cur_fg = TSWL_COL_DEFAULT_FG;
@@ -390,11 +418,19 @@ static void csi_sgr(tswl_term *t) {
             if (n > 255) n = 255;
             t->cur_bg = (uint16_t)n;
             i += 2;
-        } else if ((p == 38 || p == 48) && i + 1 < t->csi_nparams
-                   && t->csi_params[i + 1] == 2) {
-            /* truecolor 38;2;r;g;b — ignora (sem suporte RGB ainda) */
+        } else if (p == 38 && i + 4 < t->csi_nparams && t->csi_params[i + 1] == 2) {
+            /* truecolor 38;2;r;g;b → quantiza pro cubo 256 */
+            int r = t->csi_params[i + 2];
+            int g = t->csi_params[i + 3];
+            int b = t->csi_params[i + 4];
+            t->cur_fg = (uint16_t)rgb_to_256(r, g, b);
             i += 4;
-            if (i >= t->csi_nparams) i = t->csi_nparams - 1;
+        } else if (p == 48 && i + 4 < t->csi_nparams && t->csi_params[i + 1] == 2) {
+            int r = t->csi_params[i + 2];
+            int g = t->csi_params[i + 3];
+            int b = t->csi_params[i + 4];
+            t->cur_bg = (uint16_t)rgb_to_256(r, g, b);
+            i += 4;
         }
     }
 }

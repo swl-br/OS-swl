@@ -4,6 +4,13 @@ Registro diário das rodadas de orquestração. Entrada mais recente em
 cima. **Conferir sempre o repo real** — este diário é um índice, não a
 verdade de fonte.
 
+## 2026-09-10 — Truecolor (rebase) integrado; aviso t5-word (admin)
+
+Rebase somando (truecolor + OSC) verificado 30/30 e integrado; aviso
+truecolor ATENDIDO. T5-word (duplo clique) com lógica aprovada mas
+base sem OSC — devolvido com aviso preciso
+(`2026-09-10-aviso-t5word.md`).
+
 ## 2026-09-09 — T3 + R-13 reconciliados (admin)
 
 `origin/notebook`: linha DejaVu no `render.c` (T3, a que faltava) +

@@ -14,4 +14,4 @@ cobertura.
 2. Teste `test_sgr_truecolor` ADICIONADO junto ao `test_osc_title`
    (suíte deve ir a 30, não voltar a 25).
 
-Status: PENDENTE.
+Status: ATENDIDO em 2026-09-10 — rebase somando (30/30 no repo) integrado.
