@@ -710,6 +710,19 @@ static struct tinywl_toplevel *desktop_toplevel_at(
 	return tree->node.data;
 }
 
+/* Catálogo: PATH mínimo ao lançar apps do desktop/menu (aviso tswl-catalog). */
+static void swl_launch_command(const char *cmd) {
+	if (!cmd || !cmd[0]) {
+		return;
+	}
+	pid_t pid = fork();
+	if (pid == 0) {
+		setenv("PATH", "/bin:/usr/bin:/sbin", 1);
+		execl("/bin/sh", "/bin/sh", "-c", cmd, (void *)NULL);
+		_exit(1);
+	}
+}
+
 static void reset_cursor_mode(struct tinywl_server *server) {
 	/* Reset the cursor mode to passthrough. */
 	server->cursor_mode = TINYWL_CURSOR_PASSTHROUGH;
@@ -1029,11 +1042,7 @@ static void server_cursor_button(struct wl_listener *listener, void *data) {
 			if (was_click && server->desktop) {
 				const char *cmd = swl_desktop_icon_command(server->desktop, icon);
 				if (cmd && cmd[0]) {
-					pid_t pid = fork();
-					if (pid == 0) {
-						execl("/bin/sh", "/bin/sh", "-c", cmd, (void *)NULL);
-						_exit(1);
-					}
+					swl_launch_command(cmd);
 				}
 			} else if (server->desktop) {
 				/* Foi um arrasto de verdade (não clique) — encaixa na
@@ -1088,11 +1097,7 @@ static void server_cursor_button(struct wl_listener *listener, void *data) {
 			const char *cmd = swl_menu_item_command(server->menu, mhit);
 			swl_menu_close(server->menu);
 			if (cmd && cmd[0]) {
-				pid_t pid = fork();
-				if (pid == 0) {
-					execl("/bin/sh", "/bin/sh", "-c", cmd, (void *)NULL);
-					_exit(1);
-				}
+				swl_launch_command(cmd);
 			}
 			return;
 		}
@@ -1128,11 +1133,7 @@ static void server_cursor_button(struct wl_listener *listener, void *data) {
 				if (chit == 0) {
 					const char *cmd = swl_desktop_icon_command(server->desktop, target);
 					if (cmd && cmd[0]) {
-						pid_t pid = fork();
-						if (pid == 0) {
-							execl("/bin/sh", "/bin/sh", "-c", cmd, (void *)NULL);
-							_exit(1);
-						}
+						swl_launch_command(cmd);
 					}
 				} else if (chit == 1) {
 					swl_desktop_hide_icon(server->desktop, target);

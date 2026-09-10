@@ -27,8 +27,8 @@ struct swl_icon_def {
 /* Conjunto padrão de ícones, na mesma ordem/agrupamento do mockup. Ajuste
  * livremente — cada linha vira um ícone clicável na área de trabalho. */
 static const struct swl_icon_def default_icons[] = {
-	{ SWL_ICON_TERMINAL, "TSWL",        "tswl",        "tswl.png" },
-	{ SWL_ICON_EDITOR,   "SWLPAD",      "swlpad",      "swlpad.png" },
+	{ SWL_ICON_TERMINAL, "TSWL",        "/bin/tswl",   "tswl.png" },
+	{ SWL_ICON_EDITOR,   "SWLPAD",      "/bin/swlpad", "swlpad.png" },
 	{ SWL_ICON_FOLDER,   "ARQUIVOS",    "swlfiles",    "arquivos.png" },
 	{ SWL_ICON_BOOK,     "SEBRE",       "sebre",       "sebre.png" },
 	{ SWL_ICON_CONFIG,   "CONFIG",      "swlconfig",   "config.png" },

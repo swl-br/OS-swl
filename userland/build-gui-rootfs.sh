@@ -46,6 +46,13 @@ if [ -d "$ARTIFACTS/apps" ]; then
         chmod 755 "$ROOTFS/bin/$(basename "$app")"
     done
 fi
+# Catálogo: TSWL precisa estar em /bin (desktop aponta /bin/tswl).
+if [ ! -x "$ROOTFS/bin/tswl" ]; then
+    echo "AVISO: $ROOTFS/bin/tswl ausente — compile apps no chroot (build-gui-i386) e reempacote."
+fi
+if [ -x "$ROOTFS/bin/tswl" ]; then
+    echo "  app tswl: $(ls -l "$ROOTFS/bin/tswl" | awk '{print $5, $NF}')"
+fi
 
 for lib in "$ARTIFACTS"/lib/*.so*; do
     [ -e "$lib" ] || continue
@@ -193,6 +200,8 @@ mkdir -p /run/udev
 # "allocate shm file for keymap" e o xkbcommon pode morrer depois.
 mkdir -p /run/shm
 ln -sfn /run/shm /dev/shm
+export PATH="/bin:/usr/bin:/sbin${PATH:+:$PATH}"
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run}"
 /sbin/systemd-udevd --daemon 2>/dev/null
 /usr/bin/udevadm trigger --type=subsystems --action=add >/dev/null 2>&1
 /usr/bin/udevadm trigger --type=devices --action=add >/dev/null 2>&1

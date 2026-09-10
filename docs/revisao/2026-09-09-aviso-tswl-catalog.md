@@ -19,4 +19,4 @@ subir apagaria os três. NÃO integrar como está.
    no `start-gui.sh` (após as linhas de `/dev/shm`). Sem tirar
    `fonts.conf` do T3.
 
-Status: PENDENTE.
+Status: ATENDIDO em 2026-09-09 — rebase com as 4 adições exatas verificado (build 12/12, sintaxe) e integrado.

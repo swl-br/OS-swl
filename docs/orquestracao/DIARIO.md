@@ -46,6 +46,15 @@ no repo; compositor repassa axis, ok). Aprovado agora e integrado:
 `wl_pointer` + teclas KP/shift. T2 → CONCLUÍDA (validação no QEMU
 pendente; reconstruir disco com o código novo).
 
+## 2026-09-09 — Catalog integrado; render do rebase rejeitado (admin)
+
+Pacote `rebase-avisos-files/`: `desktop.c` (só `/bin`), `swlwm.c` (só
+helper + 3 usos) e `build-gui-rootfs.sh` (só checagem + PATH) exatos —
+build 12/12, sintaxe OK, integrados; aviso-tswl-catalog ATENDIDO. O
+`render.c` do mesmo pacote veio de outra linhagem (menubar
+inexistente, sem T1, encoding quebrado) — rejeitado com aviso novo
+(`aviso-render-linhagem.md`); t4-dirty segue pendente.
+
 ## 2026-09-09 — Correção de processo: fontline entrou sem rito (admin)
 
 Auditoria achou que a linha TSWL_FONT entrou no repo via varredura de
