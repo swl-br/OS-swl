@@ -90,6 +90,7 @@ struct app {
     int sel_anchor_c, sel_anchor_r;
     long last_click_ms;
     int last_click_c, last_click_r;
+    int click_count;
     char *clipboard;
     size_t clipboard_len;
 };
@@ -677,13 +678,23 @@ static void pointer_button(void *data, struct wl_pointer *pointer,
     if (button == BTN_LEFT) {
         if (pressed) {
             long now = now_ms();
-            int dbl = (a->last_click_ms > 0
+            int same = (a->last_click_ms > 0
                 && now - a->last_click_ms < 400
                 && c == a->last_click_c && r == a->last_click_r);
+            if (same)
+                a->click_count++;
+            else
+                a->click_count = 1;
             a->last_click_ms = now;
             a->last_click_c = c;
             a->last_click_r = r;
-            if (dbl) {
+            if (a->click_count >= 3) {
+                /* triplo: linha inteira */
+                tswl_term_select_line(a->term, r);
+                a->selecting = false;
+                a->click_count = 0;
+                a->need_redraw = true;
+            } else if (a->click_count == 2) {
                 tswl_term_select_word(a->term, c, r);
                 a->selecting = false;
                 a->need_redraw = true;

@@ -151,6 +151,21 @@ void tswl_term_clear_selection(tswl_term *t) {
 }
 
 
+
+void tswl_term_select_line(tswl_term *t, int row)
+{
+    if (!t) return;
+    if (row < 0 || row >= t->rows) return;
+    int c1 = t->cols - 1;
+    while (c1 > 0) {
+        const tswl_cell *cell = tswl_term_scrollback_cell(t, c1, row);
+        if (cell->ch != 0 && cell->ch != ' ')
+            break;
+        c1--;
+    }
+    tswl_term_set_selection(t, 0, row, c1, row);
+}
+
 void tswl_term_select_word(tswl_term *t, int col, int row)
 {
     if (!t) return;

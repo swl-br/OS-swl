@@ -10,6 +10,13 @@ Rebase exato (só palavra, OSC intacto) verificado e integrado; aviso
 t5word ATENDIDO. Entrada limpa do resolvido (restam: c2/Buffy,
 swlpad/decisão, swl-about-neo/aviso, s2).
 
+## 2026-09-10 — T5 triplo-clique integrado (admin)
+
+Rebase limpo (só adições) verificado: build OK, 3/3 sanitizer.
+Atenção: `main.c` do W1 que estava na pasta (cópia de teste do
+usuário) foi guardada em `/tmp` antes de sobrescrever. T5 → inclui
+duplo + triplo.
+
 ## 2026-09-10 — Truecolor (rebase) integrado; aviso t5-word (admin)
 
 Rebase somando (truecolor + OSC) verificado 30/30 e integrado; aviso
