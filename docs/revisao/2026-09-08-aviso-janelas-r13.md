@@ -22,5 +22,5 @@ if (tree == NULL) {
 Sem isso, clique em painel/desktop/menu pode ler `tree->node.data`
 com `tree == NULL`.
 
-Status: PENDENTE (sessão da entrega também pendente — autor gera e o
-usuário coloca na entrada).
+Status: ATENDIDO em 2026-09-09 — Claude repôs as 5 linhas exatas sobre
+base atual (build 12/12 verificado); nada mais tocado. Aviso encerrado.
