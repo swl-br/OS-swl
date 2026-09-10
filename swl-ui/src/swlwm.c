@@ -1447,6 +1447,23 @@ static void output_request_state(struct wl_listener *listener, void *data) {
 				toplevel_apply_fullscreen_layout(t);
 			} else if (t->maximized) {
 				toplevel_apply_maximized_layout(t);
+			} else {
+				/* W1: flutuante maior que o novo output — limita. */
+				struct wlr_box geo;
+				wlr_xdg_surface_get_geometry(t->xdg_toplevel->base, &geo);
+				int max_w = ow;
+				int max_h = oh - SWL_PANEL_HEIGHT - SWL_TASKBAR_HEIGHT
+					- SWL_TITLEBAR_HEIGHT;
+				if (max_w < 200) max_w = 200;
+				if (max_h < 80) max_h = 80;
+				if (geo.width > max_w || geo.height > max_h) {
+					int nw = geo.width > max_w ? max_w : geo.width;
+					int nh = geo.height > max_h ? max_h : geo.height;
+					wlr_xdg_toplevel_set_size(t->xdg_toplevel, nw, nh);
+					if (t->decoration) {
+						swl_decoration_resize(t->decoration, nw);
+					}
+				}
 			}
 		}
 	}
@@ -1568,6 +1585,22 @@ static void server_new_output(struct wl_listener *listener, void *data) {
 					toplevel_apply_fullscreen_layout(t);
 				} else if (t->maximized) {
 					toplevel_apply_maximized_layout(t);
+				} else {
+					struct wlr_box geo;
+					wlr_xdg_surface_get_geometry(t->xdg_toplevel->base, &geo);
+					int max_w = ow;
+					int max_h = oh - SWL_PANEL_HEIGHT - SWL_TASKBAR_HEIGHT
+						- SWL_TITLEBAR_HEIGHT;
+					if (max_w < 200) max_w = 200;
+					if (max_h < 80) max_h = 80;
+					if (geo.width > max_w || geo.height > max_h) {
+						int nw = geo.width > max_w ? max_w : geo.width;
+						int nh = geo.height > max_h ? max_h : geo.height;
+						wlr_xdg_toplevel_set_size(t->xdg_toplevel, nw, nh);
+						if (t->decoration) {
+							swl_decoration_resize(t->decoration, nw);
+						}
+					}
 				}
 			}
 		}
