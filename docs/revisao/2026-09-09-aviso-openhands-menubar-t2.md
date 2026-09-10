@@ -31,4 +31,4 @@ embutido nem compila; o fluxo certo é entregar os 4 arquivos prontos.
 Teste sugerido: rebuild + suite do menubar + suite do parser (19/19
 hoje) + boot com scroll do wheel funcionando.
 
-Status: PENDENTE.
+Status: ATENDIDO em 2026-09-10 — rebase feito (fee3f49df): verificado no main atual — `pointer_axis` funcional, discrete/source/frame presentes, `app_cursor` plugado. Aviso encerrado.
