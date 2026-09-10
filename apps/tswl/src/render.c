@@ -18,7 +18,10 @@
 #include <pango/pangocairo.h>
 #include "render.h"
 
-#define TSWL_FONT "JetBrains Mono, Fira Code, monospace"
+/* T3: no rootfs mínimo do QEMU só costuma existir DejaVu*.
+ * Sans Mono cobre U+2588; Sans é fallback se Mono não estiver instalada.
+ * JetBrains/Fira ficam na frente no host de desenvolvimento. */
+#define TSWL_FONT "JetBrains Mono, Fira Code, DejaVu Sans Mono, DejaVu Sans, monospace"
 #define TSWL_FONT_SIZE 12.0
 
 typedef struct { double r, g, b; } rgb_t;
