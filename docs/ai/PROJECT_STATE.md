@@ -1,7 +1,7 @@
 # PROJECT_STATE — SWL OS
 
-Última atualização: 2026-09-08 (orquestrador — lote Claude: min 260,
-build via scanner, taskbar; aviso resize pendente; ver DIARIO.md)
+Última atualização: 2026-09-10 (orquestrador — TSWL: seleção, 256,
+truecolor, OSC, menubar M1; swlconfig; catálogo; ver DIARIO.md)
 
 ## Repositório (higiene)
 
@@ -205,6 +205,10 @@ STATUS: FUNCIONAL NO BOOT REAL (2026-09-07).
   i386 no chroot (`scripts/build-gui-i386.sh` → `gui-artifacts/apps/`)
   e instalado em `/bin` — abre no boot real com shell funcional
   (exigia `/dev/pts` montado no init; ver sessão 2026-09-07).
+  Recursos: scrollback com resize, alt-screen `?1049`, DECCKM + F1–F12,
+  título OSC, 256 cores + truecolor quantizado, seleção mouse +
+  clipboard interno, scroll wheel, cursor barra, menubar M1
+  (`apps/swlappkit/`). Suíte parser 30/30 (`apps/tswl/tests/`).
 - **SWLPAD** (`apps/swlpad/`): mesmo fluxo de build/instalação; abre.
 - **SWLSYSINFO** (`apps/swlsysinfo/`, 2026-09-09): monitor do sistema
   (CPU/MEM, janela 640x400). Mesmo fluxo i386 (incluído no chroot em
