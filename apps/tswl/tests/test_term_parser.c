@@ -171,6 +171,21 @@ static void test_alt_screen_restores(void)
     tswl_term_free(t);
 }
 
+
+static void test_sgr_256(void)
+{
+    tswl_term *t = tswl_term_new(20, 5);
+    feed(t, "\033[38;5;196mX\033[0m");
+    const tswl_cell *c = tswl_term_cell(t, 0, 0);
+    expect(c->ch == 'X', "256-color escreve X");
+    expect(c->fg == 196, "fg indice 196 (cube red)");
+    feed(t, "\033[48;5;21m \033[0m");
+    c = tswl_term_cell(t, 1, 0);
+    /* apos X cursor avancou; space com bg 21 */
+    expect(c->bg == 21, "bg indice 21");
+    tswl_term_free(t);
+}
+
 int main(void)
 {
     printf("tswl term parser unit tests\n");
@@ -184,6 +199,7 @@ int main(void)
     test_decckm();
     test_scrollback_survives_resize();
     test_alt_screen_restores();
+    test_sgr_256();
     printf("\nsummary: %d passed, %d failed\n", passes, fails);
     return fails ? 1 : 0;
 }

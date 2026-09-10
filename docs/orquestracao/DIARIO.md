@@ -87,6 +87,13 @@ fica a lição: `git add -A` só com `git status` conferido antes, e
 commit de docs nunca carrega código. Aviso T3 marcado ATENDIDO;
 pastas fontline (1) e (2) removidas da entrada (resolvidas).
 
+## 2026-09-10 — TSWL 256 cores integrado (admin)
+
+Entrega do Grok (`term.c` SGR 38;5/48;5 + `render.c` color_256 + 3
+asserts): base compatível, mapeamento xterm correto, build 9/9,
+suíte 22/22 com e sem sanitizer (rodada no repo). Aprovado pelo
+usuário e integrado.
+
 ## 2026-09-09 — Pacote fix-t4-t5 integrado; mea-culpa do orquestrador (admin)
 
 Rejeição anterior revertida: o veredito usou árvore velha (menubar já

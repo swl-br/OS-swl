@@ -367,6 +367,25 @@ static void csi_sgr(tswl_term *t) {
         else if (p == 49) t->cur_bg = TSWL_COL_DEFAULT_BG;
         else if (p >= 90 && p <= 97) t->cur_fg = (uint16_t)(p - 90 + 8);
         else if (p >= 100 && p <= 107) t->cur_bg = (uint16_t)(p - 100 + 8);
+        /* 256-color: CSI 38;5;n m / 48;5;n m */
+        else if (p == 38 && i + 2 < t->csi_nparams && t->csi_params[i + 1] == 5) {
+            int n = t->csi_params[i + 2];
+            if (n < 0) n = 0;
+            if (n > 255) n = 255;
+            t->cur_fg = (uint16_t)n;
+            i += 2;
+        } else if (p == 48 && i + 2 < t->csi_nparams && t->csi_params[i + 1] == 5) {
+            int n = t->csi_params[i + 2];
+            if (n < 0) n = 0;
+            if (n > 255) n = 255;
+            t->cur_bg = (uint16_t)n;
+            i += 2;
+        } else if ((p == 38 || p == 48) && i + 1 < t->csi_nparams
+                   && t->csi_params[i + 1] == 2) {
+            /* truecolor 38;2;r;g;b — ignora (sem suporte RGB ainda) */
+            i += 4;
+            if (i >= t->csi_nparams) i = t->csi_nparams - 1;
+        }
     }
 }
 

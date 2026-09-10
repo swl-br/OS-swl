@@ -48,14 +48,45 @@ static const rgb_t palette[18] = {
     { 0.043, 0.055, 0.078 },  /* 17 default bg (#0b0e14)     */
 };
 
+static rgb_t color_256(int idx) {
+    if (idx < 0) idx = 0;
+    if (idx > 255) idx = 255;
+    if (idx < 16) {
+        /* mapeia 0-15 pra paleta do sistema */
+        return palette[idx];
+    }
+    if (idx < 232) {
+        /* cubo 6x6x6 (indices 16-231) */
+        int v = idx - 16;
+        int r = v / 36;
+        int g = (v / 6) % 6;
+        int b = v % 6;
+        static const int levels[6] = { 0, 95, 135, 175, 215, 255 };
+        rgb_t c = {
+            levels[r] / 255.0,
+            levels[g] / 255.0,
+            levels[b] / 255.0
+        };
+        return c;
+    }
+    /* escala de cinza 232-255 */
+    int gray = 8 + (idx - 232) * 10;
+    double d = gray / 255.0;
+    rgb_t c = { d, d, d };
+    return c;
+}
+
 static rgb_t color_for(uint16_t idx, uint8_t attrs, bool is_fg) {
     if (idx == TSWL_COL_DEFAULT_FG) return palette[16];
     if (idx == TSWL_COL_DEFAULT_BG) return palette[17];
-    int i = idx & 0xFF;
-    /* negrito eleva cores normais pra bright (conveno clssica) */
+    int i = (int)idx;
+    if (i < 0) i = 0;
+    if (i > 255) i = 255;
+    /* negrito eleva 0-7 para bright */
     if (is_fg && (attrs & TSWL_ATTR_BOLD) && i < 8) i += 8;
-    if (i > 15) i = 15;
-    return palette[i];
+    if (i < 16)
+        return palette[i];
+    return color_256(i);
 }
 
 struct tswl_render {
