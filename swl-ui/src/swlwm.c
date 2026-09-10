@@ -151,12 +151,6 @@ struct tinywl_server {
 	const char *background_path; /* NULL = usa o fallback procedural (grade) */
 };
 
-/* TESTE W1: SWL_NO_TASKBAR=1 pula a taskbar (criação + resize).
- * Todo o resto checa server->taskbar antes de usar. */
-static bool swl_no_taskbar(void) {
-	return getenv("SWL_NO_TASKBAR") != NULL;
-}
-
 struct tinywl_output {
 	struct wl_list link;
 	struct tinywl_server *server;
@@ -1432,9 +1426,7 @@ static void output_request_state(struct wl_listener *listener, void *data) {
 		if (server->panel != NULL) {
 			swl_background_resize(server->background, ow, oh, server->background_path);
 			swl_panel_resize(server->panel, ow);
-			if (server->taskbar) {
-				swl_taskbar_resize(server->taskbar, ow, oh - SWL_TASKBAR_HEIGHT);
-			}
+			swl_taskbar_resize(server->taskbar, ow, oh - SWL_TASKBAR_HEIGHT);
 			swl_menu_resize(server->menu, oh);
 		}
 		/* Reflow maximizadas (A5) e fullscreen (A6). */
@@ -1447,23 +1439,6 @@ static void output_request_state(struct wl_listener *listener, void *data) {
 				toplevel_apply_fullscreen_layout(t);
 			} else if (t->maximized) {
 				toplevel_apply_maximized_layout(t);
-			} else {
-				/* W1: flutuante maior que o novo output — limita. */
-				struct wlr_box geo;
-				wlr_xdg_surface_get_geometry(t->xdg_toplevel->base, &geo);
-				int max_w = ow;
-				int max_h = oh - SWL_PANEL_HEIGHT - SWL_TASKBAR_HEIGHT
-					- SWL_TITLEBAR_HEIGHT;
-				if (max_w < 200) max_w = 200;
-				if (max_h < 80) max_h = 80;
-				if (geo.width > max_w || geo.height > max_h) {
-					int nw = geo.width > max_w ? max_w : geo.width;
-					int nh = geo.height > max_h ? max_h : geo.height;
-					wlr_xdg_toplevel_set_size(t->xdg_toplevel, nw, nh);
-					if (t->decoration) {
-						swl_decoration_resize(t->decoration, nw);
-					}
-				}
 			}
 		}
 	}
@@ -1558,10 +1533,8 @@ static void server_new_output(struct wl_listener *listener, void *data) {
 				server->background_path);
 			server->desktop = swl_desktop_create(&server->scene->tree, SWL_PANEL_HEIGHT);
 			server->panel = swl_panel_create(loop, &server->scene->tree, ow);
-			if (!swl_no_taskbar()) {
-				server->taskbar = swl_taskbar_create(loop, &server->scene->tree,
-					ow, oh - SWL_TASKBAR_HEIGHT);
-			}
+			server->taskbar = swl_taskbar_create(loop, &server->scene->tree,
+				ow, oh - SWL_TASKBAR_HEIGHT);
 			server->menu = swl_menu_create(&server->scene->tree);
 			swl_menu_resize(server->menu, oh);
 			server->ctx_menu = swl_context_menu_create(&server->scene->tree);
@@ -1569,9 +1542,7 @@ static void server_new_output(struct wl_listener *listener, void *data) {
 		} else {
 			swl_background_resize(server->background, ow, oh, server->background_path);
 			swl_panel_resize(server->panel, ow);
-			if (server->taskbar) {
-				swl_taskbar_resize(server->taskbar, ow, oh - SWL_TASKBAR_HEIGHT);
-			}
+			swl_taskbar_resize(server->taskbar, ow, oh - SWL_TASKBAR_HEIGHT);
 			swl_menu_resize(server->menu, oh);
 			/* Mesmo reflow de maximizadas/fullscreen que em
 			 * output_request_state (A5 + complemento A6 —
@@ -1585,22 +1556,6 @@ static void server_new_output(struct wl_listener *listener, void *data) {
 					toplevel_apply_fullscreen_layout(t);
 				} else if (t->maximized) {
 					toplevel_apply_maximized_layout(t);
-				} else {
-					struct wlr_box geo;
-					wlr_xdg_surface_get_geometry(t->xdg_toplevel->base, &geo);
-					int max_w = ow;
-					int max_h = oh - SWL_PANEL_HEIGHT - SWL_TASKBAR_HEIGHT
-						- SWL_TITLEBAR_HEIGHT;
-					if (max_w < 200) max_w = 200;
-					if (max_h < 80) max_h = 80;
-					if (geo.width > max_w || geo.height > max_h) {
-						int nw = geo.width > max_w ? max_w : geo.width;
-						int nh = geo.height > max_h ? max_h : geo.height;
-						wlr_xdg_toplevel_set_size(t->xdg_toplevel, nw, nh);
-						if (t->decoration) {
-							swl_decoration_resize(t->decoration, nw);
-						}
-					}
 				}
 			}
 		}
