@@ -663,8 +663,10 @@ static void pointer_button(void *data, struct wl_pointer *pointer,
     bool pressed = (state == WL_POINTER_BUTTON_STATE_PRESSED);
     int by = a->pointer_y;
 
-    /* menubar tem prioridade */
+    /* menubar tem prioridade; menu nunca e arrasto: desliga selecao
+     * travada (drag terminado sobre a menubar). Provado via log QEMU. */
     if (a->menubar && (swl_menubar_is_open(a->menubar) || by < TSWL_MENUBAR_H)) {
+        a->selecting = false;
         int id = swl_menubar_pointer_button(a->menubar, a->pointer_x, by, pressed);
         if (id > 0) execute_action(a, id);
         a->need_redraw = true;
