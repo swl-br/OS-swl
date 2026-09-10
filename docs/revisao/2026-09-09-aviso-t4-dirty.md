@@ -12,4 +12,4 @@ antes; ver aviso-t3-fontline).
 Sobre o `render.c` atual (que já tem T1 + linha T3), aplicar SÓ a
 otimização dirty-row. Não trazer mais nada do arquivo entregue.
 
-Status: PENDENTE.
+Status: ATENDIDO em 2026-09-09 — pacote fix-t4-t5 (revisado contra a árvore com menubar) integrado.

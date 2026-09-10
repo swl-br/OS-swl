@@ -87,6 +87,17 @@ fica a lição: `git add -A` só com `git status` conferido antes, e
 commit de docs nunca carrega código. Aviso T3 marcado ATENDIDO;
 pastas fontline (1) e (2) removidas da entrada (resolvidas).
 
+## 2026-09-09 — Pacote fix-t4-t5 integrado; mea-culpa do orquestrador (admin)
+
+Rejeição anterior revertida: o veredito usou árvore velha (menubar já
+estava no `main` via outra máquina). Pacote re-verificado contra a
+árvore atual: build limpo, T5/R-11/R-14 OK sanitizer. Integrado:
+dirty-row + **barra T1 restaurada** + seleção. Achado no caminho: a
+integração do menubar apagou a barra do T1 no `main` sem aviso
+(regressão silenciosa — coberta por este pacote). Lição: fetch + diff
+contra o `main` atual antes de todo veredito. T5 CONCLUÍDA; avisos
+t4-dirty e t5-build ATENDIDOS.
+
 ## 2026-09-09 — T1 (cursor barra) testada em pixel e integrada (admin)
 
 Entrega do Grok (`render.c` + sessão): barra 2–3px sobreposta em vez

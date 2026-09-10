@@ -21,4 +21,4 @@ static void clipboard_paste(struct app *a);
 Igual ao t4-dirty: manter o `#define TSWL_FONT` com DejaVu (não
 apagar T1).
 
-Status: PENDENTE.
+Status: ATENDIDO em 2026-09-09 — pacote fix-t4-t5 traz forward decls; integrado.

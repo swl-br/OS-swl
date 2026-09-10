@@ -41,6 +41,10 @@ struct tswl_term {
 
     int scroll_offset;        /* scrollback visual (0 = fim) */
 
+    /* T5 selecao (coords de tela) */
+    bool sel_active;
+    int sel_c0, sel_r0, sel_c1, sel_r1;
+
     enum parser_state state;
     int csi_params[MAX_CSI_PARAMS];
     int csi_nparams;
@@ -121,9 +125,114 @@ const tswl_cell *tswl_term_scrollback_cell(const tswl_term *t, int col, int row)
 
 bool tswl_term_row_dirty(tswl_term *t, int row) { return t->dirty[row] != 0; }
 
+static void mark_all_dirty(tswl_term *t);
+
 void tswl_term_clear_dirty(tswl_term *t) {
     memset(t->dirty, 0, (size_t)t->rows);
 }
+
+void tswl_term_clear_selection(tswl_term *t) {
+    if (!t) return;
+    if (t->sel_active) {
+        t->sel_active = false;
+        mark_all_dirty(t);
+        t->changed = true;
+    }
+}
+
+void tswl_term_set_selection(tswl_term *t, int c0, int r0, int c1, int r1) {
+    if (!t) return;
+    if (c0 < 0) c0 = 0;
+    if (r0 < 0) r0 = 0;
+    if (c1 < 0) c1 = 0;
+    if (r1 < 0) r1 = 0;
+    if (c0 >= t->cols) c0 = t->cols - 1;
+    if (c1 >= t->cols) c1 = t->cols - 1;
+    if (r0 >= t->rows) r0 = t->rows - 1;
+    if (r1 >= t->rows) r1 = t->rows - 1;
+    t->sel_c0 = c0; t->sel_r0 = r0;
+    t->sel_c1 = c1; t->sel_r1 = r1;
+    t->sel_active = true;
+    mark_all_dirty(t);
+    t->changed = true;
+}
+
+bool tswl_term_has_selection(const tswl_term *t) {
+    return t && t->sel_active;
+}
+
+static void sel_norm(const tswl_term *t, int *sc, int *sr, int *ec, int *er) {
+    int a = t->sel_r0 * t->cols + t->sel_c0;
+    int b = t->sel_r1 * t->cols + t->sel_c1;
+    if (a <= b) {
+        *sc = t->sel_c0; *sr = t->sel_r0;
+        *ec = t->sel_c1; *er = t->sel_r1;
+    } else {
+        *sc = t->sel_c1; *sr = t->sel_r1;
+        *ec = t->sel_c0; *er = t->sel_r0;
+    }
+}
+
+bool tswl_term_cell_selected(const tswl_term *t, int col, int row) {
+    if (!t || !t->sel_active) return false;
+    if (col < 0 || row < 0 || col >= t->cols || row >= t->rows) return false;
+    int sc, sr, ec, er;
+    sel_norm(t, &sc, &sr, &ec, &er);
+    int pos = row * t->cols + col;
+    int a = sr * t->cols + sc;
+    int b = er * t->cols + ec;
+    return pos >= a && pos <= b;
+}
+
+char *tswl_term_selection_text(const tswl_term *t) {
+    if (!t || !t->sel_active) return NULL;
+    int sc, sr, ec, er;
+    sel_norm(t, &sc, &sr, &ec, &er);
+    size_t cap = (size_t)(er - sr + 1) * ((size_t)t->cols * 4 + 1) + 1;
+    char *out = malloc(cap);
+    if (!out) return NULL;
+    size_t n = 0;
+    for (int r = sr; r <= er; r++) {
+        int x0 = (r == sr) ? sc : 0;
+        int x1 = (r == er) ? ec : (t->cols - 1);
+        int end = x1;
+        while (end >= x0) {
+            const tswl_cell *cell = tswl_term_scrollback_cell(t, end, r);
+            if (cell->ch != 0 && cell->ch != ' ') break;
+            end--;
+        }
+        for (int x = x0; x <= end; x++) {
+            const tswl_cell *cell = tswl_term_scrollback_cell(t, x, r);
+            uint32_t cp = cell->ch ? cell->ch : (uint32_t)' ';
+            if (cp < 0x80) {
+                if (n + 1 >= cap) break;
+                out[n++] = (char)cp;
+            } else if (cp < 0x800) {
+                if (n + 2 >= cap) break;
+                out[n++] = (char)(0xC0 | (cp >> 6));
+                out[n++] = (char)(0x80 | (cp & 0x3F));
+            } else if (cp < 0x10000) {
+                if (n + 3 >= cap) break;
+                out[n++] = (char)(0xE0 | (cp >> 12));
+                out[n++] = (char)(0x80 | ((cp >> 6) & 0x3F));
+                out[n++] = (char)(0x80 | (cp & 0x3F));
+            } else {
+                if (n + 4 >= cap) break;
+                out[n++] = (char)(0xF0 | (cp >> 18));
+                out[n++] = (char)(0x80 | ((cp >> 12) & 0x3F));
+                out[n++] = (char)(0x80 | ((cp >> 6) & 0x3F));
+                out[n++] = (char)(0x80 | (cp & 0x3F));
+            }
+        }
+        if (r < er) {
+            if (n + 1 >= cap) break;
+            out[n++] = '\n';
+        }
+    }
+    out[n] = 0;
+    return out;
+}
+
 
 static void mark_all_dirty(tswl_term *t) {
     memset(t->dirty, 1, (size_t)t->rows);

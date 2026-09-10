@@ -84,6 +84,12 @@ struct app {
     bool need_redraw;
     bool cursor_on;
     long blink_ms_last;
+
+    /* T5: selecao + clipboard interno */
+    bool selecting;
+    int sel_anchor_c, sel_anchor_r;
+    char *clipboard;
+    size_t clipboard_len;
 };
 
 static long now_ms(void) {
@@ -420,6 +426,54 @@ static int keysym_to_seq(xkb_keysym_t sym, char *buf, bool app_cursor) {
 
 static void execute_action(struct app *a, int id);
 
+
+/* T5 helpers (forward decls before keyboard_key uses them) */
+#ifndef BTN_LEFT
+#define BTN_LEFT   0x110
+#define BTN_RIGHT  0x111
+#define BTN_MIDDLE 0x112
+#endif
+
+static void selection_copy(struct app *a);
+static void clipboard_paste(struct app *a);
+
+static void pixel_to_cell(struct app *a, int sx, int sy, int *col, int *row) {
+    int cw = tswl_render_cell_w(a->render);
+    int ch = tswl_render_cell_h(a->render);
+    if (cw < 1) cw = 1;
+    if (ch < 1) ch = 1;
+    /* grid comeca abaixo da menubar */
+    int y = sy - TSWL_MENUBAR_H - TSWL_RENDER_PAD;
+    int x = sx - TSWL_RENDER_PAD;
+    int c = x / cw;
+    int r = y / ch;
+    int cols = tswl_term_cols(a->term);
+    int rows = tswl_term_rows(a->term);
+    if (c < 0) c = 0;
+    if (r < 0) r = 0;
+    if (c >= cols) c = cols - 1;
+    if (r >= rows) r = rows - 1;
+    *col = c;
+    *row = r;
+}
+
+static void selection_copy(struct app *a) {
+    char *txt = tswl_term_selection_text(a->term);
+    if (txt) {
+        free(a->clipboard);
+        a->clipboard = txt;
+        a->clipboard_len = strlen(txt);
+    }
+}
+
+static void clipboard_paste(struct app *a) {
+    if (!a->clipboard || a->clipboard_len == 0 || a->pty_fd < 0) return;
+    ssize_t w = write(a->pty_fd, a->clipboard, a->clipboard_len);
+    (void)w;
+    tswl_term_scroll_view(a->term, -tswl_term_rows(a->term));
+    a->need_redraw = true;
+}
+
 static void keyboard_key(void *data, struct wl_keyboard *kb,
         uint32_t serial, uint32_t time, uint32_t key, uint32_t state) {
     struct app *a = data;
@@ -461,7 +515,18 @@ static void keyboard_key(void *data, struct wl_keyboard *kb,
     xkb_mod_mask_t shift = xkb_state_mod_name_is_active(a->xkb_state,
         "Shift", XKB_STATE_MODS_EFFECTIVE);
 
-    /* Shift+PageUp/Down: scrollback do terminal (não vai pro shell) */
+    /* T5: Ctrl+Shift+C copia, Ctrl+Shift+V cola */
+    if (ctrl && shift && (sym == XKB_KEY_C || sym == XKB_KEY_c)) {
+        if (tswl_term_has_selection(a->term))
+            selection_copy(a);
+        return;
+    }
+    if (ctrl && shift && (sym == XKB_KEY_V || sym == XKB_KEY_v)) {
+        clipboard_paste(a);
+        return;
+    }
+
+    /* Shift+PageUp/Down: scrollback do terminal (nao vai pro shell) */
     if (shift && sym == XKB_KEY_Page_Up) {
         tswl_term_scroll_view(a->term, tswl_term_rows(a->term) / 2);
         a->need_redraw = true;
@@ -580,19 +645,52 @@ static void pointer_motion(void *data, struct wl_pointer *pointer,
         swl_menubar_pointer_motion(a->menubar, a->pointer_x, a->pointer_y);
         if (swl_menubar_is_open(a->menubar)) a->need_redraw = true;
     }
+    if (a->selecting && a->term) {
+        int c, r;
+        pixel_to_cell(a, a->pointer_x, a->pointer_y, &c, &r);
+        tswl_term_set_selection(a->term, a->sel_anchor_c, a->sel_anchor_r, c, r);
+        a->need_redraw = true;
+    }
 }
 
 static void pointer_button(void *data, struct wl_pointer *pointer,
         uint32_t serial, uint32_t time, uint32_t button, uint32_t state) {
     struct app *a = data;
-    (void)pointer;(void)serial;(void)time;(void)button;
-    if (!a->menubar) return;
+    (void)pointer;(void)serial;(void)time;
     bool pressed = (state == WL_POINTER_BUTTON_STATE_PRESSED);
     int by = a->pointer_y;
-    if (swl_menubar_is_open(a->menubar) || by < TSWL_MENUBAR_H) {
+
+    /* menubar tem prioridade */
+    if (a->menubar && (swl_menubar_is_open(a->menubar) || by < TSWL_MENUBAR_H)) {
         int id = swl_menubar_pointer_button(a->menubar, a->pointer_x, by, pressed);
-        if (id >  0) execute_action(a, id);
+        if (id > 0) execute_action(a, id);
         a->need_redraw = true;
+        return;
+    }
+
+    if (!a->term) return;
+    int c, r;
+    pixel_to_cell(a, a->pointer_x, a->pointer_y, &c, &r);
+
+    if (button == BTN_LEFT) {
+        if (pressed) {
+            a->selecting = true;
+            a->sel_anchor_c = c;
+            a->sel_anchor_r = r;
+            tswl_term_set_selection(a->term, c, r, c, r);
+            a->need_redraw = true;
+        } else {
+            a->selecting = false;
+            if (a->sel_anchor_c == c && a->sel_anchor_r == r) {
+                tswl_term_clear_selection(a->term);
+                a->need_redraw = true;
+            }
+        }
+    } else if (button == BTN_RIGHT && pressed) {
+        if (tswl_term_has_selection(a->term))
+            selection_copy(a);
+    } else if (button == BTN_MIDDLE && pressed) {
+        clipboard_paste(a);
     }
 }
 
@@ -843,6 +941,7 @@ int main(int argc, char *argv[]) {
     for (int i = 0; i < TSWL_BUF_COUNT; i++) {
         shm_buf_free_resources(&a.bufs[i]);
     }
+    free(a.clipboard);
     if (a.keyboard) wl_keyboard_destroy(a.keyboard);
     if (a.pointer) wl_pointer_destroy(a.pointer);
     if (a.keymap) xkb_keymap_unref(a.keymap);
