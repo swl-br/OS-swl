@@ -86,4 +86,7 @@ bool tswl_term_has_selection(const tswl_term *t);
 bool tswl_term_cell_selected(const tswl_term *t, int col, int row);
 char *tswl_term_selection_text(const tswl_term *t);
 
+/* OSC 0/2: titulo da janela. true se havia titulo novo. */
+bool tswl_term_take_title(tswl_term *t, char *out, size_t outsz);
+
 #endif /* TSWL_TERM_H */

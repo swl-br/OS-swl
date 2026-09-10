@@ -15,4 +15,4 @@ subir apagaria o 256 integrado ontem. Lógica OSC verificada e correta.
 4. `tswl_term_take_title()` no fim (com guards).
 5. `term.h`: decl. `main.c` e testes: como entregues (base compatível).
 
-Status: PENDENTE.
+Status: ATENDIDO em 2026-09-10 — rebase exato verificado (27/27 + build 9/9) e integrado.

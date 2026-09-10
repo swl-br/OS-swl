@@ -8,6 +8,7 @@
  */
 
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include "term.h"
 
@@ -52,6 +53,12 @@ struct tswl_term {
     uint32_t utf8_cp;         /* codepoint parcial */
     int utf8_left;            /* bytes restantes do caractere atual */
     bool changed;
+
+    /* OSC 0/2 titulo */
+    char osc_buf[256];
+    int osc_len;
+    char window_title[256];
+    bool title_pending;
 };
 
 static tswl_cell blank_cell(uint16_t bg) {
@@ -83,6 +90,9 @@ tswl_term *tswl_term_new(int cols, int rows) {
         t->main_save[i] = b;
     }
     memset(t->dirty, 1, (size_t)rows);
+    t->osc_len = 0;
+    t->window_title[0] = '\0';
+    t->title_pending = false;
     return t;
 }
 
@@ -601,15 +611,42 @@ bool tswl_term_feed(tswl_term *t, const char *data, size_t len) {
         unsigned char b = (unsigned char)data[i];
 
         if (t->state == ST_OSC_STR || t->state == ST_OSC_ESC) {
-            /* OSC ... até BEL ou ESC \ — conteúdo ignorado (título etc.) */
+            /* OSC ... ate BEL ou ST — captura titulo (0/2) */
             if (t->state == ST_OSC_ESC && b == '\\') {
+                if (t->osc_len > 255) t->osc_len = 255;
+                t->osc_buf[t->osc_len] = 0;
+                if (t->osc_len > 2 && (t->osc_buf[0] == '0' || t->osc_buf[0] == '2')
+                    && t->osc_buf[1] == ';') {
+                    snprintf(t->window_title, sizeof(t->window_title),
+                             "%s", t->osc_buf + 2);
+                    t->title_pending = true;
+                    t->changed = true;
+                }
+                t->osc_len = 0;
                 t->state = ST_GROUND;
-            } else if (b == 0x1B) {
+                continue;
+            }
+            if (b == 0x1B) {
                 t->state = ST_OSC_ESC;
-            } else if (b == '\a') {
+                continue;
+            }
+            if (b == 0x07) {
+                if (t->osc_len > 255) t->osc_len = 255;
+                t->osc_buf[t->osc_len] = 0;
+                if (t->osc_len > 2 && (t->osc_buf[0] == '0' || t->osc_buf[0] == '2')
+                    && t->osc_buf[1] == ';') {
+                    snprintf(t->window_title, sizeof(t->window_title),
+                             "%s", t->osc_buf + 2);
+                    t->title_pending = true;
+                    t->changed = true;
+                }
+                t->osc_len = 0;
                 t->state = ST_GROUND;
+                continue;
             } else if (t->state == ST_OSC_ESC) {
-                t->state = ST_OSC_STR;  /* ESC solto dentro de OSC */
+                t->state = ST_OSC_STR;
+            } else if (t->osc_len < 255 && b >= 0x20) {
+                t->osc_buf[t->osc_len++] = (char)b;
             }
             continue;
         }
@@ -621,7 +658,7 @@ bool tswl_term_feed(tswl_term *t, const char *data, size_t len) {
                       t->csi_private = false;
                       memset(t->csi_params, 0, sizeof(t->csi_params));
                       break;
-            case ']': t->state = ST_OSC_STR; break;
+            case ']': t->state = ST_OSC_STR; t->osc_len = 0; break;
             case '7': t->saved_cx = t->cx; t->saved_cy = t->cy; break;
             case '8': t->cx = t->saved_cx; t->cy = t->saved_cy; clamp_cursor(t); break;
             case 'D': newline(t); break;
@@ -704,6 +741,14 @@ bool tswl_term_feed(tswl_term *t, const char *data, size_t len) {
         ground_byte(t, b);
     }
     return t->changed;
+}
+
+bool tswl_term_take_title(tswl_term *t, char *out, size_t outsz) {
+    if (!t || !out || outsz == 0) return false;
+    if (!t->title_pending) return false;
+    snprintf(out, outsz, "%s", t->window_title);
+    t->title_pending = false;
+    return true;
 }
 
 void tswl_term_resize(tswl_term *t, int cols, int rows) {

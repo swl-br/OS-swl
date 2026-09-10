@@ -186,6 +186,21 @@ static void test_sgr_256(void)
     tswl_term_free(t);
 }
 
+
+static void test_osc_title(void)
+{
+    tswl_term *t = tswl_term_new(20, 5);
+    feed(t, "\033]0;Hello SWL\007");
+    char title[64];
+    expect(tswl_term_take_title(t, title, sizeof(title)), "OSC 0 seta titulo");
+    expect(strcmp(title, "Hello SWL") == 0, "titulo Hello SWL");
+    expect(!tswl_term_take_title(t, title, sizeof(title)), "flag consumida");
+    feed(t, "\033]2;Alt Title\033\\");
+    expect(tswl_term_take_title(t, title, sizeof(title)), "OSC 2 ST");
+    expect(strcmp(title, "Alt Title") == 0, "titulo Alt Title");
+    tswl_term_free(t);
+}
+
 int main(void)
 {
     printf("tswl term parser unit tests\n");
@@ -200,6 +215,7 @@ int main(void)
     test_scrollback_survives_resize();
     test_alt_screen_restores();
     test_sgr_256();
+    test_osc_title();
     printf("\nsummary: %d passed, %d failed\n", passes, fails);
     return fails ? 1 : 0;
 }

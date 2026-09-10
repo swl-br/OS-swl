@@ -87,6 +87,12 @@ fica a lição: `git add -A` só com `git status` conferido antes, e
 commit de docs nunca carrega código. Aviso T3 marcado ATENDIDO;
 pastas fontline (1) e (2) removidas da entrada (resolvidas).
 
+## 2026-09-10 — OSC title (rebase) integrado, aviso atendido (admin)
+
+Rebase exato (só adições do aviso) verificado: suíte 27/27 com e sem
+sanitizer + build 9/9 (rodados no repo). Aprovado pelo usuário e
+integrado: shell pode titular a janela (`ESC]0;texto`).
+
 ## 2026-09-10 — TSWL 256 cores integrado (admin)
 
 Entrega do Grok (`term.c` SGR 38;5/48;5 + `render.c` color_256 + 3

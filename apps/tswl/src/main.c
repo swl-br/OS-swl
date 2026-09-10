@@ -912,6 +912,13 @@ int main(int argc, char *argv[]) {
                 if (tswl_term_feed(a.term, buf, (size_t)n)) {
                     a.need_redraw = true;
                 }
+                {
+                    char title[256];
+                    if (tswl_term_take_title(a.term, title, sizeof(title))) {
+                        xdg_toplevel_set_title(a.toplevel,
+                            title[0] ? title : "TSWL");
+                    }
+                }
             } else if (n == 0 || (n < 0 && errno != EAGAIN && errno != EIO)) {
                 /* shell morreu: fecha o terminal junto */
                 a.running = false;
