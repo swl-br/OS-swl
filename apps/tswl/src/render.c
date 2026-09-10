@@ -1,16 +1,16 @@
 /*
- * render.c — desenho do grid do TSWL via cairo/pango.
+ * render.c  desenho do grid do TSWL via cairo/pango.
  *
  * Paleta: mesma do theme.h do swl-ui (fundo #0b0e14, texto #d4dee6,
  * ciano #6bd1cc etc.) pra identidade visual consistente.
  *
- * Otimizações:
- * - texto desenhado linha a linha com um único PangoLayout reutilizado;
- * - fundo pintado em retângulos por segmento de mesma cor (não por célula);
- * - o main decide QUANDO chamar draw (só quando o term marca mudança ou
- *   o blink do cursor expira) — draw() em si sempre repinta a superfície
- *   inteira, o que é barato o suficiente em tamanhos de janela normais
- *   (~1-2ms medidos) e muito mais simples que diff de retângulos.
+ * Otimizaes:
+ * - texto desenhado linha a linha com um nico PangoLayout reutilizado;
+ * - fundo pintado em retngulos por segmento de mesma cor (no por clula);
+ * - o main decide QUANDO chamar draw (s quando o term marca mudana ou
+ *   o blink do cursor expira)  draw() em si sempre repinta a superfcie
+ *   inteira, o que  barato o suficiente em tamanhos de janela normais
+ *   (~1-2ms medidos) e muito mais simples que diff de retngulos.
  */
 
 #include <stdlib.h>
@@ -23,7 +23,7 @@
 
 typedef struct { double r, g, b; } rgb_t;
 
-/* paleta: índices 0-7 normal, 8-15 bright, 16 = fg default, 17 = bg default */
+/* paleta: ndices 0-7 normal, 8-15 bright, 16 = fg default, 17 = bg default */
 static const rgb_t palette[18] = {
     { 0.043, 0.055, 0.078 },  /* 0  black (fundo do sistema) */
     { 0.86,  0.35,  0.40  },  /* 1  red (#dc5a66)            */
@@ -49,7 +49,7 @@ static rgb_t color_for(uint16_t idx, uint8_t attrs, bool is_fg) {
     if (idx == TSWL_COL_DEFAULT_FG) return palette[16];
     if (idx == TSWL_COL_DEFAULT_BG) return palette[17];
     int i = idx & 0xFF;
-    /* negrito eleva cores normais pra bright (convenção clássica) */
+    /* negrito eleva cores normais pra bright (conveno clssica) */
     if (is_fg && (attrs & TSWL_ATTR_BOLD) && i < 8) i += 8;
     if (i > 15) i = 15;
     return palette[i];
@@ -57,9 +57,9 @@ static rgb_t color_for(uint16_t idx, uint8_t attrs, bool is_fg) {
 
 struct tswl_render {
     cairo_surface_t *surface;
-    int width, height;      /* pixels da superfície */
-    int cw, ch;             /* pixels por célula */
-    int baseline;           /* offset Y do baseline do texto na célula */
+    int width, height;      /* pixels da superfcie */
+    int cw, ch;             /* pixels por clula */
+    int baseline;           /* offset Y do baseline do texto na clula */
 };
 
 static void measure_font(tswl_render *r) {
@@ -76,7 +76,7 @@ static void measure_font(tswl_render *r) {
     pango_layout_get_pixel_size(layout, &w, &h);
     r->cw = w > 0 ? w : 8;
     r->ch = h > 0 ? h : 16;
-    r->baseline = 2;  /* pequeno offset do topo da célula */
+    r->baseline = 2;  /* pequeno offset do topo da clula */
 
     g_object_unref(layout);
     cairo_destroy(cr);
@@ -114,11 +114,11 @@ int tswl_render_cols_for(tswl_render *r, int width) {
 }
 
 int tswl_render_rows_for(tswl_render *r, int height) {
-    int n = (height - 2 * TSWL_RENDER_PAD) / r->ch;
+    int n = (height - TSWL_MENUBAR_H - 2 * TSWL_RENDER_PAD) / r->ch;
     return n < 1 ? 1 : n;
 }
 
-/* pinta o fundo de uma linha em segmentos de cor contínua */
+/* pinta o fundo de uma linha em segmentos de cor contnua */
 static void draw_row_background(cairo_t *cr, tswl_render *r,
         tswl_term *t, int row, int offset_rows) {
     int cols = tswl_term_cols(t);
@@ -147,7 +147,7 @@ static void draw_row_background(cairo_t *cr, tswl_render *r,
                 cairo_set_source_rgb(cr, cur.r, cur.g, cur.b);
                 cairo_rectangle(cr,
                     TSWL_RENDER_PAD + seg_start * r->cw,
-                    TSWL_RENDER_PAD + row * r->ch,
+                    row * r->ch,
                     (x - seg_start) * r->cw, r->ch);
                 cairo_fill(cr);
             }
@@ -157,8 +157,8 @@ static void draw_row_background(cairo_t *cr, tswl_render *r,
     }
 }
 
-/* desenha o texto de uma linha com um único layout, parando em mudanças
- * de estilo — agrupa runs de células com mesmo fg/attrs */
+/* desenha o texto de uma linha com um nico layout, parando em mudanas
+ * de estilo  agrupa runs de clulas com mesmo fg/attrs */
 static void draw_row_text(cairo_t *cr, PangoLayout *layout, tswl_render *r,
         tswl_term *t, int row, int offset_rows) {
     int cols = tswl_term_cols(t);
@@ -169,7 +169,7 @@ static void draw_row_text(cairo_t *cr, PangoLayout *layout, tswl_render *r,
             : tswl_term_cell(t, x, row);
         if (cell->ch == 0 || cell->ch == ' ') { x++; continue; }
 
-        /* run: células consecutivas com mesmo estilo */
+        /* run: clulas consecutivas com mesmo estilo */
         uint16_t fg = cell->fg;
         uint16_t bg = cell->bg;
         uint8_t attrs = cell->attrs;
@@ -225,24 +225,27 @@ static void draw_row_text(cairo_t *cr, PangoLayout *layout, tswl_render *r,
         }
         cairo_set_source_rgb(cr, c.r, c.g, c.b);
         cairo_move_to(cr, TSWL_RENDER_PAD + x0 * r->cw,
-                      TSWL_RENDER_PAD + row * r->ch + r->baseline);
+                      row * r->ch + r->baseline);
         pango_cairo_show_layout(cr, layout);
 
         if (attrs & TSWL_ATTR_UNDERLINE) {
             int run_w = (x - x0) * r->cw;
             cairo_rectangle(cr, TSWL_RENDER_PAD + x0 * r->cw,
-                TSWL_RENDER_PAD + row * r->ch + r->ch - 2, run_w, 1);
+                row * r->ch + r->ch - 2, run_w, 1);
             cairo_fill(cr);
         }
     }
 }
 
-void tswl_render_draw(tswl_render *r, tswl_term *t, bool cursor_on) {
+void tswl_render_draw(tswl_render *r, tswl_term *t,
+        swl_menubar *mb, bool cursor_on) {
     cairo_t *cr = cairo_create(r->surface);
 
     /* fundo geral */
     cairo_set_source_rgb(cr, palette[17].r, palette[17].g, palette[17].b);
     cairo_paint(cr);
+    if (mb) swl_menubar_draw(mb, cr, r->width);
+    cairo_translate(cr,  0,   TSWL_MENUBAR_H + TSWL_RENDER_PAD);
 
     int rows = tswl_term_rows(t);
     int offset = tswl_term_scroll_offset(t);
@@ -254,23 +257,52 @@ void tswl_render_draw(tswl_render *r, tswl_term *t, bool cursor_on) {
     }
     g_object_unref(layout);
 
-    /* cursor — T1: barra vertical piscando (não bloco invertido) */
+    /* cursor */
     if (cursor_on && tswl_term_cursor_visible(t) && offset == 0) {
         int cx = tswl_term_cursor_x(t);
         int cy = tswl_term_cursor_y(t);
         const tswl_cell *cell = tswl_term_cell(t, cx, cy);
+        /* cursor: bloco com cor do fg da clula (ou default), texto fica
+         * com a cor de fundo por cima  efeito de inverso clssico */
         rgb_t cc = color_for(cell->fg == TSWL_COL_DEFAULT_FG
                              ? (uint16_t)7 : cell->fg, 0, true);
-        /* largura ~1/8 da célula, mínimo 2px — posição no início da célula */
-        int bar_w = r->cw / 8;
-        if (bar_w < 2) bar_w = 2;
-        if (bar_w > 3) bar_w = 3;
-        cairo_set_source_rgba(cr, cc.r, cc.g, cc.b, 0.95);
-        cairo_rectangle(cr,
-                        TSWL_RENDER_PAD + cx * r->cw,
-                        TSWL_RENDER_PAD + cy * r->ch,
-                        bar_w, r->ch);
+        cairo_set_source_rgba(cr, cc.r, cc.g, cc.b, 0.85);
+        cairo_rectangle(cr, TSWL_RENDER_PAD + cx * r->cw,
+                        cy * r->ch, r->cw, r->ch);
         cairo_fill(cr);
+        if (cell->ch > 0x20) {
+            char buf[8];
+            int blen = 0;
+            uint32_t cp = cell->ch;
+            if (cp < 0x80) buf[blen++] = (char)cp;
+            else if (cp < 0x800) {
+                buf[blen++] = (char)(0xC0 | (cp >> 6));
+                buf[blen++] = (char)(0x80 | (cp & 0x3F));
+            } else if (cp < 0x10000) {
+                buf[blen++] = (char)(0xE0 | (cp >> 12));
+                buf[blen++] = (char)(0x80 | ((cp >> 6) & 0x3F));
+                buf[blen++] = (char)(0x80 | (cp & 0x3F));
+            } else {
+                buf[blen++] = (char)(0xF0 | (cp >> 18));
+                buf[blen++] = (char)(0x80 | ((cp >> 12) & 0x3F));
+                buf[blen++] = (char)(0x80 | ((cp >> 6) & 0x3F));
+                buf[blen++] = (char)(0x80 | (cp & 0x3F));
+            }
+            buf[blen] = 0;
+            PangoLayout *cl = pango_cairo_create_layout(cr);
+            char desc[128];
+            snprintf(desc, sizeof(desc), "%s%s %.0f", TSWL_FONT,
+                (cell->attrs & TSWL_ATTR_BOLD) ? " Bold" : "", TSWL_FONT_SIZE);
+            PangoFontDescription *fd = pango_font_description_from_string(desc);
+            pango_layout_set_font_description(cl, fd);
+            pango_font_description_free(fd);
+            pango_layout_set_text(cl, buf, blen);
+            cairo_set_source_rgb(cr, palette[17].r, palette[17].g, palette[17].b);
+            cairo_move_to(cr, TSWL_RENDER_PAD + cx * r->cw,
+                          cy * r->ch + r->baseline);
+            pango_cairo_show_layout(cr, cl);
+            g_object_unref(cl);
+        }
     }
 
     cairo_destroy(cr);

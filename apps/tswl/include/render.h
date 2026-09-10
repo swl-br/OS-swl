@@ -3,6 +3,7 @@
 
 #include <cairo/cairo.h>
 #include "term.h"
+#include "menubar.h"
 
 /*
  * render: desenha o grid do terminal numa superfície cairo (que o main
@@ -19,7 +20,8 @@ void tswl_render_free(tswl_render *r);
 
 /* desenha o estado atual do term na superfície interna. cursor_on
  * controla o blink (main alterna num timer de ~500ms). */
-void tswl_render_draw(tswl_render *r, tswl_term *t, bool cursor_on);
+void tswl_render_draw(tswl_render *r, tswl_term *t,
+        swl_menubar *mb, bool cursor_on);
 
 /* superfície cairo pronta pra copiar pro buffer Wayland */
 cairo_surface_t *tswl_render_surface(tswl_render *r);
@@ -31,6 +33,9 @@ int tswl_render_cell_h(tswl_render *r);
 /* quantas colunas/linhas cabem numa área w x h pixels */
 int tswl_render_cols_for(tswl_render *r, int width);
 int tswl_render_rows_for(tswl_render *r, int height);
+
+/* altura da barra de menu M1 (o grid começa abaixo dela) */
+#define TSWL_MENUBAR_H SWL_MENUBAR_BAR_H
 
 /* padding interno (pixels) entre a borda da janela e a área de texto */
 #define TSWL_RENDER_PAD 4

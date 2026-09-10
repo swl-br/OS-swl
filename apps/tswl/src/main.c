@@ -65,6 +65,7 @@ struct app {
     struct xdg_toplevel *toplevel;
     struct wl_keyboard *keyboard;
     struct wl_pointer *pointer;
+    int pointer_x, pointer_y;
 
     struct xkb_context *xkb_ctx;
     struct xkb_keymap *keymap;
@@ -77,6 +78,7 @@ struct app {
 
     tswl_term *term;
     tswl_render *render;
+    swl_menubar *menubar;
     int pty_fd;
     pid_t child_pid;
     bool need_redraw;
@@ -226,7 +228,7 @@ static void redraw(struct app *a) {
         return;
     }
 
-    tswl_render_draw(a->render, a->term, a->cursor_on);
+    tswl_render_draw(a->render, a->term, a->menubar, a->cursor_on);
     cairo_surface_t *surf = tswl_render_surface(a->render);
     int sw = cairo_image_surface_get_width(surf);
     int sh = cairo_image_surface_get_height(surf);
@@ -271,6 +273,7 @@ static void toplevel_configure(void *data, struct xdg_toplevel *tl,
     if (w > 0 && h > 0 && (w != a->width || h != a->height)) {
         a->width = w;
         a->height = h;
+        swl_menubar_resize(a->menubar, w);
         /* recria render+grid no novo tamanho */
         tswl_render_free(a->render);
         a->render = tswl_render_new(w, h);
@@ -415,6 +418,8 @@ static int keysym_to_seq(xkb_keysym_t sym, char *buf, bool app_cursor) {
     return 0;
 }
 
+static void execute_action(struct app *a, int id);
+
 static void keyboard_key(void *data, struct wl_keyboard *kb,
         uint32_t serial, uint32_t time, uint32_t key, uint32_t state) {
     struct app *a = data;
@@ -424,6 +429,30 @@ static void keyboard_key(void *data, struct wl_keyboard *kb,
 
     uint32_t keycode = key + 8;
     xkb_keysym_t sym = xkb_state_key_get_one_sym(a->xkb_state, keycode);
+
+    if (!a->menubar) { /* sem menubar: segue o fluxo normal */ }
+    else {
+        xkb_mod_mask_t alt = xkb_state_mod_name_is_active(a->xkb_state,
+            "Mod1", XKB_STATE_MODS_EFFECTIVE);
+        bool alt_key = (sym == XKB_KEY_Alt_L) || (sym == XKB_KEY_Alt_R);
+        if (alt_key || (alt && (
+                sym == XKB_KEY_Left || sym == XKB_KEY_Right ||
+                sym == XKB_KEY_Up || sym == XKB_KEY_Down ||
+                sym == XKB_KEY_Return || sym == XKB_KEY_Escape))) {
+            enum swl_menubar_key mk;
+            if (alt_key) mk = SWL_MENUBAR_KEY_ALT;
+            else if (sym == XKB_KEY_Left) mk = SWL_MENUBAR_KEY_LEFT;
+            else if (sym == XKB_KEY_Right) mk = SWL_MENUBAR_KEY_RIGHT;
+            else if (sym == XKB_KEY_Up) mk = SWL_MENUBAR_KEY_UP;
+            else if (sym == XKB_KEY_Down) mk = SWL_MENUBAR_KEY_DOWN;
+            else if (sym == XKB_KEY_Return) mk = SWL_MENUBAR_KEY_ENTER;
+            else mk = SWL_MENUBAR_KEY_ESC;
+            int id2 = swl_menubar_key(a->menubar, mk);
+            if (id2 > 0) execute_action(a, id2);
+            a->need_redraw = true;
+            return;
+        }
+    }
     char buf[64];
     int n = 0;
 
@@ -432,23 +461,14 @@ static void keyboard_key(void *data, struct wl_keyboard *kb,
     xkb_mod_mask_t shift = xkb_state_mod_name_is_active(a->xkb_state,
         "Shift", XKB_STATE_MODS_EFFECTIVE);
 
-    /* T2: scrollback — Shift+PageUp/Down (+ keypad) e Shift+Up/Down.
-     * KP_* cobre layouts/QEMU que não emitem Page_Up "normal". */
-    if (shift && (sym == XKB_KEY_Page_Up || sym == XKB_KEY_KP_Page_Up ||
-                  sym == XKB_KEY_Up || sym == XKB_KEY_KP_Up)) {
-        int step = (sym == XKB_KEY_Up || sym == XKB_KEY_KP_Up)
-                   ? 3 : (tswl_term_rows(a->term) / 2);
-        if (step < 1) step = 1;
-        tswl_term_scroll_view(a->term, step);
+    /* Shift+PageUp/Down: scrollback do terminal (não vai pro shell) */
+    if (shift && sym == XKB_KEY_Page_Up) {
+        tswl_term_scroll_view(a->term, tswl_term_rows(a->term) / 2);
         a->need_redraw = true;
         return;
     }
-    if (shift && (sym == XKB_KEY_Page_Down || sym == XKB_KEY_KP_Page_Down ||
-                  sym == XKB_KEY_Down || sym == XKB_KEY_KP_Down)) {
-        int step = (sym == XKB_KEY_Down || sym == XKB_KEY_KP_Down)
-                   ? 3 : (tswl_term_rows(a->term) / 2);
-        if (step < 1) step = 1;
-        tswl_term_scroll_view(a->term, -step);
+    if (shift && sym == XKB_KEY_Page_Down) {
+        tswl_term_scroll_view(a->term, -tswl_term_rows(a->term) / 2);
         a->need_redraw = true;
         return;
     }
@@ -491,25 +511,91 @@ static const struct wl_keyboard_listener keyboard_listener = {
     .repeat_info = keyboard_repeat_info,
 };
 
+/* ---------------- seat / registry ---------------- */
 
-/* ---------------- pointer (T2: wheel → scrollback) ---------------- */
 
-static void pointer_enter(void *data, struct wl_pointer *p, uint32_t serial,
-        struct wl_surface *surface, wl_fixed_t sx, wl_fixed_t sy) {
-    (void)data; (void)p; (void)serial; (void)surface; (void)sx; (void)sy;
+/* menus da menubar */
+enum { TSWL_ACTION_LIMPAR = 1, TSWL_ACTION_SAIR = 2 };
+
+static const swl_menuitem tswl_arquivo[] = {
+    { "Limpar", TSWL_ACTION_LIMPAR, true },
+    { "Sair", TSWL_ACTION_SAIR, true },
+};
+static const swl_menuitem tswl_editar[] = {
+    { "Copiar", 3, false },
+    { "Colar",  4, false },
+};
+static const swl_menuitem tswl_config[] = {
+    { "Preferencias...",  5, false },
+};
+static const swl_menu tswl_menus[] = {
+    { "Arquivo",  tswl_arquivo,  2 },
+    { "Editar",  tswl_editar,  2 },
+    { "Configurar",  tswl_config,  1 },
+};
+
+static void execute_action(struct app *a, int id) {
+    switch (id) {
+    case TSWL_ACTION_LIMPAR: {
+        if (a->pty_fd >=  0) {
+            write(a->pty_fd, "\033[H\033[2J",  7);
+        }
+        tswl_term_scroll_view(a->term, -tswl_term_rows(a->term));
+        a->need_redraw = true;
+        break;
+    }
+    case TSWL_ACTION_SAIR: {
+        a->running = false;
+        break;
+    }
+    }
 }
-static void pointer_leave(void *data, struct wl_pointer *p, uint32_t serial,
-        struct wl_surface *surface) {
-    (void)data; (void)p; (void)serial; (void)surface;
+
+static void pointer_enter(void *data, struct wl_pointer *pointer,
+        uint32_t serial, struct wl_surface *surface, wl_fixed_t sx, wl_fixed_t sy) {
+    struct app *a = data;
+    (void)pointer;(void)serial;(void)surface;
+    a->pointer_x = wl_fixed_to_int(sx);
+    a->pointer_y = wl_fixed_to_int(sy);
+    if (a->menubar) {
+        if (swl_menubar_is_open(a->menubar)) {
+            swl_menubar_pointer_motion(a->menubar, a->pointer_x, a->pointer_y);
+            a->need_redraw = true;
+        }
+    }
 }
-static void pointer_motion(void *data, struct wl_pointer *p, uint32_t time,
-        wl_fixed_t sx, wl_fixed_t sy) {
-    (void)data; (void)p; (void)time; (void)sx; (void)sy;
+
+static void pointer_leave(void *data, struct wl_pointer *pointer,
+        uint32_t serial, struct wl_surface *surface) {
+    (void)data;(void)pointer;(void)serial;(void)surface;
 }
-static void pointer_button(void *data, struct wl_pointer *p, uint32_t serial,
-        uint32_t time, uint32_t button, uint32_t state) {
-    (void)data; (void)p; (void)serial; (void)time; (void)button; (void)state;
+
+static void pointer_motion(void *data, struct wl_pointer *pointer,
+        uint32_t time, wl_fixed_t sx, wl_fixed_t sy) {
+    struct app *a = data;
+    (void)pointer;(void)time;
+    a->pointer_x = wl_fixed_to_int(sx);
+    a->pointer_y = wl_fixed_to_int(sy);
+    if (a->menubar) {
+        swl_menubar_pointer_motion(a->menubar, a->pointer_x, a->pointer_y);
+        if (swl_menubar_is_open(a->menubar)) a->need_redraw = true;
+    }
 }
+
+static void pointer_button(void *data, struct wl_pointer *pointer,
+        uint32_t serial, uint32_t time, uint32_t button, uint32_t state) {
+    struct app *a = data;
+    (void)pointer;(void)serial;(void)time;(void)button;
+    if (!a->menubar) return;
+    bool pressed = (state == WL_POINTER_BUTTON_STATE_PRESSED);
+    int by = a->pointer_y;
+    if (swl_menubar_is_open(a->menubar) || by < TSWL_MENUBAR_H) {
+        int id = swl_menubar_pointer_button(a->menubar, a->pointer_x, by, pressed);
+        if (id >  0) execute_action(a, id);
+        a->need_redraw = true;
+    }
+}
+
 static void pointer_axis(void *data, struct wl_pointer *p, uint32_t time,
         uint32_t axis, wl_fixed_t value) {
     struct app *a = data;
@@ -554,9 +640,6 @@ static const struct wl_pointer_listener pointer_listener = {
     .axis_stop = pointer_axis_stop,
     .axis_discrete = pointer_axis_discrete,
 };
-
-/* ---------------- seat / registry ---------------- */
-
 static void seat_capabilities(void *data, struct wl_seat *seat, uint32_t caps) {
     struct app *a = data;
     if ((caps & WL_SEAT_CAPABILITY_KEYBOARD) && !a->keyboard) {
@@ -566,6 +649,7 @@ static void seat_capabilities(void *data, struct wl_seat *seat, uint32_t caps) {
         wl_keyboard_destroy(a->keyboard);
         a->keyboard = NULL;
     }
+
     if ((caps & WL_SEAT_CAPABILITY_POINTER) && !a->pointer) {
         a->pointer = wl_seat_get_pointer(seat);
         wl_pointer_add_listener(a->pointer, &pointer_listener, a);
@@ -663,6 +747,7 @@ int main(int argc, char *argv[]) {
 
     /* render + grid no tamanho inicial */
     a.render = tswl_render_new(a.width, a.height);
+    a.menubar = swl_menubar_new(a.width, tswl_menus, 3);
     if (!a.render) {
         fprintf(stderr, "tswl: falha ao criar render\n");
         return 1;
@@ -758,13 +843,14 @@ int main(int argc, char *argv[]) {
     for (int i = 0; i < TSWL_BUF_COUNT; i++) {
         shm_buf_free_resources(&a.bufs[i]);
     }
-    if (a.pointer) wl_pointer_destroy(a.pointer);
     if (a.keyboard) wl_keyboard_destroy(a.keyboard);
+    if (a.pointer) wl_pointer_destroy(a.pointer);
     if (a.keymap) xkb_keymap_unref(a.keymap);
     if (a.xkb_state) xkb_state_unref(a.xkb_state);
     if (a.xkb_ctx) xkb_context_unref(a.xkb_ctx);
     tswl_term_free(a.term);
     tswl_render_free(a.render);
+    swl_menubar_free(a.menubar);
     xdg_toplevel_destroy(a.toplevel);
     xdg_surface_destroy(a.xsurface);
     wl_surface_destroy(a.surface);
