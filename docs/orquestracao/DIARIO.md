@@ -4,6 +4,13 @@ Registro diário das rodadas de orquestração. Entrada mais recente em
 cima. **Conferir sempre o repo real** — este diário é um índice, não a
 verdade de fonte.
 
+## 2026-09-09 — T3 + R-13 reconciliados (admin)
+
+`origin/notebook`: linha DejaVu no `render.c` (T3, a que faltava) +
+guard R-13 no `swlwm.c`, sessões e 2 avisos novos (t4-dirty e
+tswl-catalog, ambos p/ outros — rebase necessário). Merge limpo.
+Subido.
+
 ## 2026-09-09 — KVM resolve a fluidez (admin)
 
 `make run-gui` com `-accel kvm` (fallback TCG): usuário confirma
