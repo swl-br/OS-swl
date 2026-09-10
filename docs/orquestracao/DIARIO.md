@@ -46,6 +46,16 @@ no repo; compositor repassa axis, ok). Aprovado agora e integrado:
 `wl_pointer` + teclas KP/shift. T2 → CONCLUÍDA (validação no QEMU
 pendente; reconstruir disco com o código novo).
 
+## 2026-09-09 — Correção de processo: fontline entrou sem rito (admin)
+
+Auditoria achou que a linha TSWL_FONT entrou no repo via varredura de
+`git add -A` dentro de commit rotulado "docs" (9edfe33ab) — sem o rito
+verificar→reportar→aprovar→integrar. Conteúdo auditado depois:
+idêntico ao arquivo verificado (T1 intacto, build OK). Sem dano, mas
+fica a lição: `git add -A` só com `git status` conferido antes, e
+commit de docs nunca carrega código. Aviso T3 marcado ATENDIDO;
+pastas fontline (1) e (2) removidas da entrada (resolvidas).
+
 ## 2026-09-09 — T1 (cursor barra) testada em pixel e integrada (admin)
 
 Entrega do Grok (`render.c` + sessão): barra 2–3px sobreposta em vez

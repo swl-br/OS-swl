@@ -26,4 +26,4 @@ por:
 Nada mais do `render.c` da entrega deve entrar (o resto é código
 pré-T1).
 
-Status: PENDENTE.
+Status: ATENDIDO em 2026-09-09 — a linha entrou via commit 9edfe33ab (varredura do git add -A; conteúdo idêntico ao verificado). Aviso encerrado.
