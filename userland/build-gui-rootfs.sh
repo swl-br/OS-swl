@@ -115,6 +115,17 @@ elif [ -d /usr/share/X11/xkb ]; then
     cp -a /usr/share/X11/xkb "$ROOTFS/usr/share/X11/xkb"
 fi
 
+# W2: quirks do libinput (independentes de arquitetura): sem
+# /usr/share/libinput o backend loga "Failed to load the device quirks"
+# e o comportamento de mouse/teclado degrada. Mesmo padrão do xkb acima.
+if [ -d "$ARTIFACTS/libinput" ]; then
+    mkdir -p "$ROOTFS/usr/share"
+    cp -a "$ARTIFACTS/libinput" "$ROOTFS/usr/share/libinput"
+elif [ -d /usr/share/libinput ]; then
+    mkdir -p "$ROOTFS/usr/share"
+    cp -a /usr/share/libinput "$ROOTFS/usr/share/libinput"
+fi
+
 # fontconfig precisa de um config mínimo apontando pra essa pasta —
 # sem isso ele não acha a fonte mesmo com o arquivo presente.
 mkdir -p "$ROOTFS/etc/fonts"
