@@ -82,6 +82,8 @@ void tswl_term_clear_dirty(tswl_term *t);
 /* T5: selecao de texto (coords de tela). */
 void tswl_term_clear_selection(tswl_term *t);
 void tswl_term_set_selection(tswl_term *t, int c0, int r0, int c1, int r1);
+/* Seleciona a palavra sob (col,row) — alnum/_ contiguos. */
+void tswl_term_select_word(tswl_term *t, int col, int row);
 bool tswl_term_has_selection(const tswl_term *t);
 bool tswl_term_cell_selected(const tswl_term *t, int col, int row);
 char *tswl_term_selection_text(const tswl_term *t);

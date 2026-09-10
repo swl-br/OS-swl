@@ -88,6 +88,8 @@ struct app {
     /* T5: selecao + clipboard interno */
     bool selecting;
     int sel_anchor_c, sel_anchor_r;
+    long last_click_ms;
+    int last_click_c, last_click_r;
     char *clipboard;
     size_t clipboard_len;
 };
@@ -674,16 +676,31 @@ static void pointer_button(void *data, struct wl_pointer *pointer,
 
     if (button == BTN_LEFT) {
         if (pressed) {
-            a->selecting = true;
-            a->sel_anchor_c = c;
-            a->sel_anchor_r = r;
-            tswl_term_set_selection(a->term, c, r, c, r);
-            a->need_redraw = true;
-        } else {
-            a->selecting = false;
-            if (a->sel_anchor_c == c && a->sel_anchor_r == r) {
-                tswl_term_clear_selection(a->term);
+            long now = now_ms();
+            int dbl = (a->last_click_ms > 0
+                && now - a->last_click_ms < 400
+                && c == a->last_click_c && r == a->last_click_r);
+            a->last_click_ms = now;
+            a->last_click_c = c;
+            a->last_click_r = r;
+            if (dbl) {
+                tswl_term_select_word(a->term, c, r);
+                a->selecting = false;
                 a->need_redraw = true;
+            } else {
+                a->selecting = true;
+                a->sel_anchor_c = c;
+                a->sel_anchor_r = r;
+                tswl_term_set_selection(a->term, c, r, c, r);
+                a->need_redraw = true;
+            }
+        } else {
+            if (a->selecting) {
+                a->selecting = false;
+                if (a->sel_anchor_c == c && a->sel_anchor_r == r) {
+                    tswl_term_clear_selection(a->term);
+                    a->need_redraw = true;
+                }
             }
         }
     } else if (button == BTN_RIGHT && pressed) {

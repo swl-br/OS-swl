@@ -4,6 +4,12 @@ Registro diário das rodadas de orquestração. Entrada mais recente em
 cima. **Conferir sempre o repo real** — este diário é um índice, não a
 verdade de fonte.
 
+## 2026-09-10 — T5-word (rebase) integrado; entrada limpa (admin)
+
+Rebase exato (só palavra, OSC intacto) verificado e integrado; aviso
+t5word ATENDIDO. Entrada limpa do resolvido (restam: c2/Buffy,
+swlpad/decisão, swl-about-neo/aviso, s2).
+
 ## 2026-09-10 — Truecolor (rebase) integrado; aviso t5-word (admin)
 
 Rebase somando (truecolor + OSC) verificado 30/30 e integrado; aviso

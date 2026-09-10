@@ -150,6 +150,41 @@ void tswl_term_clear_selection(tswl_term *t) {
     }
 }
 
+
+void tswl_term_select_word(tswl_term *t, int col, int row)
+{
+    if (!t) return;
+    if (col < 0 || row < 0 || col >= t->cols || row >= t->rows) return;
+    const tswl_cell *cell = tswl_term_scrollback_cell(t, col, row);
+    uint32_t ch = cell->ch;
+    if (ch == 0 || ch == ' ') {
+        tswl_term_set_selection(t, col, row, col, row);
+        return;
+    }
+    int is_word = (ch < 128 && ((ch >= '0' && ch <= '9')
+        || (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') || ch == '_'));
+    int c0 = col, c1 = col;
+    if (is_word) {
+        while (c0 > 0) {
+            const tswl_cell *L = tswl_term_scrollback_cell(t, c0 - 1, row);
+            uint32_t x = L->ch;
+            if (!(x < 128 && ((x >= '0' && x <= '9')
+                || (x >= 'A' && x <= 'Z') || (x >= 'a' && x <= 'z') || x == '_')))
+                break;
+            c0--;
+        }
+        while (c1 + 1 < t->cols) {
+            const tswl_cell *R = tswl_term_scrollback_cell(t, c1 + 1, row);
+            uint32_t x = R->ch;
+            if (!(x < 128 && ((x >= '0' && x <= '9')
+                || (x >= 'A' && x <= 'Z') || (x >= 'a' && x <= 'z') || x == '_')))
+                break;
+            c1++;
+        }
+    }
+    tswl_term_set_selection(t, c0, row, c1, row);
+}
+
 void tswl_term_set_selection(tswl_term *t, int c0, int r0, int c1, int r1) {
     if (!t) return;
     if (c0 < 0) c0 = 0;

@@ -12,4 +12,4 @@ o título da janela.
 2. `term.h`: somar decl (manter decl OSC).
 3. `main.c`: somar lógica de duplo clique (manter bloco take_title).
 
-Status: PENDENTE.
+Status: ATENDIDO em 2026-09-10 — rebase exato verificado (build + palavra/OSC sanitizer) e integrado.
