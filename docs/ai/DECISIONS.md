@@ -213,6 +213,9 @@ nível exigente. Checklist do orquestrador antes de aprovar:
    já existe, sem binário gerado commitado).
 5. Teste executado de verdade (build + harness/suíte; interativo vai
    pro usuário com roteiro).
+6. Entrega que não compila na base atual volta com aviso — sem exceção.
+   "Funciona na minha máquina" sem build limpo aqui não conta (casos:
+   t5-selection, w1-geom).
 
 Motivo: regra do usuário (2026-09-10) — sistema rápido, estruturado,
 seguro e bonito exige código bem pensado; pressa aqui vira lentidão
