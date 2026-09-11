@@ -10,6 +10,13 @@ Rebase exato (só palavra, OSC intacto) verificado e integrado; aviso
 t5word ATENDIDO. Entrada limpa do resolvido (restam: c2/Buffy,
 swlpad/decisão, swl-about-neo/aviso, s2).
 
+## 2026-09-11 — W1-geom integrado; entrada limpa (admin)
+
+Fix exato do aviso (campos buf + set + pick-guard + memset + mínimos)
+verificado com build limpo e integrado; aviso ATENDIDO. W1 agora
+aguarda validação no QEMU. Entrada limpa do resolvido (restam: c2,
+s2, about, swlpad + backup W1 do usuário).
+
 ## 2026-09-11 — Ctrl+Shift+A integrado, aviso atendido (admin)
 
 Fix exato (remove `pressed`) verificado com build 9/9 e integrado;

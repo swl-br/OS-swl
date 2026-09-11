@@ -48,6 +48,7 @@ struct tswl_shm_buf {
     struct wl_buffer *wl;
     void *data;
     size_t size;
+    int buf_w, buf_h;  /* dims da criação; pick só reusa se bate atual */
     bool busy;   /* attach feito, esperando release */
     bool stale;  /* resize pediu destruição enquanto busy */
 };
@@ -177,6 +178,8 @@ static bool shm_buf_create(struct app *a, struct tswl_shm_buf *b,
     b->wl = wl;
     b->data = map;
     b->size = size;
+    b->buf_w = width;
+    b->buf_h = height;
     b->busy = false;
     b->stale = false;
     wl_buffer_add_listener(b->wl, &buffer_listener, b);
@@ -186,7 +189,8 @@ static bool shm_buf_create(struct app *a, struct tswl_shm_buf *b,
 static struct tswl_shm_buf *pick_free_buf(struct app *a) {
     for (int i = 0; i < TSWL_BUF_COUNT; i++) {
         struct tswl_shm_buf *b = &a->bufs[i];
-        if (b->wl && b->data && !b->busy && !b->stale) {
+        if (b->wl && b->data && !b->busy && !b->stale
+            && b->buf_w == a->width && b->buf_h == a->height) {
             return b;
         }
     }
@@ -256,6 +260,9 @@ static void redraw(struct app *a) {
     int copy_w = sw < a->width ? sw : a->width;
     int copy_h = sh < a->height ? sh : a->height;
     size_t dst_stride = (size_t)a->width * 4;
+    /* W1: limpa buffer antes — evita farelos de frame antigo */
+    if (b->size > 0)
+        memset(b->data, 0, b->size);
     for (int y = 0; y < copy_h; y++) {
         memcpy((char *)b->data + (size_t)y * dst_stride,
                src + (size_t)y * sstride, (size_t)copy_w * 4);
@@ -289,25 +296,39 @@ static void toplevel_configure(void *data, struct xdg_toplevel *tl,
         int32_t w, int32_t h, struct wl_array *states) {
     struct app *a = data;
     (void)tl; (void)states;
-    if (w > 0 && h > 0 && (w != a->width || h != a->height)) {
-        a->width = w;
-        a->height = h;
+    if (w <= 0 || h <= 0)
+        return;
+    /* W1: evita configure minusculo apos resize de output. */
+    if (w < 160)
+        w = 160;
+    if (h < TSWL_MENUBAR_H + 2 * TSWL_RENDER_PAD + 32)
+        h = TSWL_MENUBAR_H + 2 * TSWL_RENDER_PAD + 32;
+    if (w == a->width && h == a->height)
+        return;
+    a->width = w;
+    a->height = h;
+    if (a->menubar)
         swl_menubar_resize(a->menubar, w);
-        /* recria render+grid no novo tamanho */
-        tswl_render_free(a->render);
-        a->render = tswl_render_new(w, h);
-        int cols = tswl_render_cols_for(a->render, w);
-        int rows = tswl_render_rows_for(a->render, h);
-        tswl_term_resize(a->term, cols, rows);
-        tswl_pty_resize(a->pty_fd, cols, rows);
-        if (a->configured) {
-            if (!recreate_buffers(a)) {
-                fprintf(stderr, "tswl: falha ao recriar buffers no resize\n");
-                a->running = false;
-                return;
-            }
-            a->need_redraw = true;
+    tswl_render_free(a->render);
+    a->render = tswl_render_new(w, h);
+    if (!a->render) {
+        fprintf(stderr, "tswl: falha ao recriar render no resize\n");
+        a->running = false;
+        return;
+    }
+    int cols = tswl_render_cols_for(a->render, w);
+    int rows = tswl_render_rows_for(a->render, h);
+    if (cols < 10) cols = 10;
+    if (rows < 3) rows = 3;
+    tswl_term_resize(a->term, cols, rows);
+    tswl_pty_resize(a->pty_fd, cols, rows);
+    if (a->configured) {
+        if (!recreate_buffers(a)) {
+            fprintf(stderr, "tswl: falha ao recriar buffers no resize\n");
+            a->running = false;
+            return;
         }
+        a->need_redraw = true;
     }
 }
 

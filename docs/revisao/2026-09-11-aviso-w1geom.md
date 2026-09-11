@@ -15,4 +15,4 @@ No struct (junto a `busy`/`stale`):
 int buf_w, buf_h;   /* dims da criação; pick só reusa se bate atual */
 ```
 
-Status: PENDENTE.
+Status: ATENDIDO em 2026-09-11 — fix exato (campos + set + pick-guard + memset + mínimos) verificado com build limpo e integrado.
