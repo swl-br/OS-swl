@@ -47,6 +47,16 @@ compromisso.
   quando houver um caso real (a ordem natural é: primeiro os apps
   nativos, depois a camada de compat).
 
+## Jogos (ideia do usuário, 2026-09-09)
+
+- **Jogos 2D e 3D no sistema, com Neo, Tux e outros personagens.**
+- Leitura técnica: 2D é viável já — mesmo stack dos apps (cliente
+  Wayland + cairo, sprites em PNG como os ícones); um mini-jogo do Neo
+  seria o "hello world" ideal. 3D fica pra fase futura: hoje só há
+  renderização por software (pixman, sem GLES/Vulkan no guest).
+- Atenção: Tux tem licença/uso específico (Larry Ewing); Neo é nosso
+  e está em `swl-ui/assets/mascot/`.
+
 ## Linguagem SWL
 
 - **Veredito lang-swl (projeto antigo do usuário, 2026-09-08)** — pacote
