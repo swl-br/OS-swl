@@ -468,9 +468,11 @@ static void csi_sgr(tswl_term *t) {
             t->cur_attrs = 0;
         } else if (p == 1) t->cur_attrs |= TSWL_ATTR_BOLD;
         else if (p == 2) t->cur_attrs |= TSWL_ATTR_DIM;
+        else if (p == 3) t->cur_attrs |= TSWL_ATTR_ITALIC;
         else if (p == 4) t->cur_attrs |= TSWL_ATTR_UNDERLINE;
         else if (p == 7) t->cur_attrs |= TSWL_ATTR_REVERSE;
         else if (p == 22) t->cur_attrs &= ~(TSWL_ATTR_BOLD | TSWL_ATTR_DIM);
+        else if (p == 23) t->cur_attrs &= ~TSWL_ATTR_ITALIC;
         else if (p == 24) t->cur_attrs &= ~TSWL_ATTR_UNDERLINE;
         else if (p == 27) t->cur_attrs &= ~TSWL_ATTR_REVERSE;
         else if (p >= 30 && p <= 37) t->cur_fg = (uint16_t)(p - 30);

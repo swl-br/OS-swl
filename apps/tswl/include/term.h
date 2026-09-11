@@ -32,6 +32,7 @@ enum {
 #define TSWL_ATTR_DIM       0x02
 #define TSWL_ATTR_UNDERLINE 0x04
 #define TSWL_ATTR_REVERSE   0x08
+#define TSWL_ATTR_ITALIC    0x10
 
 typedef struct {
     uint32_t ch;        /* codepoint UTF-32 (0 = célula vazia) */

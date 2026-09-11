@@ -4,6 +4,12 @@ Registro diário das rodadas de orquestração. Entrada mais recente em
 cima. **Conferir sempre o repo real** — este diário é um índice, não a
 verdade de fonte.
 
+## 2026-09-11 — SGR itálico integrado (admin)
+
+Veredito padrão: BOM (SGR 3/23, bit livre); base ATUAL; 49/49 com e
+sem sanitizer; build limpo. Aprovado pelo usuário e integrado (com
+ida pro `main`).
+
 ## 2026-09-11 — OSC 52 clipboard integrado (admin)
 
 Veredito padrão: BOM (decoder + handoff corretos); base ATUAL;

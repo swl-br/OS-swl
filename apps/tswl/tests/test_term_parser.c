@@ -286,6 +286,18 @@ static void test_osc52_clipboard(void)
     tswl_term_free(t);
 }
 
+
+static void test_sgr_italic(void)
+{
+    tswl_term *t = tswl_term_new(10, 4);
+    feed(t, "\033[3mA\033[23mB");
+    const tswl_cell *a = tswl_term_cell(t, 0, 0);
+    const tswl_cell *b = tswl_term_cell(t, 1, 0);
+    expect(a->attrs & TSWL_ATTR_ITALIC, "SGR 3 italic");
+    expect(!(b->attrs & TSWL_ATTR_ITALIC), "SGR 23 limpa italic");
+    tswl_term_free(t);
+}
+
 int main(void)
 {
     printf("tswl term parser unit tests\n");
@@ -306,6 +318,7 @@ int main(void)
     test_csi_3j_scrollback();
     test_soft_reset();
     test_osc52_clipboard();
+    test_sgr_italic();
     test_utf8_multibyte();
     printf("\nsummary: %d passed, %d failed\n", passes, fails);
     return fails ? 1 : 0;

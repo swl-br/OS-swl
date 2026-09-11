@@ -249,8 +249,10 @@ static void draw_row_text(cairo_t *cr, PangoLayout *layout, tswl_render *r,
         buf[blen] = 0;
 
         char desc[128];
-        snprintf(desc, sizeof(desc), "%s%s %.0f", TSWL_FONT,
-            (attrs & TSWL_ATTR_BOLD) ? " Bold" : "", TSWL_FONT_SIZE);
+        snprintf(desc, sizeof(desc), "%s%s%s %.0f", TSWL_FONT,
+            (attrs & TSWL_ATTR_BOLD) ? " Bold" : "",
+            (attrs & TSWL_ATTR_ITALIC) ? " Italic" : "",
+            TSWL_FONT_SIZE);
         PangoFontDescription *fd = pango_font_description_from_string(desc);
         pango_layout_set_font_description(layout, fd);
         pango_font_description_free(fd);
