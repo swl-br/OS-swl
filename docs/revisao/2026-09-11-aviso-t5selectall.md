@@ -1,13 +1,14 @@
-# AVISO — t5-selectall: manter fix UTF-8 (2026-09-11, orquestrador)
+# AVISO — selectall: `pressed` não existe (2026-09-11, orquestrador)
 
-## Veredito: LÓGICA APROVADA, integração BLOQUEADA por base velha
+## Veredito: LÓGICA APROVADA, integração BLOQUEADA (não compila)
 
-`select_all` + Ctrl+Shift+A corretos. Mas o arquivo veio sem o guard
-UTF-8 (`utf8_left == 0`, commit 862539210) — subir apaga ele e o €/emoji
-quebram de novo.
+`select_all` + handler corretos, mas usa variável `pressed` que não
+existe em `keyboard_key` (ela retorna cedo se não-pressed — linha 484;
+vizinhos C/V nem checam). Erro duro no GCC.
 
-## O que fazer (sobre os arquivos atuais)
+## O que falta
 
-Somar SÓ `select_all` + decl + handler Ctrl+Shift+A, mantendo o guard.
+Trocar `if (pressed && a->term)` por `if (a->term)` (o early return já
+garante press).
 
 Status: PENDENTE.

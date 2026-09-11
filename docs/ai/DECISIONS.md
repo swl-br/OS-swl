@@ -194,7 +194,9 @@ sobre base velha volta com aviso de rebase.
 
 Motivo: regra do usuário (2026-09-11) — Grok lia só o `main` e gerou
 uma sequência de rebases (R-14, t4-dirty, catalog, T5-word, select-all)
-por partir de base desatualizada.
+por partir de base desatualizada. Fluxo completo: antes de pedir algo a
+uma IA, garantir `main` reconciliado e fresco; a IA baseia no mais novo
+(main/notebook).
 
 ---
 ## DEC-010 — Barra de qualidade: verificação em múltiplas passadas
