@@ -15,4 +15,4 @@ Em `apps/tswl/src/term.c`, sobre a base atual:
 3. `bool tswl_term_take_bell(tswl_term *t)` (consome a flag, com guards
    NULL — mesmo padrão do `take_title`).
 
-Status: PENDENTE.
+Status: ATENDIDO em 2026-09-11 — pacote completo (base atual, sem regressão) verificado e integrado.

@@ -91,6 +91,7 @@ struct app {
     long last_click_ms;
     int last_click_c, last_click_r;
     int click_count;
+    long bell_until_ms;
     char *clipboard;
     size_t clipboard_len;
 };
@@ -238,6 +239,15 @@ static void redraw(struct app *a) {
     }
 
     tswl_render_draw(a->render, a->term, a->menubar, a->cursor_on);
+    if (a->bell_until_ms > 0 && now_ms() < a->bell_until_ms) {
+        cairo_t *crb = cairo_create(tswl_render_surface(a->render));
+        cairo_set_source_rgba(crb, 1.0, 1.0, 1.0, 0.35);
+        cairo_paint(crb);
+        cairo_destroy(crb);
+        a->need_redraw = true;
+    } else if (a->bell_until_ms > 0) {
+        a->bell_until_ms = 0;
+    }
     cairo_surface_t *surf = tswl_render_surface(a->render);
     int sw = cairo_image_surface_get_width(surf);
     int sh = cairo_image_surface_get_height(surf);
@@ -940,6 +950,10 @@ int main(int argc, char *argv[]) {
             ssize_t n = read(a.pty_fd, buf, sizeof(buf));
             if (n > 0) {
                 if (tswl_term_feed(a.term, buf, (size_t)n)) {
+                    a.need_redraw = true;
+                }
+                if (tswl_term_take_bell(a.term)) {
+                    a.bell_until_ms = now_ms() + 120;
                     a.need_redraw = true;
                 }
                 {

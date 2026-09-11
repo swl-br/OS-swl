@@ -92,4 +92,7 @@ char *tswl_term_selection_text(const tswl_term *t);
 /* OSC 0/2: titulo da janela. true se havia titulo novo. */
 bool tswl_term_take_title(tswl_term *t, char *out, size_t outsz);
 
+/* BEL (0x07) em ground: true se havia visual bell. */
+bool tswl_term_take_bell(tswl_term *t);
+
 #endif /* TSWL_TERM_H */

@@ -59,6 +59,9 @@ struct tswl_term {
     int osc_len;
     char window_title[256];
     bool title_pending;
+
+    /* visual bell (BEL em ground; OSC usa 0x07 so como terminador) */
+    bool bell_pending;
 };
 
 static tswl_cell blank_cell(uint16_t bg) {
@@ -93,6 +96,7 @@ tswl_term *tswl_term_new(int cols, int rows) {
     t->osc_len = 0;
     t->window_title[0] = '\0';
     t->title_pending = false;
+    t->bell_pending = false;
     return t;
 }
 
@@ -671,6 +675,10 @@ static void ground_byte(tswl_term *t, unsigned char b) {
     case '\r': t->cx = 0; break;
     case '\n': case '\v': case '\f': newline(t); break;
     case '\b': if (t->cx > 0) t->cx--; break;
+    case 0x07:  /* BEL — visual bell (nao e terminador OSC aqui) */
+        t->bell_pending = true;
+        t->changed = true;
+        break;
     case '\t': {
         int next = (t->cx + 8) & ~7;
         tswl_cell fill = blank_cell(t->cur_bg);
@@ -830,6 +838,12 @@ bool tswl_term_feed(tswl_term *t, const char *data, size_t len) {
         ground_byte(t, b);
     }
     return t->changed;
+}
+
+bool tswl_term_take_bell(tswl_term *t) {
+    if (!t || !t->bell_pending) return false;
+    t->bell_pending = false;
+    return true;
 }
 
 bool tswl_term_take_title(tswl_term *t, char *out, size_t outsz) {

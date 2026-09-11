@@ -10,6 +10,12 @@ Rebase exato (só palavra, OSC intacto) verificado e integrado; aviso
 t5word ATENDIDO. Entrada limpa do resolvido (restam: c2/Buffy,
 swlpad/decisão, swl-about-neo/aviso, s2).
 
+## 2026-09-11 — Visual bell integrado (admin)
+
+Pacote completo (base atual conferida marcador por marcador — sem o
+problema de base velha): BEL → flash 120ms, OSC-BEL não pisca.
+Verificado 4/4 sanitizer + suíte 35/35. Aviso ATENDIDO.
+
 ## 2026-09-10 — T5 triplo-clique integrado (admin)
 
 Rebase limpo (só adições) verificado: build OK, 3/3 sanitizer.
