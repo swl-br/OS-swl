@@ -9,6 +9,12 @@ verdade de fonte.
 CSI ?2004 (cola sem interpretar metachars): base atual, 38/38 com e
 sem sanitizer, build limpo. Aprovado pelo usuário e integrado.
 
+## 2026-09-11 — W1 geometria reconciliado (admin)
+
+`origin/notebook`: fix W1 (dims nos buffers shm, memset anti-farelo,
+clamp de configure). FF limpo. Revisão do admin: causa-raiz endereçada
+nos 3 pontos; build 9/9 + suite 35/35 aqui. Subido.
+
 ## 2026-09-10 — T5-word (rebase) integrado; entrada limpa (admin)
 
 Rebase exato (só palavra, OSC intacto) verificado e integrado; aviso
