@@ -11,4 +11,4 @@ vizinhos C/V nem checam). Erro duro no GCC.
 Trocar `if (pressed && a->term)` por `if (a->term)` (o early return já
 garante press).
 
-Status: PENDENTE.
+Status: ATENDIDO em 2026-09-11 — fix exato verificado (build 9/9) e integrado.

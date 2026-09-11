@@ -10,6 +10,12 @@ Rebase exato (só palavra, OSC intacto) verificado e integrado; aviso
 t5word ATENDIDO. Entrada limpa do resolvido (restam: c2/Buffy,
 swlpad/decisão, swl-about-neo/aviso, s2).
 
+## 2026-09-11 — Ctrl+Shift+A integrado, aviso atendido (admin)
+
+Fix exato (remove `pressed`) verificado com build 9/9 e integrado;
+aviso selectall ATENDIDO. T5 seleção agora completa (arrasto, palavra,
+linha, tudo + atalhos).
+
 ## 2026-09-11 — Visual bell integrado (admin)
 
 Pacote completo (base atual conferida marcador por marcador — sem o

@@ -539,6 +539,15 @@ static void keyboard_key(void *data, struct wl_keyboard *kb,
         return;
     }
 
+    /* T5+: Ctrl+Shift+A seleciona tudo */
+    if (ctrl && shift && (sym == XKB_KEY_A || sym == XKB_KEY_a)) {
+        if (a->term) {
+            tswl_term_select_all(a->term);
+            a->need_redraw = true;
+        }
+        return;
+    }
+
     /* Shift+PageUp/Down: scrollback do terminal (nao vai pro shell) */
     if (shift && sym == XKB_KEY_Page_Up) {
         tswl_term_scroll_view(a->term, tswl_term_rows(a->term) / 2);

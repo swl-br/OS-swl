@@ -156,6 +156,13 @@ void tswl_term_clear_selection(tswl_term *t) {
 
 
 
+
+void tswl_term_select_all(tswl_term *t)
+{
+    if (!t || t->cols < 1 || t->rows < 1) return;
+    tswl_term_set_selection(t, 0, 0, t->cols - 1, t->rows - 1);
+}
+
 void tswl_term_select_line(tswl_term *t, int row)
 {
     if (!t) return;
