@@ -4,6 +4,12 @@ Registro diário das rodadas de orquestração. Entrada mais recente em
 cima. **Conferir sempre o repo real** — este diário é um índice, não a
 verdade de fonte.
 
+## 2026-09-11 — W1 geometria reconciliado (admin)
+
+`origin/notebook`: fix W1 (dims nos buffers shm, memset anti-farelo,
+clamp de configure). FF limpo. Revisão do admin: causa-raiz endereçada
+nos 3 pontos; build 9/9 + suite 35/35 aqui. Subido.
+
 ## 2026-09-10 — T5-word (rebase) integrado; entrada limpa (admin)
 
 Rebase exato (só palavra, OSC intacto) verificado e integrado; aviso
