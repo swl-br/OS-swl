@@ -182,3 +182,25 @@ fix equivalente. Subir por cima seria atropelar trabalho em curso e
 gerar retrabalho/conflito. Caso concreto: C2 verificado e APROVADO
 tecnicamente, integração SUSPENSA aguardando o Buffy.
 
+---
+## DEC-010 — Barra de qualidade: verificação em múltiplas passadas
+
+Status: ACCEPTED
+
+Decisão: só integra código revisado mais de uma vez (ler e reler),
+nível exigente. Checklist do orquestrador antes de aprovar:
+
+1. Correção (lógica certa, edge cases, sem regressão — diff contra a
+   base atual, nunca por sessão).
+2. Segurança (bounds, NULL, overflow, free, input não-confiável).
+3. Performance (sem trabalho repetido por frame/evento; sem syscall ou
+   alloc quente sem motivo).
+4. Limpeza (zero warnings novos, sem código morto, sem duplicar o que
+   já existe, sem binário gerado commitado).
+5. Teste executado de verdade (build + harness/suíte; interativo vai
+   pro usuário com roteiro).
+
+Motivo: regra do usuário (2026-09-10) — sistema rápido, estruturado,
+seguro e bonito exige código bem pensado; pressa aqui vira lentidão
+e bug depois.
+
