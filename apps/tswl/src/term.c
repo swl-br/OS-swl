@@ -813,8 +813,11 @@ bool tswl_term_feed(tswl_term *t, const char *data, size_t len) {
 
         /* ST_GROUND */
         if (b == 0x1B) { t->state = ST_ESC; continue; }
-        /* R-11: C1 (0x80-0x9F) — não imprimir U+FFFD. 0x9B = CSI 8-bit. */
-        if (b >= 0x80 && b <= 0x9F) {
+        /* R-11: C1 (0x80-0x9F) — não imprimir U+FFFD. 0x9B = CSI 8-bit.
+         * Só fora de sequência UTF-8: no meio dela, 80-9F são SEMPRE
+         * bytes de continuação (nunca iniciam caractere) e vão pro
+         * decodificador. */
+        if (t->utf8_left == 0 && b >= 0x80 && b <= 0x9F) {
             if (b == 0x9B) {
                 t->state = ST_CSI;
                 t->csi_nparams = 0;
