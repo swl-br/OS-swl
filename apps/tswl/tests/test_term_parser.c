@@ -242,6 +242,36 @@ static void test_bracketed_paste(void)
     tswl_term_free(t);
 }
 
+
+static void test_csi_3j_scrollback(void)
+{
+    tswl_term *t = tswl_term_new(10, 4);
+    /* enche scrollback com newlines */
+    for (int i = 0; i < 20; i++)
+        feed(t, "line\n");
+    expect(tswl_term_scroll_offset(t) >= 0, "offset ok");
+    int before = 0;
+    /* CSI 3 J */
+    feed(t, "\033[3J");
+    /* scrollback deve estar vazio: nao da pra subir */
+    tswl_term_scroll_view(t, 100);
+    expect(tswl_term_scroll_offset(t) == 0, "CSI 3J zera scrollback");
+    tswl_term_free(t);
+}
+
+static void test_soft_reset(void)
+{
+    tswl_term *t = tswl_term_new(10, 4);
+    feed(t, "\033[?1h");  /* app cursor */
+    feed(t, "\033[?2004h");
+    expect(tswl_term_app_cursor(t), "app on");
+    expect(tswl_term_bracketed_paste(t), "bp on");
+    feed(t, "\033[!p");
+    expect(!tswl_term_app_cursor(t), "soft reset limpa app cursor");
+    expect(!tswl_term_bracketed_paste(t), "soft reset limpa bracketed");
+    tswl_term_free(t);
+}
+
 int main(void)
 {
     printf("tswl term parser unit tests\n");
@@ -259,6 +289,8 @@ int main(void)
     test_osc_title();
     test_sgr_truecolor();
     test_bracketed_paste();
+    test_csi_3j_scrollback();
+    test_soft_reset();
     test_utf8_multibyte();
     printf("\nsummary: %d passed, %d failed\n", passes, fails);
     return fails ? 1 : 0;

@@ -51,6 +51,7 @@ struct tswl_term {
     int csi_params[MAX_CSI_PARAMS];
     int csi_nparams;
     bool csi_private;         /* '?' logo após '[' */
+    char csi_intermed;        /* intermediate (ex: '!' em CSI !p) */
     uint32_t utf8_cp;         /* codepoint parcial */
     int utf8_left;            /* bytes restantes do caractere atual */
     bool changed;
@@ -521,8 +522,19 @@ static void csi_dispatch(tswl_term *t, char final) {
         } else if (n == 1) {
             erase_range(t, t->cy, 0, t->cx);
             for (int r = 0; r < t->cy; r++) erase_range(t, r, 0, t->cols - 1);
-        } else if (n == 2 || n == 3) {
+        } else if (n == 2) {
             for (int r = 0; r < t->rows; r++) erase_range(t, r, 0, t->cols - 1);
+        } else if (n == 3) {
+            /* CSI 3 J — limpa tela + scrollback (xterm) */
+            for (int r = 0; r < t->rows; r++) erase_range(t, r, 0, t->cols - 1);
+            if (t->back) {
+                tswl_cell bb = blank_cell(t->cur_bg);
+                for (int i = 0; i < TSWL_SCROLLBACK * t->cols; i++)
+                    t->back[i] = bb;
+            }
+            t->back_count = 0;
+            t->back_head = 0;
+            t->scroll_offset = 0;
         }
         break;
     case 'K':  /* erase in line */
@@ -590,6 +602,21 @@ static void csi_dispatch(tswl_term *t, char final) {
     }
     case 'd': t->cy = param(t, 0, 1) - 1; clamp_cursor(t); break;
     case 'm': csi_sgr(t); break;
+
+    case 'p':
+        if (t->csi_intermed == '!') {
+            /* DECSTR soft reset: attrs, scroll region, modes comuns */
+            t->cur_fg = TSWL_COL_DEFAULT_FG;
+            t->cur_bg = TSWL_COL_DEFAULT_BG;
+            t->cur_attrs = 0;
+            t->scroll_top = 0;
+            t->scroll_bot = t->rows - 1;
+            t->app_cursor = false;
+            t->bracketed_paste = false;
+            t->cursor_visible = true;
+            t->changed = true;
+        }
+        break;
     case 'r':  /* set scroll region */
         /* CSI Pt ; Pb r — região inclusiva. Região inválida
          * (top > bot ou fora dos limites) → tela inteira.
@@ -762,6 +789,7 @@ bool tswl_term_feed(tswl_term *t, const char *data, size_t len) {
             switch (b) {
             case '[': t->state = ST_CSI; t->csi_nparams = 0;
                       t->csi_private = false;
+                t->csi_intermed = 0;
                       memset(t->csi_params, 0, sizeof(t->csi_params));
                       break;
             case ']': t->state = ST_OSC_STR; t->osc_len = 0; break;
@@ -801,6 +829,7 @@ bool tswl_term_feed(tswl_term *t, const char *data, size_t len) {
                 t->state = ST_ESC;
                 t->csi_nparams = 0;
                 t->csi_private = false;
+                t->csi_intermed = 0;
                 continue;
             }
             if (b >= '0' && b <= '9') {
@@ -817,6 +846,8 @@ bool tswl_term_feed(tswl_term *t, const char *data, size_t len) {
                 if (t->csi_nparams < MAX_CSI_PARAMS) t->csi_nparams++;
             } else if (b == '?') {
                 t->csi_private = true;
+            } else if (b >= 0x20 && b <= 0x2F) {
+                t->csi_intermed = (char)b;
             } else if (b >= 0x40 && b <= 0x7E) {  /* final byte */
                 if (t->csi_nparams == 0 &&
                     (b == 'h' || b == 'l' || b == 'm' || b == 'r')) {
@@ -842,6 +873,7 @@ bool tswl_term_feed(tswl_term *t, const char *data, size_t len) {
                 t->state = ST_CSI;
                 t->csi_nparams = 0;
                 t->csi_private = false;
+                t->csi_intermed = 0;
                 memset(t->csi_params, 0, sizeof(t->csi_params));
             }
             /* demais C1: ignorados (não viram glyph) */

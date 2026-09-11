@@ -4,6 +4,11 @@ Registro diário das rodadas de orquestração. Entrada mais recente em
 cima. **Conferir sempre o repo real** — este diário é um índice, não a
 verdade de fonte.
 
+## 2026-09-11 — CSI 3J + DECSTR integrados (admin)
+
+Veredito padrão: BOM (lógica correta e útil); base ATUAL (só adições);
+44/44 com e sem sanitizer; build ok. Aprovado pelo usuário e integrado.
+
 ## 2026-09-11 — Bracketed paste integrado (admin)
 
 CSI ?2004 (cola sem interpretar metachars): base atual, 38/38 com e
