@@ -502,8 +502,21 @@ static void selection_copy(struct app *a) {
 
 static void clipboard_paste(struct app *a) {
     if (!a->clipboard || a->clipboard_len == 0 || a->pty_fd < 0) return;
-    ssize_t w = write(a->pty_fd, a->clipboard, a->clipboard_len);
-    (void)w;
+    /* Bracketed paste: se o shell pediu CSI ?2004h, envolve o texto
+     * com ESC[200~ ... ESC[201~ pra o readline nao interpretar. */
+    if (a->term && tswl_term_bracketed_paste(a->term)) {
+        const char start[] = "\033[200~";
+        const char end[] = "\033[201~";
+        ssize_t w = write(a->pty_fd, start, sizeof(start) - 1);
+        (void)w;
+        w = write(a->pty_fd, a->clipboard, a->clipboard_len);
+        (void)w;
+        w = write(a->pty_fd, end, sizeof(end) - 1);
+        (void)w;
+    } else {
+        ssize_t w = write(a->pty_fd, a->clipboard, a->clipboard_len);
+        (void)w;
+    }
     tswl_term_scroll_view(a->term, -tswl_term_rows(a->term));
     a->need_redraw = true;
 }

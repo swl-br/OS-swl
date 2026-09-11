@@ -230,6 +230,18 @@ static void test_utf8_multibyte(void)
     tswl_term_free(t);
 }
 
+
+static void test_bracketed_paste(void)
+{
+    tswl_term *t = tswl_term_new(20, 5);
+    expect(!tswl_term_bracketed_paste(t), "default off");
+    feed(t, "\033[?2004h");
+    expect(tswl_term_bracketed_paste(t), "CSI ?2004h liga");
+    feed(t, "\033[?2004l");
+    expect(!tswl_term_bracketed_paste(t), "CSI ?2004l desliga");
+    tswl_term_free(t);
+}
+
 int main(void)
 {
     printf("tswl term parser unit tests\n");
@@ -246,6 +258,7 @@ int main(void)
     test_sgr_256();
     test_osc_title();
     test_sgr_truecolor();
+    test_bracketed_paste();
     test_utf8_multibyte();
     printf("\nsummary: %d passed, %d failed\n", passes, fails);
     return fails ? 1 : 0;

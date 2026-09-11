@@ -66,6 +66,8 @@ bool tswl_term_cursor_visible(const tswl_term *t);
 
 /* DECCKM: true = setas em application mode (ESC O A etc.). */
 bool tswl_term_app_cursor(const tswl_term *t);
+/* CSI ?2004h/l — bracketed paste. */
+bool tswl_term_bracketed_paste(const tswl_term *t);
 
 /* scrollback: quantas linhas para trás a tela está deslocada
  * (0 = posição normal, no fim do histórico). O renderer usa
