@@ -183,6 +183,20 @@ gerar retrabalho/conflito. Caso concreto: C2 verificado e APROVADO
 tecnicamente, integração SUSPENSA aguardando o Buffy.
 
 ---
+## DEC-011 — Base de trabalho: branch mais novo, nunca presumir main
+
+Status: ACCEPTED
+
+Decisão: antes de codar, toda IA confere `main` E `notebook` (fetch +
+`git log`) e baseia no mais novo — hoje o `notebook` costuma estar à
+frente (integrações entram lá; `main` reconcilia depois). Entrega feita
+sobre base velha volta com aviso de rebase.
+
+Motivo: regra do usuário (2026-09-11) — Grok lia só o `main` e gerou
+uma sequência de rebases (R-14, t4-dirty, catalog, T5-word, select-all)
+por partir de base desatualizada.
+
+---
 ## DEC-010 — Barra de qualidade: verificação em múltiplas passadas
 
 Status: ACCEPTED
