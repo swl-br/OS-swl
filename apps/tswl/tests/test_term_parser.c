@@ -215,6 +215,21 @@ static void test_sgr_truecolor(void)
     tswl_term_free(t);
 }
 
+static void test_utf8_multibyte(void)
+{
+    tswl_term *t = tswl_term_new(80, 24);
+    /* regressão: C1 (R-11) comia continuação 0x80-0x9F no meio do UTF-8 */
+    feed(t, "caf\xc3\xa9 \xe2\x82\xac \xf0\x9f\x98\x80");
+    expect(tswl_term_cell(t, 3, 0)->ch == 0xE9, "UTF-8 2 bytes (é)");
+    expect(tswl_term_cell(t, 5, 0)->ch == 0x20AC, "UTF-8 3 bytes (€)");
+    expect(tswl_term_cell(t, 7, 0)->ch == 0x1F600, "UTF-8 4 bytes (emoji)");
+    expect(tswl_term_cursor_x(t) == 8, "cursor avança por glyph");
+    /* C1 isolado continua ignorado */
+    feed(t, "\x80\x85\x9f");
+    expect(tswl_term_cursor_x(t) == 8, "C1 solo ignorado");
+    tswl_term_free(t);
+}
+
 int main(void)
 {
     printf("tswl term parser unit tests\n");
@@ -231,6 +246,7 @@ int main(void)
     test_sgr_256();
     test_osc_title();
     test_sgr_truecolor();
+    test_utf8_multibyte();
     printf("\nsummary: %d passed, %d failed\n", passes, fails);
     return fails ? 1 : 0;
 }
