@@ -17,6 +17,13 @@ Atenção: `main.c` do W1 que estava na pasta (cópia de teste do
 usuário) foi guardada em `/tmp` antes de sobrescrever. T5 → inclui
 duplo + triplo.
 
+## 2026-09-10 — Visão do novo visual das janelas (usuário) → V2 (admin)
+
+Usuário definiu o redesign: cantos levemente arredondados, barra fina,
+menubar oculta com botão-seta animado, vidro fosco sutil, toggles
+Apple-like, botões redondos com cores atuais, sem perder leveza.
+Registrado como V2 (dono a definir).
+
 ## 2026-09-10 — Truecolor (rebase) integrado; aviso t5-word (admin)
 
 Rebase somando (truecolor + OSC) verificado 30/30 e integrado; aviso
