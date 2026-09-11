@@ -272,6 +272,20 @@ static void test_soft_reset(void)
     tswl_term_free(t);
 }
 
+
+static void test_osc52_clipboard(void)
+{
+    tswl_term *t = tswl_term_new(10, 4);
+    feed(t, "\033]52;c;aGk=\007");
+    char *clip = NULL;
+    size_t clen = 0;
+    expect(tswl_term_take_clipboard(t, &clip, &clen), "OSC52 pending");
+    expect(clen == 2 && clip && clip[0]=='h' && clip[1]=='i', "decoded hi");
+    free(clip);
+    expect(!tswl_term_take_clipboard(t, &clip, &clen), "consumed");
+    tswl_term_free(t);
+}
+
 int main(void)
 {
     printf("tswl term parser unit tests\n");
@@ -291,6 +305,7 @@ int main(void)
     test_bracketed_paste();
     test_csi_3j_scrollback();
     test_soft_reset();
+    test_osc52_clipboard();
     test_utf8_multibyte();
     printf("\nsummary: %d passed, %d failed\n", passes, fails);
     return fails ? 1 : 0;

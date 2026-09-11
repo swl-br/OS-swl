@@ -56,15 +56,21 @@ struct tswl_term {
     int utf8_left;            /* bytes restantes do caractere atual */
     bool changed;
 
-    /* OSC 0/2 titulo */
-    char osc_buf[256];
+    /* OSC 0/2 titulo + OSC 52 clipboard */
+    char osc_buf[1024];
     int osc_len;
     char window_title[256];
     bool title_pending;
+    char *clip_pending;
+    size_t clip_pending_len;
+    bool clip_pending_set;
 
     /* visual bell (BEL em ground; OSC usa 0x07 so como terminador) */
     bool bell_pending;
 };
+
+static void osc_finish(tswl_term *t);
+static char *b64_decode(const char *in, size_t inlen, size_t *outlen);
 
 static tswl_cell blank_cell(uint16_t bg) {
     tswl_cell c = { 0, TSWL_COL_DEFAULT_FG, bg, 0 };
@@ -98,12 +104,16 @@ tswl_term *tswl_term_new(int cols, int rows) {
     t->osc_len = 0;
     t->window_title[0] = '\0';
     t->title_pending = false;
+    t->clip_pending = NULL;
+    t->clip_pending_len = 0;
+    t->clip_pending_set = false;
     t->bell_pending = false;
     return t;
 }
 
 void tswl_term_free(tswl_term *t) {
     if (!t) return;
+    free(t->clip_pending);
     free(t->grid);
     free(t->main_save);
     free(t->back);
@@ -746,16 +756,7 @@ bool tswl_term_feed(tswl_term *t, const char *data, size_t len) {
         if (t->state == ST_OSC_STR || t->state == ST_OSC_ESC) {
             /* OSC ... ate BEL ou ST — captura titulo (0/2) */
             if (t->state == ST_OSC_ESC && b == '\\') {
-                if (t->osc_len > 255) t->osc_len = 255;
-                t->osc_buf[t->osc_len] = 0;
-                if (t->osc_len > 2 && (t->osc_buf[0] == '0' || t->osc_buf[0] == '2')
-                    && t->osc_buf[1] == ';') {
-                    snprintf(t->window_title, sizeof(t->window_title),
-                             "%s", t->osc_buf + 2);
-                    t->title_pending = true;
-                    t->changed = true;
-                }
-                t->osc_len = 0;
+                osc_finish(t);
                 t->state = ST_GROUND;
                 continue;
             }
@@ -764,21 +765,12 @@ bool tswl_term_feed(tswl_term *t, const char *data, size_t len) {
                 continue;
             }
             if (b == 0x07) {
-                if (t->osc_len > 255) t->osc_len = 255;
-                t->osc_buf[t->osc_len] = 0;
-                if (t->osc_len > 2 && (t->osc_buf[0] == '0' || t->osc_buf[0] == '2')
-                    && t->osc_buf[1] == ';') {
-                    snprintf(t->window_title, sizeof(t->window_title),
-                             "%s", t->osc_buf + 2);
-                    t->title_pending = true;
-                    t->changed = true;
-                }
-                t->osc_len = 0;
+                osc_finish(t);
                 t->state = ST_GROUND;
                 continue;
             } else if (t->state == ST_OSC_ESC) {
                 t->state = ST_OSC_STR;
-            } else if (t->osc_len < 255 && b >= 0x20) {
+            } else if (t->osc_len < (int)sizeof(t->osc_buf) - 1 && b >= 0x20) {
                 t->osc_buf[t->osc_len++] = (char)b;
             }
             continue;
@@ -890,11 +882,98 @@ bool tswl_term_take_bell(tswl_term *t) {
     return true;
 }
 
+
+static char *b64_decode(const char *in, size_t inlen, size_t *outlen)
+{
+    signed char tbl[256];
+    for (int i = 0; i < 256; i++) tbl[i] = -1;
+    for (int i = 0; i < 26; i++) {
+        tbl['A' + i] = (signed char)i;
+        tbl['a' + i] = (signed char)(26 + i);
+    }
+    for (int i = 0; i < 10; i++) tbl['0' + i] = (signed char)(52 + i);
+    tbl['+'] = 62;
+    tbl['/'] = 63;
+
+    size_t max_out = (inlen / 4) * 3 + 3;
+    char *out = malloc(max_out + 1);
+    if (!out) return NULL;
+    size_t o = 0;
+    unsigned val = 0;
+    int valb = -8;
+    for (size_t i = 0; i < inlen; i++) {
+        unsigned char c = (unsigned char)in[i];
+        if (c == '=') break;
+        if (c == '\n' || c == '\r') continue;
+        signed char d = tbl[c];
+        if (d < 0) { free(out); return NULL; }
+        val = (val << 6) | (unsigned)d;
+        valb += 6;
+        if (valb >= 0) {
+            out[o++] = (char)((val >> valb) & 0xFF);
+            valb -= 8;
+        }
+    }
+    out[o] = 0;
+    if (outlen) *outlen = o;
+    return out;
+}
+
+static void osc_finish(tswl_term *t)
+{
+    if (t->osc_len > (int)sizeof(t->osc_buf) - 1)
+        t->osc_len = (int)sizeof(t->osc_buf) - 1;
+    if (t->osc_len < 0) t->osc_len = 0;
+    t->osc_buf[t->osc_len] = 0;
+
+    if (t->osc_len > 2 && (t->osc_buf[0] == '0' || t->osc_buf[0] == '2')
+        && t->osc_buf[1] == ';') {
+        snprintf(t->window_title, sizeof(t->window_title),
+                 "%s", t->osc_buf + 2);
+        t->title_pending = true;
+        t->changed = true;
+    } else if (t->osc_len > 4 && t->osc_buf[0] == '5' && t->osc_buf[1] == '2'
+               && t->osc_buf[2] == ';') {
+        const char *p = t->osc_buf + 3;
+        while (*p && *p != ';') p++;
+        if (*p == ';') {
+            p++;
+            if (*p && *p != '?') {
+                size_t dlen = 0;
+                char *decoded = b64_decode(p, strlen(p), &dlen);
+                if (decoded) {
+                    free(t->clip_pending);
+                    t->clip_pending = decoded;
+                    t->clip_pending_len = dlen;
+                    t->clip_pending_set = true;
+                    t->changed = true;
+                }
+            }
+        }
+    }
+    t->osc_len = 0;
+}
+
+bool tswl_term_take_clipboard(tswl_term *t, char **out, size_t *outlen)
+{
+    if (!t || !t->clip_pending_set || !t->clip_pending) return false;
+    if (out) *out = t->clip_pending;
+    else free(t->clip_pending);
+    if (outlen) *outlen = t->clip_pending_len;
+    t->clip_pending = NULL;
+    t->clip_pending_len = 0;
+    t->clip_pending_set = false;
+    return true;
+}
+
 bool tswl_term_take_title(tswl_term *t, char *out, size_t outsz) {
     if (!t || !out || outsz == 0) return false;
     if (!t->title_pending) return false;
     snprintf(out, outsz, "%s", t->window_title);
     t->title_pending = false;
+    t->clip_pending = NULL;
+    t->clip_pending_len = 0;
+    t->clip_pending_set = false;
     return true;
 }
 

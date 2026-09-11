@@ -1006,6 +1006,15 @@ int main(int argc, char *argv[]) {
                             title[0] ? title : "TSWL");
                     }
                 }
+                {
+                    char *clip = NULL;
+                    size_t clen = 0;
+                    if (tswl_term_take_clipboard(a.term, &clip, &clen)) {
+                        free(a.clipboard);
+                        a.clipboard = clip;
+                        a.clipboard_len = clen;
+                    }
+                }
             } else if (n == 0 || (n < 0 && errno != EAGAIN && errno != EIO)) {
                 /* shell morreu: fecha o terminal junto */
                 a.running = false;
