@@ -503,6 +503,22 @@ static void keyboard_handle_modifiers(
 		&keyboard->wlr_keyboard->modifiers);
 }
 
+
+static struct tinywl_toplevel *focused_toplevel(struct tinywl_server *server) {
+	struct wlr_surface *focused_surf =
+		server->seat ? server->seat->keyboard_state.focused_surface : NULL;
+	if (!focused_surf) {
+		return NULL;
+	}
+	struct tinywl_toplevel *t;
+	wl_list_for_each(t, &server->toplevels, link) {
+		if (!t->minimized && t->xdg_toplevel->base->surface == focused_surf) {
+			return t;
+		}
+	}
+	return NULL;
+}
+
 static void cycle_toplevel(struct tinywl_server *server, bool reverse) {
 	if (wl_list_length(&server->toplevels) < 2) {
 		return;
@@ -568,6 +584,30 @@ static bool handle_keybinding(struct tinywl_server *server, xkb_keysym_t sym,
 		/* alguns layouts emitem isto com Shift+Tab */
 		cycle_toplevel(server, true);
 		break;
+	case XKB_KEY_F4: {
+		/* Alt+F4 — pede ao cliente fechar (mesmo da decoracao) */
+		struct tinywl_toplevel *t = focused_toplevel(server);
+		if (t) {
+			wlr_xdg_toplevel_send_close(t->xdg_toplevel);
+		}
+		break;
+	}
+	case XKB_KEY_F9: {
+		/* Alt+F9 — minimizar */
+		struct tinywl_toplevel *t = focused_toplevel(server);
+		if (t) {
+			toplevel_set_minimized(t, true);
+		}
+		break;
+	}
+	case XKB_KEY_F10: {
+		/* Alt+F10 — maximizar/restaurar */
+		struct tinywl_toplevel *t = focused_toplevel(server);
+		if (t) {
+			toplevel_set_maximized(t, !t->maximized);
+		}
+		break;
+	}
 	default:
 		return false;
 	}

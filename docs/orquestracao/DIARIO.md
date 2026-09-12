@@ -4,6 +4,11 @@ Registro diário das rodadas de orquestração. Entrada mais recente em
 cima. **Conferir sempre o repo real** — este diário é um índice, não a
 verdade de fonte.
 
+## 2026-09-11 — Atalhos WM Alt+F4/F9/F10 (admin)
+
+Veredito padrão: BOM; base ATUAL; build limpo (comportamento no
+QEMU). Aprovado pelo usuário e integrado.
+
 ## 2026-09-11 — Alt+Tab no compositor (admin)
 
 Veredito padrão: BOM (ciclo frente/trás, pula minimizadas, sem loop);
