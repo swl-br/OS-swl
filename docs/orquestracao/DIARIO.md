@@ -4,6 +4,13 @@ Registro diário das rodadas de orquestração. Entrada mais recente em
 cima. **Conferir sempre o repo real** — este diário é um índice, não a
 verdade de fonte.
 
+## 2026-09-11 — Super+D mostra desktop (admin)
+
+Veredito padrão: BOM (toggle minimizar/restaurar com taskbar);
+base ATUAL; build limpo (tecla no QEMU). Ressalva: restaura todas
+as minimizadas, não só as que escondeu. Aprovado e integrado com
+ida pro `main`.
+
 ## 2026-09-11 — Snap Super+setas integrado (admin)
 
 Veredito padrão: BOM; base ATUAL (F-keys intactos); build limpo

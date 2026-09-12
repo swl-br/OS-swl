@@ -146,6 +146,10 @@ struct tinywl_server {
 	 * ver process_cursor_move() e o handler de WLR_BUTTON_RELEASED). */
 	bool move_snap_maximize;
 
+	/* Super+D: true enquanto a area de trabalho esta "mostrada"
+	 * (todas as janelas minimizadas por este atalho). */
+	bool show_desktop_active;
+
 	struct wlr_scene_buffer *background;
 	int screen_width, screen_height;
 	const char *background_path; /* NULL = usa o fallback procedural (grade) */
@@ -552,6 +556,36 @@ static void toplevel_snap_half(struct tinywl_toplevel *toplevel, int side) {
 	}
 }
 
+
+static void toggle_show_desktop(struct tinywl_server *server) {
+	struct tinywl_toplevel *t;
+	bool any_visible = false;
+	wl_list_for_each(t, &server->toplevels, link) {
+		if (!t->minimized) {
+			any_visible = true;
+			break;
+		}
+	}
+	if (any_visible) {
+		wl_list_for_each(t, &server->toplevels, link) {
+			if (!t->minimized) {
+				toplevel_set_minimized(t, true);
+			}
+		}
+		server->show_desktop_active = true;
+		update_taskbar(server);
+	} else {
+		/* Restaura todas as minimizadas (toggle). */
+		wl_list_for_each(t, &server->toplevels, link) {
+			if (t->minimized) {
+				toplevel_set_minimized(t, false);
+			}
+		}
+		server->show_desktop_active = false;
+		update_taskbar(server);
+	}
+}
+
 static void cycle_toplevel(struct tinywl_server *server, bool reverse) {
 	if (wl_list_length(&server->toplevels) < 2) {
 		return;
@@ -672,10 +706,17 @@ static void keyboard_handle_key(
 				handled = handle_keybinding(server, syms[i], modifiers);
 			}
 		}
-		/* Super+setas: meia-tela / maximizar / restaurar|minimizar */
+		/* Super+… : setas (snap) e D (mostrar area de trabalho) */
 		if (!handled && (modifiers & WLR_MODIFIER_LOGO)) {
+			for (int i = 0; i < nsyms; i++) {
+				if (syms[i] == XKB_KEY_d || syms[i] == XKB_KEY_D) {
+					toggle_show_desktop(server);
+					handled = true;
+					break;
+				}
+			}
 			struct tinywl_toplevel *ft = focused_toplevel(server);
-			for (int i = 0; i < nsyms && ft; i++) {
+			for (int i = 0; i < nsyms && ft && !handled; i++) {
 				switch (syms[i]) {
 				case XKB_KEY_Left:
 					toplevel_snap_half(ft, 0);
