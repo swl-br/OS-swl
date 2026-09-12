@@ -503,26 +503,70 @@ static void keyboard_handle_modifiers(
 		&keyboard->wlr_keyboard->modifiers);
 }
 
-static bool handle_keybinding(struct tinywl_server *server, xkb_keysym_t sym) {
+static void cycle_toplevel(struct tinywl_server *server, bool reverse) {
+	if (wl_list_length(&server->toplevels) < 2) {
+		return;
+	}
+	/* Lista: focada na cabeça. Frente = prev (fim); trás = next. */
+	struct tinywl_toplevel *next_toplevel;
+	if (reverse) {
+		next_toplevel = wl_container_of(server->toplevels.next->next,
+			next_toplevel, link);
+		/* se só 2, next->next é a cabeça de novo — pega next */
+		if (&next_toplevel->link == &server->toplevels) {
+			next_toplevel = wl_container_of(server->toplevels.next,
+				next_toplevel, link);
+		}
+	} else {
+		next_toplevel = wl_container_of(server->toplevels.prev,
+			next_toplevel, link);
+	}
+	/* Pula minimizadas */
+	struct tinywl_toplevel *start = next_toplevel;
+	for (;;) {
+		if (!next_toplevel->minimized) {
+			focus_toplevel(next_toplevel,
+				next_toplevel->xdg_toplevel->base->surface);
+			return;
+		}
+		if (reverse) {
+			next_toplevel = wl_container_of(next_toplevel->link.next,
+				next_toplevel, link);
+			if (&next_toplevel->link == &server->toplevels) {
+				next_toplevel = wl_container_of(server->toplevels.next,
+					next_toplevel, link);
+			}
+		} else {
+			next_toplevel = wl_container_of(next_toplevel->link.prev,
+				next_toplevel, link);
+			if (&next_toplevel->link == &server->toplevels) {
+				next_toplevel = wl_container_of(server->toplevels.prev,
+					next_toplevel, link);
+			}
+		}
+		if (next_toplevel == start) {
+			return;
+		}
+	}
+}
+
+static bool handle_keybinding(struct tinywl_server *server, xkb_keysym_t sym,
+		uint32_t modifiers) {
 	/*
-	 * Here we handle compositor keybindings. This is when the compositor is
-	 * processing keys, rather than passing them on to the client for its own
-	 * processing.
-	 *
-	 * This function assumes Alt is held down.
+	 * Keybindings do compositor. Assume Alt pressionado.
 	 */
 	switch (sym) {
 	case XKB_KEY_Escape:
 		wl_display_terminate(server->wl_display);
 		break;
 	case XKB_KEY_F1:
-		/* Cycle to the next toplevel */
-		if (wl_list_length(&server->toplevels) < 2) {
-			break;
-		}
-		struct tinywl_toplevel *next_toplevel =
-			wl_container_of(server->toplevels.prev, next_toplevel, link);
-		focus_toplevel(next_toplevel, next_toplevel->xdg_toplevel->base->surface);
+	case XKB_KEY_Tab:
+		/* Alt+Tab / Alt+F1: cicla janelas; Shift reverte. */
+		cycle_toplevel(server, modifiers & WLR_MODIFIER_SHIFT);
+		break;
+	case XKB_KEY_ISO_Left_Tab:
+		/* alguns layouts emitem isto com Shift+Tab */
+		cycle_toplevel(server, true);
 		break;
 	default:
 		return false;
@@ -553,7 +597,7 @@ static void keyboard_handle_key(
 		/* If alt is held down and this button was _pressed_, we attempt to
 		 * process it as a compositor keybinding. */
 		for (int i = 0; i < nsyms; i++) {
-			handled = handle_keybinding(server, syms[i]);
+			handled = handle_keybinding(server, syms[i], modifiers);
 		}
 	}
 
