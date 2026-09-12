@@ -519,6 +519,39 @@ static struct tinywl_toplevel *focused_toplevel(struct tinywl_server *server) {
 	return NULL;
 }
 
+
+/* Meia-tela esquerda (side=0) ou direita (side=1). */
+static void toplevel_snap_half(struct tinywl_toplevel *toplevel, int side) {
+	struct tinywl_server *server = toplevel->server;
+	int avail_w = server->screen_width;
+	int avail_h = server->screen_height - SWL_PANEL_HEIGHT -
+		SWL_TASKBAR_HEIGHT - SWL_TITLEBAR_HEIGHT;
+	if (avail_w < 80 || avail_h < 40) {
+		return;
+	}
+	int half = avail_w / 2;
+	int x = (side == 0) ? 0 : half;
+	int w = (side == 0) ? half : (avail_w - half);
+
+	if (toplevel->fullscreen) {
+		toplevel_set_fullscreen(toplevel, false);
+	}
+	if (!toplevel->maximized) {
+		toplevel_save_geometry(toplevel);
+	} else {
+		wlr_xdg_toplevel_set_maximized(toplevel->xdg_toplevel, false);
+		toplevel->maximized = false;
+	}
+
+	wlr_scene_node_set_position(&toplevel->scene_tree->node, x, SWL_PANEL_HEIGHT);
+	wlr_scene_node_set_position(&toplevel->content_tree->node, 0, SWL_TITLEBAR_HEIGHT);
+	wlr_xdg_toplevel_set_size(toplevel->xdg_toplevel, w, avail_h);
+	if (toplevel->decoration) {
+		wlr_scene_node_set_enabled(&toplevel->decoration->tree->node, true);
+		swl_decoration_resize(toplevel->decoration, w);
+	}
+}
+
 static void cycle_toplevel(struct tinywl_server *server, bool reverse) {
 	if (wl_list_length(&server->toplevels) < 2) {
 		return;
@@ -632,12 +665,42 @@ static void keyboard_handle_key(
 
 	bool handled = false;
 	uint32_t modifiers = wlr_keyboard_get_modifiers(keyboard->wlr_keyboard);
-	if ((modifiers & WLR_MODIFIER_ALT) &&
-			event->state == WL_KEYBOARD_KEY_STATE_PRESSED) {
-		/* If alt is held down and this button was _pressed_, we attempt to
-		 * process it as a compositor keybinding. */
-		for (int i = 0; i < nsyms; i++) {
-			handled = handle_keybinding(server, syms[i], modifiers);
+	if (event->state == WL_KEYBOARD_KEY_STATE_PRESSED) {
+		if (modifiers & WLR_MODIFIER_ALT) {
+			/* Alt+… — atalhos do compositor */
+			for (int i = 0; i < nsyms; i++) {
+				handled = handle_keybinding(server, syms[i], modifiers);
+			}
+		}
+		/* Super+setas: meia-tela / maximizar / restaurar|minimizar */
+		if (!handled && (modifiers & WLR_MODIFIER_LOGO)) {
+			struct tinywl_toplevel *ft = focused_toplevel(server);
+			for (int i = 0; i < nsyms && ft; i++) {
+				switch (syms[i]) {
+				case XKB_KEY_Left:
+					toplevel_snap_half(ft, 0);
+					handled = true;
+					break;
+				case XKB_KEY_Right:
+					toplevel_snap_half(ft, 1);
+					handled = true;
+					break;
+				case XKB_KEY_Up:
+					toplevel_set_maximized(ft, true);
+					handled = true;
+					break;
+				case XKB_KEY_Down:
+					if (ft->maximized) {
+						toplevel_set_maximized(ft, false);
+					} else {
+						toplevel_set_minimized(ft, true);
+					}
+					handled = true;
+					break;
+				default:
+					break;
+				}
+			}
 		}
 	}
 

@@ -10,4 +10,4 @@ Super+setas + maximize/restore corretos. Mas veio sem Alt+F4/F9/F10
 Somar snap-half + bloco Super sobre o `swlwm.c` atual (que já tem
 F-keys). Nada a remover.
 
-Status: PENDENTE.
+Status: ATENDIDO em 2026-09-11 — rebase exato (só snap, F-keys intactos) verificado com build limpo e integrado.
