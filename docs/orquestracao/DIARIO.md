@@ -21,6 +21,15 @@ integrado (com ida pro `main`).
 Veredito padrão: BOM (lógica correta e útil); base ATUAL (só adições);
 44/44 com e sem sanitizer; build ok. Aprovado pelo usuário e integrado.
 
+## 2026-09-11 — DSR 5n/6n integrado (parcial: falta o drain) (admin)
+
+Veredito padrão: BOM (DSR padrão + remove 3 linhas bugadas do
+`take_title`); base ATUAL; 53/53 + build. Ressalva honesta: o pacote
+não trouxe o drain (`take_reply` → pty) nem a decl — a resposta é
+gerada mas ninguém lê ainda. Integrado assim mesmo (capacidade sem
+efeito colateral); falta complemento pequeno (decl + bloco drain).
+Com ida pro `main`.
+
 ## 2026-09-11 — Bracketed paste integrado (admin)
 
 CSI ?2004 (cola sem interpretar metachars): base atual, 38/38 com e

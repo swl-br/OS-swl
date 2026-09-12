@@ -65,6 +65,10 @@ struct tswl_term {
     size_t clip_pending_len;
     bool clip_pending_set;
 
+    /* DSR reply (CSI 5n/6n) */
+    char reply_buf[64];
+    bool reply_pending;
+
     /* visual bell (BEL em ground; OSC usa 0x07 so como terminador) */
     bool bell_pending;
 };
@@ -107,6 +111,8 @@ tswl_term *tswl_term_new(int cols, int rows) {
     t->clip_pending = NULL;
     t->clip_pending_len = 0;
     t->clip_pending_set = false;
+    t->reply_buf[0] = 0;
+    t->reply_pending = false;
     t->bell_pending = false;
     return t;
 }
@@ -615,6 +621,23 @@ static void csi_dispatch(tswl_term *t, char final) {
     case 'd': t->cy = param(t, 0, 1) - 1; clamp_cursor(t); break;
     case 'm': csi_sgr(t); break;
 
+    case 'n': {  /* DSR device status report */
+        int q = param(t, 0, 0);
+        if (q == 5) {
+            /* CSI 0 n — terminal ok */
+            snprintf(t->reply_buf, sizeof(t->reply_buf), "\033[0n");
+            t->reply_pending = true;
+            t->changed = true;
+        } else if (q == 6) {
+            /* CPR — cursor position 1-based row;col */
+            snprintf(t->reply_buf, sizeof(t->reply_buf),
+                     "\033[%d;%dR", t->cy + 1, t->cx + 1);
+            t->reply_pending = true;
+            t->changed = true;
+        }
+        break;
+    }
+
     case 'p':
         if (t->csi_intermed == '!') {
             /* DECSTR soft reset: attrs, scroll region, modes comuns */
@@ -968,14 +991,21 @@ bool tswl_term_take_clipboard(tswl_term *t, char **out, size_t *outlen)
     return true;
 }
 
+
+bool tswl_term_take_reply(tswl_term *t, char *out, size_t outsz)
+{
+    if (!t || !t->reply_pending || !out || outsz == 0) return false;
+    snprintf(out, outsz, "%s", t->reply_buf);
+    t->reply_pending = false;
+    t->reply_buf[0] = 0;
+    return true;
+}
+
 bool tswl_term_take_title(tswl_term *t, char *out, size_t outsz) {
     if (!t || !out || outsz == 0) return false;
     if (!t->title_pending) return false;
     snprintf(out, outsz, "%s", t->window_title);
     t->title_pending = false;
-    t->clip_pending = NULL;
-    t->clip_pending_len = 0;
-    t->clip_pending_set = false;
     return true;
 }
 

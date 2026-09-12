@@ -298,6 +298,21 @@ static void test_sgr_italic(void)
     tswl_term_free(t);
 }
 
+
+static void test_dsr(void)
+{
+    tswl_term *t = tswl_term_new(20, 10);
+    feed(t, "\033[5;5H");  /* row 5 col 5 (1-based) */
+    feed(t, "\033[6n");
+    char reply[64];
+    expect(tswl_term_take_reply(t, reply, sizeof(reply)), "CPR pending");
+    expect(strcmp(reply, "\033[5;5R") == 0, "CPR 5;5");
+    feed(t, "\033[5n");
+    expect(tswl_term_take_reply(t, reply, sizeof(reply)), "status pending");
+    expect(strcmp(reply, "\033[0n") == 0, "status ok");
+    tswl_term_free(t);
+}
+
 int main(void)
 {
     printf("tswl term parser unit tests\n");
@@ -319,6 +334,7 @@ int main(void)
     test_soft_reset();
     test_osc52_clipboard();
     test_sgr_italic();
+    test_dsr();
     test_utf8_multibyte();
     printf("\nsummary: %d passed, %d failed\n", passes, fails);
     return fails ? 1 : 0;
