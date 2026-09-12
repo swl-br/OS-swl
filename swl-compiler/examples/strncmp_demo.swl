@@ -1,0 +1,45 @@
+; strncmp_demo.swl -- swl_strncmp: compare at most n bytes
+module strncmp_demo
+
+fn main() -> i32
+    var a: [u8, 32] = "hello world"
+    var b: [u8, 32] = "hello there"
+    var c: [u8, 32] = "hello world"
+
+    ; first 5 bytes equal ("hello")
+    if swl_strncmp(a, b, 5) != 0
+        swl_print_str("FAIL 5\n")
+        return 1
+    end
+    swl_print_str("strncmp 5: equal\n")
+
+    ; first 6 equal ("hello " with space)
+    if swl_strncmp(a, b, 6) != 0
+        swl_print_str("FAIL 6\n")
+        return 2
+    end
+    swl_print_str("strncmp 6: equal\n")
+
+    ; first 7 differ (w vs t)
+    if swl_strncmp(a, b, 7) == 0
+        swl_print_str("FAIL 7\n")
+        return 3
+    end
+    swl_print_str("strncmp 7: differ\n")
+
+    ; n=0 always equal
+    if swl_strncmp(a, b, 0) != 0
+        swl_print_str("FAIL 0\n")
+        return 4
+    end
+    swl_print_str("strncmp 0: equal\n")
+
+    ; full equal strings
+    if swl_strncmp(a, c, 11) != 0
+        swl_print_str("FAIL full\n")
+        return 5
+    end
+    swl_print_str("strncmp 11: equal\n")
+
+    return 0
+end

@@ -1,0 +1,41 @@
+; strcat_demo.swl -- swl_strcat: append NUL-terminated strings
+module main
+
+fn main() -> i32
+    var dst: [u8, 16]
+    dst[0] = 72   ; H
+    dst[1] = 101  ; e
+    dst[2] = 108  ; l
+    dst[3] = 108  ; l
+    dst[4] = 111  ; o
+    dst[5] = 0    ; NUL
+
+    var src: [u8, 7]
+    src[0] = 32   ; (space)
+    src[1] = 87   ; W
+    src[2] = 111  ; o
+    src[3] = 114  ; r
+    src[4] = 108  ; l
+    src[5] = 100  ; d
+    src[6] = 0    ; NUL
+
+    ; append src to dst -> "Hello World"
+    swl_strcat(dst, src)
+
+    ; verify length
+    var len: i32 = swl_strlen(dst)
+    swl_print_i32(len)
+
+    ; verify contents via strcmp
+    var cmp: i32 = swl_strcmp(dst, dst)
+    swl_print_i32(cmp)
+
+    ; chain concat: add "!"
+    var bang: [u8, 2]
+    bang[0] = 33 ; !
+    bang[1] = 0  ; NUL
+    swl_strcat(dst, bang)
+    swl_print_i32(swl_strlen(dst))
+
+    return 0
+end

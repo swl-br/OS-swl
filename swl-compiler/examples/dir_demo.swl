@@ -1,0 +1,70 @@
+; dir_demo.swl -- dir/process: mkdir/rmdir/chdir/getcwd/getpid
+module dir_demo
+
+fn main() -> i32
+    var pid: i32 = swl_getpid()
+    if pid <= 0
+        swl_print_str("FAIL getpid\n")
+        return 1
+    end
+    swl_print_str("getpid ok\n")
+
+    var path: [u8, 20]
+    path[0] = 47
+    path[1] = 116
+    path[2] = 109
+    path[3] = 112
+    path[4] = 47
+    path[5] = 115
+    path[6] = 119
+    path[7] = 108
+    path[8] = 95
+    path[9] = 100
+    path[10] = 105
+    path[11] = 114
+    path[12] = 95
+    path[13] = 100
+    path[14] = 101
+    path[15] = 109
+    path[16] = 111
+    path[17] = 0
+
+    var rc: i32 = swl_mkdir(path, 493)
+    if rc != 0
+        swl_print_str("FAIL mkdir\n")
+        return 2
+    end
+    swl_print_str("mkdir ok\n")
+
+    var buf: [u8, 64]
+    var p: i32 = swl_getcwd(buf, 64)
+    if p == 0
+        swl_print_str("FAIL getcwd\n")
+        return 3
+    end
+    if swl_strlen(buf) == 0
+        return 4
+    end
+    swl_print_str("getcwd ok\n")
+
+    swl_chdir(path)
+    var buf2: [u8, 64]
+    swl_getcwd(buf2, 64)
+    if swl_strlen(buf2) == 0
+        return 5
+    end
+    if swl_strcmp(buf, buf2) == 0
+        swl_print_str("FAIL chdir\n")
+        return 6
+    end
+    swl_print_str("chdir ok\n")
+
+    swl_chdir("/tmp")
+    rc = swl_rmdir(path)
+    if rc != 0
+        swl_print_i32(rc)
+        return 7
+    end
+    swl_print_str("dir ok\n")
+    return 0
+end

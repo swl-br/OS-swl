@@ -1,0 +1,4 @@
+write ok
+read ok: hello file
+seek ok: file
+file ok

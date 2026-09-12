@@ -1,0 +1,64 @@
+; proc_demo.swl -- process: fork/waitpid/exec/sleep/getpid/getppid
+module proc_demo
+
+fn main() -> i32
+    var pid: i32 = swl_getpid()
+    if pid <= 0
+        return 1
+    end
+    var ppid: i32 = swl_getppid()
+    if ppid <= 0
+        return 2
+    end
+    swl_print_str("pid ok\n")
+
+    ; fork + waitpid
+    var f: i32 = swl_fork()
+    if f < 0
+        swl_print_str("FAIL fork\n")
+        return 3
+    end
+    if f == 0
+        swl_print_str("child\n")
+        return 42
+    end
+    var status: i32 = 0
+    var p: *i32 = &status
+    var w: i32 = swl_waitpid(f, p as *u8, 0)
+    if w != f
+        swl_print_str("FAIL wait\n")
+        return 4
+    end
+    if status != 10752
+        swl_print_i32(status)
+        return 5
+    end
+    swl_print_str("fork ok\n")
+
+    ; fork + exec + waitpid
+    var f2: i32 = swl_fork()
+    if f2 < 0
+        return 6
+    end
+    if f2 == 0
+        swl_exec("/bin/true")
+        swl_print_str("FAIL exec\n")
+        return 99
+    end
+    var status2: i32 = 0
+    var p2: *i32 = &status2
+    w = swl_waitpid(f2, p2 as *u8, 0)
+    if w != f2
+        return 7
+    end
+    if status2 != 0
+        swl_print_i32(status2)
+        return 8
+    end
+    swl_print_str("exec ok\n")
+
+    swl_sleep(0)
+    swl_print_str("sleep ok\n")
+    swl_print_str("proc ok\n")
+    return 0
+end

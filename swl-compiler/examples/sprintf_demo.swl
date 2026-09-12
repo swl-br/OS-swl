@@ -1,0 +1,82 @@
+; sprintf_demo.swl -- exercise swl_sprintf with %d %u %s %x %%
+module main
+
+const BIG: i32 = 1234567890
+
+fn main() -> i32
+    var buf: i32 = swl_malloc(128)
+    var n: i32 = 0
+
+    ; %d signed decimal
+    n = swl_sprintf(buf as *u8, "%d", 42, 0, 0)
+    if swl_strcmp(buf as *u8, "42") != 0
+        swl_print_str("FAIL %d\n")
+        return 1
+    end
+
+    ; %s string
+    n = swl_sprintf(buf as *u8, "hello %s", "world", 0, 0)
+    if swl_strcmp(buf as *u8, "hello world") != 0
+        swl_print_str("FAIL %s\n")
+        swl_print_str(buf as *u8)
+        swl_print_str("\n")
+        return 2
+    end
+
+    ; %x hex
+    n = swl_sprintf(buf as *u8, "0x%x", 255, 0, 0)
+    if swl_strcmp(buf as *u8, "0xff") != 0
+        swl_print_str("FAIL %x\n")
+        return 3
+    end
+
+    ; %c character
+    n = swl_sprintf(buf as *u8, "[%c]", 65, 0, 0)
+    if swl_strcmp(buf as *u8, "[A]") != 0
+        swl_print_str("FAIL %c\n")
+        return 4
+    end
+
+    ; %% literal percent
+    n = swl_sprintf(buf as *u8, "100%%", 0, 0, 0)
+    if swl_strcmp(buf as *u8, "100%") != 0
+        swl_print_str("FAIL %%\n")
+        return 5
+    end
+
+    ; mixed: %d %s %x
+    n = swl_sprintf(buf as *u8, "%d and %s %x", 42, "hi", 255)
+    if swl_strcmp(buf as *u8, "42 and hi ff") != 0
+        swl_print_str("FAIL mixed\n")
+        swl_print_str(buf as *u8)
+        swl_print_str("\n")
+        return 6
+    end
+
+    ; %u unsigned
+    n = swl_sprintf(buf as *u8, "%u", BIG, 0, 0)
+    if swl_strcmp(buf as *u8, "1234567890") != 0
+        swl_print_str("FAIL %u\n")
+        swl_print_str(buf as *u8)
+        swl_print_str("\n")
+        return 7
+    end
+
+    ; negative %d
+    n = swl_sprintf(buf as *u8, "%d", -7, 0, 0)
+    if swl_strcmp(buf as *u8, "-7") != 0
+        swl_print_str("FAIL neg\n")
+        return 8
+    end
+
+    ; return value check (last sprintf wrote "-7" = 2 bytes)
+    if n != 2
+        swl_print_str("FAIL len\n")
+        swl_print_i32(n)
+        return 9
+    end
+
+    swl_free(buf)
+    swl_print_str("sprintf ok\n")
+    return 0
+end

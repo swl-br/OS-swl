@@ -1,0 +1,88 @@
+; file_demo.swl -- file IO: open/read/write/seek/close/unlink
+module file_demo
+
+fn main() -> i32
+    var path: [u8, 24]
+    path[0] = 47  ; /
+    path[1] = 116 ; t
+    path[2] = 109 ; m
+    path[3] = 112 ; p
+    path[4] = 47  ; /
+    path[5] = 115 ; s
+    path[6] = 119 ; w
+    path[7] = 108 ; l
+    path[8] = 95  ; _
+    path[9] = 102 ; f
+    path[10] = 105 ; i
+    path[11] = 108 ; l
+    path[12] = 101 ; e
+    path[13] = 95 ; _
+    path[14] = 100 ; d
+    path[15] = 101 ; e
+    path[16] = 109 ; m
+    path[17] = 111 ; o
+    path[18] = 46 ; .
+    path[19] = 116 ; t
+    path[20] = 120 ; x
+    path[21] = 116 ; t
+    path[22] = 0
+
+    ; create/truncate and write
+    var fd: i32 = swl_open(path, 577, 420)
+    if fd < 0
+        swl_print_str("FAIL open w\n")
+        return 1
+    end
+    var n: i32 = swl_write(fd, "hello file\n", 11)
+    if n != 11
+        return 2
+    end
+    swl_close(fd)
+    swl_print_str("write ok\n")
+
+    ; read back and verify
+    fd = swl_open(path, 0, 0)
+    if fd < 0
+        return 3
+    end
+    var buf: [u8, 32]
+    n = swl_read(fd, buf, 32)
+    swl_close(fd)
+    if n != 11
+        swl_print_i32(n)
+        return 4
+    end
+    buf[11] = 0
+    if swl_strcmp(buf, "hello file\n") != 0
+        swl_print_str(buf)
+        return 5
+    end
+    swl_print_str("read ok: ")
+    swl_print_str(buf)
+
+    ; seek to offset 6 and read "file"
+    fd = swl_open(path, 0, 0)
+    var off: i32 = swl_seek(fd, 6, 0)
+    if off != 6
+        swl_print_i32(off)
+        return 6
+    end
+    var buf2: [u8, 16]
+    n = swl_read(fd, buf2, 4)
+    swl_close(fd)
+    if n != 4
+        return 7
+    end
+    buf2[4] = 0
+    if swl_strcmp(buf2, "file") != 0
+        swl_print_str(buf2)
+        return 8
+    end
+    swl_print_str("seek ok: ")
+    swl_print_str(buf2)
+    swl_print_str("\n")
+
+    swl_unlink(path)
+    swl_print_str("file ok\n")
+    return 0
+end

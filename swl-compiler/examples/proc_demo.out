@@ -1,0 +1,6 @@
+pid ok
+child
+fork ok
+exec ok
+sleep ok
+proc ok

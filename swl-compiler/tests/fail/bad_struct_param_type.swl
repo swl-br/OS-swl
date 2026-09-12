@@ -1,0 +1,16 @@
+; should be rejected: integer passed where struct parameter expected
+module bad_struct_param_type
+
+struct Point
+    x: i32
+    y: i32
+end
+
+fn get_x(p: Point) -> i32
+    return p.x
+end
+
+fn main() -> i32
+    var result: i32 = get_x(42)
+    return result
+end

@@ -309,11 +309,11 @@ static void sema_stmt(Ctx *c, Stmt *s);
 static void require_value(Ctx *c, Expr *e, const char *what)
 {
     if (type_is_array(e->type))
-        die_at(e->pos, "%s must be an integer or pointer expression (got "
-               "an array; index it with '[...]' or pass it where a "
+        die_at(e->pos, "%s must be an integer, pointer, or struct expression "
+               "(got an array; index it with '[...]' or pass it where a "
                "pointer is expected)", what);
-    if (!type_is_value(e->type))
-        die_at(e->pos, "%s must be an integer or pointer expression "
+    if (!type_is_value(e->type) && !type_is_struct(e->type))
+        die_at(e->pos, "%s must be an integer, pointer, or struct expression "
                "(got %s)", what, tyname(c, e->type));
 }
 
@@ -362,10 +362,9 @@ static void resolve_var_chain(Ctx *c, LVal *lv)
         type = s->fields[f].type;
     }
 
-    if (type_is_struct(type))
-        die_at(lv->pos,
-               "cannot use a whole struct as a value in the MVP "
-               "(access a field instead)");
+    /* Struct values are allowed: the codegen loads the address.
+     * Field chains that end at a struct type (nested struct access)
+     * are also handled this way. */
 
     lv->type = type;
     lv->disp = disp;
@@ -387,10 +386,7 @@ static void resolve_deref_lval(Ctx *c, LVal *lv)
                    tyname(c, type));
         type = ptr_base(c->p, type);
     }
-    if (type_is_struct(type))
-        die_at(lv->pos, "cannot store through a pointer to struct %s",
-               tyname(c, type));
-    if (!type_is_value(type))
+    if (!type_is_value(type) && !type_is_struct(type))
         die_at(lv->pos, "invalid write target type %s", tyname(c, type));
     lv->type = type;
     lv->disp = 0;
@@ -398,9 +394,9 @@ static void resolve_deref_lval(Ctx *c, LVal *lv)
 }
 
 /* Builtin runtime functions callable from SWL (defined in swlrt.asm). */
-typedef struct { const char *name; int nargs; int ret; int p1, p2, p3; } Builtin;
+typedef struct { const char *name; int nargs; int ret; int p1, p2, p3, p4, p5; } Builtin;
 
-enum { BP_I32 = 0, BP_PTR_U8 = 1, BP_U32 = 2 };
+enum { BP_I32 = 0, BP_PTR_U8 = 1, BP_U32 = 2, BP_PTR_I32 = 3, BP_ANY = 4 };
 
 static const Builtin builtins[] = {
     { "swl_print_i32", 1, T_VOID, BP_I32,    0,        0 },
@@ -411,11 +407,44 @@ static const Builtin builtins[] = {
     { "swl_print_str", 1, T_VOID, BP_PTR_U8, 0,        0 },
     { "swl_strlen",    1, T_I32,  BP_PTR_U8, 0,        0 },
     { "swl_strcmp",    2, T_I32,  BP_PTR_U8, BP_PTR_U8, 0 },
+    { "swl_strcpy",    2, T_I32,  BP_PTR_U8, BP_PTR_U8, 0 },
+    { "swl_strcat",    2, T_I32,  BP_PTR_U8, BP_PTR_U8, 0 },
+    { "swl_strchr",    2, T_I32,  BP_PTR_U8, BP_I32,   0 },
+    { "swl_strncmp",   3, T_I32,  BP_PTR_U8, BP_PTR_U8, BP_I32 },
+    { "swl_itoa",      2, T_I32,  BP_I32,    BP_PTR_U8, 0 },
+    { "swl_atoi",      1, T_I32,  BP_PTR_U8, 0,        0 },
     { "swl_memset8",   3, T_VOID, BP_PTR_U8, BP_I32,  BP_I32 },
+    { "swl_memcpy",    3, T_I32,  BP_PTR_U8, BP_PTR_U8, BP_I32 },
+    { "swl_memmove",   3, T_I32,  BP_PTR_U8, BP_PTR_U8, BP_I32 },
+    { "swl_malloc",    1, T_I32,  BP_I32,    0,        0 },
+    { "swl_free",      1, T_VOID, BP_I32,    0,        0 },
+    { "swl_realloc",   2, T_I32,  BP_I32,    BP_I32,   0 },
+    { "swl_calloc",    2, T_I32,  BP_I32,    BP_I32,   0 },
+    { "swl_strdup",    1, T_I32,  BP_PTR_U8, 0,        0 },
+    { "swl_open",      3, T_I32,  BP_PTR_U8, BP_I32,   BP_I32 },
+    { "swl_read",      3, T_I32,  BP_I32,    BP_PTR_U8, BP_I32 },
+    { "swl_write",     3, T_I32,  BP_I32,    BP_PTR_U8, BP_I32 },
+    { "swl_close",     1, T_I32,  BP_I32,    0,         0 },
+    { "swl_seek",      3, T_I32,  BP_I32,    BP_I32,   BP_I32 },
+    { "swl_unlink",    1, T_I32,  BP_PTR_U8, 0,         0 },
+    { "swl_mkdir",     2, T_I32,  BP_PTR_U8, BP_I32,   0 },
+    { "swl_rmdir",     1, T_I32,  BP_PTR_U8, 0,         0 },
+    { "swl_chdir",     1, T_I32,  BP_PTR_U8, 0,         0 },
+    { "swl_getcwd",    2, T_I32,  BP_PTR_U8, BP_I32,   0 },
+    { "swl_getpid",    0, T_I32,  0,         0,        0 },
+    { "swl_getppid",   0, T_I32,  0,         0,        0 },
+    { "swl_fork",      0, T_I32,  0,         0,        0 },
+    { "swl_waitpid",   3, T_I32,  BP_I32,    BP_PTR_U8, BP_I32 },
+    { "swl_exec",      1, T_I32,  BP_PTR_U8, 0,        0 },
+    { "swl_sleep",     1, T_I32,  BP_I32,    0,        0 },
+    { "swl_pipe",      1, T_I32,  BP_PTR_I32, 0,       0 },
+    { "swl_dup",       1, T_I32,  BP_I32,    0,        0 },
+    { "swl_dup2",      2, T_I32,  BP_I32,    BP_I32,   0 },
     { "swl_time_s",    0, T_I32,  0,         0,        0 },
     { "swl_rand",      0, T_I32,  0,         0,        0 },
     { "swl_srand",     1, T_VOID, BP_I32,    0,        0 },
     { "swl_print_hex", 1, T_VOID, BP_I32,    0,        0 },
+    { "swl_sprintf",   5, T_I32,  BP_PTR_U8, BP_PTR_U8, BP_ANY, BP_ANY, BP_ANY },
     { NULL, 0, 0, 0, 0, 0 }
 };
 
@@ -629,10 +658,7 @@ static void sema_expr(Ctx *c, Expr *e, int want)
         resolve_var_chain(c, &e->u.lv);
         if (!e->u.lv.resolved)
             die_at(e->pos, "undefined variable '%s'", e->u.lv.varname);
-        if (type_is_struct(e->u.lv.type))
-            die_at(e->pos,
-                   "cannot take the address of a whole struct in this "
-                   "version (address a field instead)");
+        /* address-of is allowed for any variable, including structs */
         e->type = ptr_type_of(c->p, e->u.lv.type);
         break;
     }
@@ -645,15 +671,24 @@ static void sema_expr(Ctx *c, Expr *e, int want)
                        e->u.call.name, builtins[bi].nargs,
                        e->u.call.nargs);
             for (i = 0; i < e->u.call.nargs; i++) {
-                int pk = i == 0 ? builtins[bi].p1
-                       : i == 1 ? builtins[bi].p2
-                       : builtins[bi].p3;
-                int want_t = pk == BP_PTR_U8
-                                 ? ptr_type_of(c->p, T_U8)
-                                 : pk == BP_U32
-                                 ? T_U32
-                                 : T_I32;
-                sema_expr(c, e->u.call.args[i], want_t);
+                int pk;
+                if (i == 0) pk = builtins[bi].p1;
+                else if (i == 1) pk = builtins[bi].p2;
+                else if (i == 2) pk = builtins[bi].p3;
+                else if (i == 3) pk = builtins[bi].p4;
+                else pk = builtins[bi].p5;
+                if (pk == BP_ANY) {
+                    sema_expr(c, e->u.call.args[i], T_UNKNOWN);
+                } else {
+                    int want_t = pk == BP_PTR_U8
+                                     ? ptr_type_of(c->p, T_U8)
+                                     : pk == BP_PTR_I32
+                                     ? ptr_type_of(c->p, T_I32)
+                                     : pk == BP_U32
+                                     ? T_U32
+                                     : T_I32;
+                    sema_expr(c, e->u.call.args[i], want_t);
+                }
             }
             e->type = builtins[bi].ret;
             e->u.call.fni = -1;
@@ -707,10 +742,7 @@ static void sema_expr(Ctx *c, Expr *e, int want)
                 die_at(e->pos, "cannot dereference a non-pointer "
                        "(got %s)", tyname(c, e->u.un.a->type));
             int base = ptr_base(c->p, e->u.un.a->type);
-            if (type_is_struct(base))
-                die_at(e->pos, "cannot dereference a pointer to struct %s "
-                       "in this version (dereference pointers to scalars)",
-                       tyname(c, base));
+            /* dereference works for scalars and structs */
             e->type = base;
             break;
         }
@@ -754,9 +786,7 @@ static void sema_expr(Ctx *c, Expr *e, int want)
             die_at(e->pos, "subscript requires an array or pointer "
                    "(got %s)", tyname(c, arr));
         }
-        if (type_is_struct(base))
-            die_at(e->pos, "cannot index arrays of struct %s in this "
-                   "version", tyname(c, base));
+        /* arrays of structs are allowed: indexing returns a struct value */
         e->type = base;
         break;
     }
@@ -806,10 +836,10 @@ static void sema_stmt(Ctx *c, Stmt *s)
                    tyname(c, t));
         declare_local(c, s->pos, s->u.vardecl.name, t);
         if (s->u.vardecl.init) {
-            if (type_is_struct(t))
-                die_at(s->pos, "struct variables cannot be initialized in "
-                       "the MVP");
-            if (type_is_array(t)) {
+            if (type_is_struct(t)) {
+                /* struct init: must be an expression of the same struct type */
+                sema_expr(c, s->u.vardecl.init, t);
+            } else if (type_is_array(t)) {
                 /* The only array initializer in the MVP is a string
                  * literal, and only for [u8, N]: the code generator
                  * stores the bytes element by element. */
@@ -868,14 +898,36 @@ static void sema_stmt(Ctx *c, Stmt *s)
         sema_expr(c, s->u.fors.limit, T_UNKNOWN);
         if (s->u.fors.step)
             sema_expr(c, s->u.fors.step, T_UNKNOWN);
-        /* declare loop variable as a function-local (stays in fn->vars
-         * so codegen can find it; occupies one stack slot for the
-         * entire function — negligible cost). */
-        declare_local(c, s->pos, s->u.fors.varname, s->u.fors.type);
+        if (s->u.fors.has_var) {
+            /* 'for var i : T = ...' — always declare a new local */
+            declare_local(c, s->pos, s->u.fors.varname, s->u.fors.type);
+        } else {
+            /* 'for i : T = ...' — reuse existing variable */
+            VarSym *fv = find_var(c, s->u.fors.varname);
+            if (!fv)
+                die_at(s->pos, "variable '%s' must be declared before "
+                       "use in 'for' without 'var'", s->u.fors.varname);
+            if (fv->type != s->u.fors.type)
+                die_at(s->pos, "type mismatch: variable '%s' is %s, "
+                       "but 'for' specifies %s",
+                       s->u.fors.varname, tyname(c, fv->type),
+                       tyname(c, s->u.fors.type));
+        }
         c->loop_depth++;
         for (i = 0; i < s->u.fors.nbody; i++)
             sema_stmt(c, s->u.fors.body[i]);
         c->loop_depth--;
+        break;
+    }
+    case S_SWITCH: {
+        sema_expr(c, s->u.sw.expr, T_UNKNOWN);
+        require_value(c, s->u.sw.expr, "switch expression");
+        int i;
+        for (i = 0; i < s->u.sw.ncases; i++) {
+            int j;
+            for (j = 0; j < s->u.sw.cases[i].nbody; j++)
+                sema_stmt(c, s->u.sw.cases[i].body[j]);
+        }
         break;
     }
     case S_BREAK:
@@ -919,11 +971,19 @@ static void sema_stmt(Ctx *c, Stmt *s)
                            "array element must be an integer or pointer "
                            "(cannot assign whole sub-arrays in the MVP)");
                 lv->type = t;
+                /* resolve the subscript index expression so its
+                 * variables have correct displacements (codegen
+                 * needs them to emit proper [ebp+disp] loads). */
+                for (i = 0; i < lv->nsub; i++)
+                    sema_expr(c, lv->subs[i], T_UNKNOWN);
             }
         }
         sema_expr(c, s->u.assign.val, lv->type);
         break;
     }
+    case S_ELSEIF:
+        die_at(s->pos, "internal: S_ELSEIF reached sema (not implemented yet)");
+        break;
     case S_EXPR:
         sema_expr(c, s->u.estmt.call, T_UNKNOWN);
         if (s->u.estmt.call->kind != E_CALL)
@@ -1004,14 +1064,33 @@ void sema_check(Program *p)
         c.fn = fn;
 
         int pi;
+        /* Parameters: scalars/pointers live directly on the stack.
+         * Struct params are passed by hidden pointer: [ebp+8+4*pi] holds
+         * a pointer to the caller's struct copy. We allocate a local copy
+         * and record both the pointer and the local var. */
         for (pi = fn->nparams - 1; pi >= 0; pi--) {
             Param *par = &fn->params[pi];
-            VarSym *v = xmalloc(sizeof(VarSym));
-            v->name = par->name;
-            v->type = par->type;
-            v->disp = 8 + 4 * pi;
-            v->next = c.vars;
-            c.vars = v;
+            if (type_is_struct(par->type)) {
+                /* hidden pointer param: use the stack slot as a pointer */
+                VarSym *pv = xmalloc(sizeof(VarSym));
+                char pname[128];
+                snprintf(pname, sizeof(pname), "__ptr_%s", par->name);
+                pv->name = xmalloc(strlen(pname) + 1);
+                strcpy(pv->name, pname);
+                pv->type = ptr_type_of(p, par->type);
+                pv->disp = 8 + 4 * pi;
+                pv->next = c.vars;
+                c.vars = pv;
+                /* allocate local copy */
+                declare_local(&c, (SrcPos){0,0}, par->name, par->type);
+            } else {
+                VarSym *v = xmalloc(sizeof(VarSym));
+                v->name = par->name;
+                v->type = par->type;
+                v->disp = 8 + 4 * pi;
+                v->next = c.vars;
+                c.vars = v;
+            }
         }
 
         for (f = 0; f < fn->nbody; f++)

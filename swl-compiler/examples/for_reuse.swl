@@ -1,0 +1,16 @@
+module for_reuse
+
+fn main() -> i32
+  var i: i32 = 0
+  ; first for loop WITHOUT 'var' — reuses the existing i
+  for i : i32 = 0 to 5
+    swl_print_i32(i)
+  end
+  ; second for loop WITHOUT 'var' — reuses the existing i with different range
+  for i : i32 = 10 to 15
+    swl_print_i32(i)
+  end
+  ; i should still be 15 (final value from last for loop)
+  swl_print_i32(i)
+  return 0
+end

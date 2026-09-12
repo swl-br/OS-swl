@@ -1,0 +1,30 @@
+; str_copy_demo.swl -- swl_strcpy: copy NUL-terminated strings
+module main
+
+fn main() -> i32
+    var src: [u8, 6]
+    src[0] = 72   ; H
+    src[1] = 101  ; e
+    src[2] = 108  ; l
+    src[3] = 108  ; l
+    src[4] = 111  ; o
+    src[5] = 0    ; NUL
+
+    ; copy string to dst
+    var dst: [u8, 6]
+    swl_strcpy(dst, src)
+
+    ; verify length
+    var len: i32 = swl_strlen(dst)
+    swl_print_i32(len)
+
+    ; verify contents identical
+    var cmp: i32 = swl_strcmp(dst, src)
+    swl_print_i32(cmp)
+
+    ; verify returns dst pointer
+    var ptr: i32 = swl_strcpy(dst, src)
+    swl_print_i32(ptr != 0)
+
+    return 0
+end

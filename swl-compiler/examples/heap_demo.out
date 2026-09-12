@@ -1,0 +1,5 @@
+malloc ok
+calloc ok
+strdup: hello
+realloc ok
+heap ok

@@ -210,6 +210,20 @@ static void gen_store_deref(Ctx *c, int t)
         bput(b, "    mov dword [eax], ecx\n");
 }
 
+/* copy 'size' bytes from [ecx] (source) to [eax] (dest).
+ * Used for struct assignment and struct initialization. */
+static void gen_struct_memcpy(Buf *b, int size)
+{
+    int i;
+    for (i = 0; i + 4 <= size; i += 4)
+        bfmt(b, "    mov edx, dword [ecx + %d]\n"
+                "    mov dword [eax + %d], edx\n", i, i);
+    /* copy remaining bytes (0..3) */
+    for (; i < size; i++)
+        bfmt(b, "    mov dl, byte [ecx + %d]\n"
+                "    mov byte [eax + %d], dl\n", i, i);
+}
+
 static VarSym *var_of(Ctx *c, const char *name)
 {
     VarSym *v;
@@ -322,7 +336,16 @@ static void gen_expr(Ctx *c, Expr *e, StrTable *strs)
         break;
     }
     case E_LVAL:
-        if (e->u.lv.disp == GLOBAL_DISP)
+        if (type_is_struct(e->u.lv.type)) {
+            /* struct value: load address (like E_ADDR) */
+            if (e->u.lv.disp == GLOBAL_DISP)
+                bfmt(b, "    mov eax, swl_g_%s\n", e->u.lv.varname);
+            else {
+                bfmt(b, "    lea eax, ");
+                emit_mem_ebp(b, e->u.lv.disp);
+                bput(b, "\n");
+            }
+        } else if (e->u.lv.disp == GLOBAL_DISP)
             gen_load_global(c, e->u.lv.type, e->u.lv.varname);
         else
             gen_load_offs(c, e->u.lv.type, e->u.lv.disp);
@@ -490,9 +513,22 @@ static void gen_stmt(Ctx *c, Stmt *s, int retlabel, StrTable *strs)
                 }
                 break;
             }
-            gen_expr(c, in, strs);
-            VarSym *v = var_of(c, s->u.vardecl.name);
-            gen_store_offs(c, s->u.vardecl.type, v->disp);
+            if (type_is_struct(s->u.vardecl.type)) {
+                /* struct init: var s: Pair = expr
+                 * gen_expr loads address of source into eax.
+                 * We need to compute address of dest and memcpy. */
+                gen_expr(c, in, strs);
+                bput(b, "    push eax\n"); /* source address */
+                VarSym *v = var_of(c, s->u.vardecl.name);
+                bfmt(b, "    lea eax, ");
+                emit_mem_ebp(b, v->disp);
+                bput(b, "\n    pop ecx\n");
+                gen_struct_memcpy(b, type_size_of(c->p, s->u.vardecl.type));
+            } else {
+                gen_expr(c, in, strs);
+                VarSym *v = var_of(c, s->u.vardecl.name);
+                gen_store_offs(c, s->u.vardecl.type, v->disp);
+            }
         }
         break;
     }
@@ -612,6 +648,64 @@ static void gen_stmt(Ctx *c, Stmt *s, int retlabel, StrTable *strs)
         c->loop_end = save_end;
         break;
     }
+    case S_SWITCH: {
+        int lend = new_label(c);
+        int has_default = 0;
+        int i;
+        int save_end = c->loop_end;
+        c->loop_end = lend;  /* break inside switch exits the switch */
+
+        /* evaluate switch expression, push for comparisons */
+        gen_expr(c, s->u.sw.expr, strs);
+        bput(b, "    push eax\n");
+
+        /* jump table: compare each case, jump to body or next */
+        int *case_labels = xmalloc(sizeof(int) * (size_t)s->u.sw.ncases);
+        for (i = 0; i < s->u.sw.ncases; i++) {
+            case_labels[i] = new_label(c);
+            if (s->u.sw.cases[i].val == -1)
+                has_default = 1;
+        }
+
+        /* compare and dispatch */
+        for (i = 0; i < s->u.sw.ncases; i++) {
+            if (s->u.sw.cases[i].val == -1) continue;  /* handle default last */
+            bfmt(b, "    pop eax\n");
+            bfmt(b, "    push eax\n");
+            bfmt(b, "    cmp eax, %lld\n", s->u.sw.cases[i].val);
+            bfmt(b, "    je L%d\n", case_labels[i]);
+        }
+
+        /* fall-through: no case matched */
+        bfmt(b, "    pop eax\n");  /* pop switch expr */
+        if (has_default) {
+            /* find default label */
+            for (i = 0; i < s->u.sw.ncases; i++) {
+                if (s->u.sw.cases[i].val == -1) {
+                    bfmt(b, "    jmp L%d\n", case_labels[i]);
+                    break;
+                }
+            }
+        } else {
+            bfmt(b, "    jmp L%d\n", lend);
+        }
+
+        /* case bodies */
+        for (i = 0; i < s->u.sw.ncases; i++) {
+            bfmt(b, "L%d:\n", case_labels[i]);
+            /* pop switch expression (already consumed for comparison) */
+            if (s->u.sw.cases[i].val != -1)
+                bput(b, "    pop eax\n");
+            int j;
+            for (j = 0; j < s->u.sw.cases[i].nbody; j++)
+                gen_stmt(c, s->u.sw.cases[i].body[j], retlabel, strs);
+        }
+
+        bfmt(b, "L%d:\n", lend);
+        c->loop_end = save_end;
+        free(case_labels);
+        break;
+    }
     case S_BREAK:
         bfmt(b, "    jmp L%d\n", c->loop_end);
         break;
@@ -648,14 +742,34 @@ static void gen_stmt(Ctx *c, Stmt *s, int retlabel, StrTable *strs)
                     "    pop ecx\n");
             gen_store_deref(c, lv->type);
         } else {
-            gen_expr(c, s->u.assign.val, strs);
-            if (lv->disp == GLOBAL_DISP)
-                gen_store_global(c, lv->type, lv->varname);
-            else
-                gen_store_offs(c, lv->type, lv->disp);
+            if (type_is_struct(lv->type)) {
+                /* struct assignment: s1 = s2
+                 * gen_expr loads address of s2 (source) into eax.
+                 * We need to compute address of s1 (dest) and memcpy. */
+                gen_expr(c, s->u.assign.val, strs);
+                bput(b, "    push eax\n"); /* source address */
+                if (lv->disp == GLOBAL_DISP)
+                    bfmt(b, "    mov eax, swl_g_%s\n", lv->varname);
+                else {
+                    bfmt(b, "    lea eax, ");
+                    emit_mem_ebp(b, lv->disp);
+                    bput(b, "\n");
+                }
+                bput(b, "    pop ecx\n"); /* ecx = source, eax = dest */
+                gen_struct_memcpy(b, type_size_of(c->p, lv->type));
+            } else {
+                gen_expr(c, s->u.assign.val, strs);
+                if (lv->disp == GLOBAL_DISP)
+                    gen_store_global(c, lv->type, lv->varname);
+                else
+                    gen_store_offs(c, lv->type, lv->disp);
+            }
         }
         break;
     }
+    case S_ELSEIF:
+        die_at(s->pos, "internal: S_ELSEIF reached codegen (not implemented yet)");
+        break;
     case S_EXPR:
         gen_expr(c, s->u.estmt.call, strs);
         break;
@@ -691,6 +805,29 @@ static void gen_fn(Ctx *c, Fn *f, StrTable *strs)
                 "    mov ecx, %d\n"
                 "    rep stosd\n", f->frame / 4);
 
+    /* Copy struct parameters from hidden pointers to local copies */
+    for (i = 0; i < f->nparams; i++) {
+        if (type_is_struct(f->params[i].type)) {
+            int sz = type_size_of(c->p, f->params[i].type);
+            /* source: hidden pointer at [ebp+8+4*i] */
+            bfmt(b, "    mov ecx, [ebp + %d]\n", 8 + 4 * i);
+            /* dest: local variable (its VarSym has the param name) */
+            VarSym *lv = NULL;
+            VarSym *v;
+            for (v = c->fn->vars; v; v = v->next)
+                if (strcmp(v->name, f->params[i].name) == 0) {
+                    lv = v;
+                    break;
+                }
+            if (lv) {
+                bfmt(b, "    lea eax, ");
+                emit_mem_ebp(b, lv->disp);
+                bput(b, "\n");
+                gen_struct_memcpy(b, sz);
+            }
+        }
+    }
+
     int retlabel = new_label(c);
     for (i = 0; i < f->nbody; i++)
         gen_stmt(c, f->body[i], retlabel, strs);
@@ -704,7 +841,7 @@ static void gen_fn(Ctx *c, Fn *f, StrTable *strs)
 /* Runtime extern collection                                           */
 /* ------------------------------------------------------------------ */
 
-static void collect_externs(Expr *e, char names[8][32], int *n)
+static void collect_externs(Expr *e, char names[32][32], int *n)
 {
     int i;
     if (!e)
@@ -715,7 +852,7 @@ static void collect_externs(Expr *e, char names[8][32], int *n)
             for (i = 0; i < *n; i++)
                 if (strcmp(names[i], e->u.call.name) == 0)
                     break;
-            if (i == *n && *n < 8)
+            if (i == *n && *n < 32)
                 strcpy(names[(*n)++], e->u.call.name);
         }
         for (i = 0; i < e->u.call.nargs; i++)
@@ -740,7 +877,7 @@ static void collect_externs(Expr *e, char names[8][32], int *n)
     }
 }
 
-static void collect_externs_stmt(Stmt *s, char names[8][32], int *n)
+static void collect_externs_stmt(Stmt *s, char names[32][32], int *n)
 {
     int i;
     if (!s)
@@ -766,6 +903,22 @@ static void collect_externs_stmt(Stmt *s, char names[8][32], int *n)
         for (i = 0; i < s->u.whiles.n; i++)
             collect_externs_stmt(s->u.whiles.body[i], names, n);
         break;
+    case S_FOR:
+        collect_externs(s->u.fors.start, names, n);
+        collect_externs(s->u.fors.limit, names, n);
+        if (s->u.fors.step)
+            collect_externs(s->u.fors.step, names, n);
+        for (i = 0; i < s->u.fors.nbody; i++)
+            collect_externs_stmt(s->u.fors.body[i], names, n);
+        break;
+    case S_SWITCH:
+        collect_externs(s->u.sw.expr, names, n);
+        for (i = 0; i < s->u.sw.ncases; i++) {
+            int j;
+            for (j = 0; j < s->u.sw.cases[i].nbody; j++)
+                collect_externs_stmt(s->u.sw.cases[i].body[j], names, n);
+        }
+        break;
     case S_ASSIGN:
         collect_externs(s->u.assign.val, names, n);
         for (i = 0; i < s->u.assign.lv.nsub; i++)
@@ -774,6 +927,9 @@ static void collect_externs_stmt(Stmt *s, char names[8][32], int *n)
     case S_EXPR:
         collect_externs(s->u.estmt.call, names, n);
         break;
+    case S_BREAK:
+    case S_CONTINUE:
+    case S_ELSEIF:
     default:
         break;
     }
@@ -801,7 +957,7 @@ void codegen(Program *p, const char *outpath)
                "section .text\n"
                "global swl_main\n", p->name);
 
-    char ext[8][32];
+    char ext[32][32];
     int next = 0;
     int i, j;
     for (i = 0; i < p->nfuncs; i++)
@@ -845,10 +1001,14 @@ void codegen(Program *p, const char *outpath)
         for (i = 0; i < strs.ndefs; i++) {
             bfmt(&out, "swl_str_%d:\n    db ", i);
             int k;
-            for (k = 0; k < strs.defs[i].len; k++)
-                bfmt(&out, "%s0x%02X",
-                     k ? "," : "", (unsigned char)strs.defs[i].bytes[k]);
-            bput(&out, ",0\n");
+            if (strs.defs[i].len == 0) {
+                bput(&out, "0\n");
+            } else {
+                for (k = 0; k < strs.defs[i].len; k++)
+                    bfmt(&out, "%s0x%02X",
+                         k ? "," : "", (unsigned char)strs.defs[i].bytes[k]);
+                bput(&out, ",0\n");
+            }
         }
     }
 

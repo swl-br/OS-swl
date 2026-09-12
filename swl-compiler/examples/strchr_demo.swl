@@ -1,0 +1,37 @@
+; strchr_demo.swl -- swl_strchr: find character in string
+module main
+
+fn main() -> i32
+    var s: [u8, 6]
+    s[0] = 72   ; H
+    s[1] = 101  ; e
+    s[2] = 108  ; l
+    s[3] = 108  ; l
+    s[4] = 111  ; o
+    s[5] = 0    ; NUL
+
+    ; find 'l' (should find offset 2)
+    var ip: i32 = swl_strchr(s, 108)
+    if ip == 0
+        return 1
+    end
+    var p: *u8 = ip as *u8
+    swl_print_char(*p as i32)
+    swl_print_i32(*p == 108)
+
+    ; find 'H' (offset 0)
+    ip = swl_strchr(s, 72)
+    p = ip as *u8
+    swl_print_char(*p as i32)
+    swl_print_i32(*p == 72)
+
+    ; not found -> NULL (0)
+    ip = swl_strchr(s, 90)
+    swl_print_i32(ip == 0)
+
+    ; find NUL
+    ip = swl_strchr(s, 0)
+    swl_print_i32(ip != 0)
+
+    return 0
+end

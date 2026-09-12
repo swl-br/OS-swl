@@ -1,0 +1,53 @@
+; itoa_demo.swl -- swl_itoa: integer to string conversion
+module itoa_demo
+
+fn main() -> i32
+    var buf: [u8, 16]
+
+    swl_itoa(0, buf)
+    if swl_strcmp(buf, "0") != 0
+        swl_print_str("FAIL 0\n")
+        return 1
+    end
+    swl_print_str("itoa 0: ")
+    swl_print_str(buf)
+    swl_print_str("\n")
+
+    swl_itoa(42, buf)
+    if swl_strcmp(buf, "42") != 0
+        swl_print_str("FAIL 42\n")
+        return 2
+    end
+    swl_print_str("itoa 42: ")
+    swl_print_str(buf)
+    swl_print_str("\n")
+
+    swl_itoa(-7, buf)
+    if swl_strcmp(buf, "-7") != 0
+        swl_print_str("FAIL -7\n")
+        return 3
+    end
+    swl_print_str("itoa -7: ")
+    swl_print_str(buf)
+    swl_print_str("\n")
+
+    swl_itoa(123456, buf)
+    if swl_strcmp(buf, "123456") != 0
+        swl_print_str("FAIL 123456\n")
+        return 4
+    end
+    swl_print_str("itoa 123456: ")
+    swl_print_str(buf)
+    swl_print_str("\n")
+
+    swl_itoa(2147483647, buf)
+    if swl_strcmp(buf, "2147483647") != 0
+        swl_print_str("FAIL max\n")
+        return 6
+    end
+    swl_print_str("itoa max: ")
+    swl_print_str(buf)
+    swl_print_str("\n")
+
+    return 0
+end

@@ -1,0 +1,14 @@
+module bad_struct_init_type
+
+struct Point
+    x: i32
+    y: i32
+end
+
+fn main() -> i32
+    var a: Point
+    a.x = 10
+    a.y = 20
+    var b: i32 = a
+    return 0
+end

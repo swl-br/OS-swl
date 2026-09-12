@@ -1,0 +1,72 @@
+; atoi_demo.swl -- swl_atoi: decimal string to signed integer
+module atoi_demo
+
+fn main() -> i32
+    ; basic positive number
+    if swl_atoi("42") != 42
+        swl_print_str("FAIL 42\n")
+        return 1
+    end
+    swl_print_str("atoi '42': ")
+    swl_print_i32(42)
+
+    ; basic negative number
+    if swl_atoi("-7") != -7
+        swl_print_str("FAIL -7\n")
+        return 2
+    end
+    swl_print_str("atoi '-7': ")
+    swl_print_i32(-7)
+
+    ; zero
+    if swl_atoi("0") != 0
+        swl_print_str("FAIL 0\n")
+        return 3
+    end
+    swl_print_str("atoi '0': ")
+    swl_print_i32(0)
+
+    ; empty string -> 0
+    if swl_atoi("") != 0
+        swl_print_str("FAIL empty\n")
+        return 4
+    end
+    swl_print_str("atoi '': 0\n")
+
+    ; leading whitespace
+    if swl_atoi("  123") != 123
+        swl_print_str("FAIL ws\n")
+        return 5
+    end
+    swl_print_str("atoi '  123': ")
+    swl_print_i32(123)
+
+    ; explicit plus sign
+    if swl_atoi("+5") != 5
+        swl_print_str("FAIL +5\n")
+        return 6
+    end
+    swl_print_str("atoi '+5': ")
+    swl_print_i32(5)
+
+    ; trailing non-digits
+    if swl_atoi("99abc") != 99
+        swl_print_str("FAIL trailing\n")
+        return 7
+    end
+    swl_print_str("atoi '99abc': ")
+    swl_print_i32(99)
+
+    ; roundtrip: itoa then atoi
+    var buf: [u8, 16]
+    swl_itoa(-12345, buf)
+    var v: i32 = swl_atoi(buf)
+    if v != -12345
+        swl_print_str("FAIL roundtrip\n")
+        return 8
+    end
+    swl_print_str("roundtrip -12345: ")
+    swl_print_i32(v)
+
+    return 0
+end

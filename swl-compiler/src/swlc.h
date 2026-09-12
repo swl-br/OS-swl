@@ -34,6 +34,7 @@ typedef enum {
     T_RETURN, T_AND, T_OR, T_NOT,
     T_CONST, T_AS, T_BREAK, T_CONTINUE, T_SIZEOF,
     T_FOR, T_TO, T_BY, T_GLOBAL,
+    T_SWITCH, T_CASE, T_DEFAULT,
     T_LPAREN, T_RPAREN, T_COMMA, T_COLON, T_ARROW, T_DOT, T_ASSIGN,
     T_PLUS, T_MINUS, T_STAR, T_SLASH, T_PERCENT,
     T_EQ, T_NE, T_LT, T_GT, T_LE, T_GE,
@@ -166,8 +167,14 @@ typedef struct LVal {
 } LVal;
 
 typedef enum {
-    S_VAR, S_RETURN, S_IF, S_WHILE, S_FOR, S_BREAK, S_CONTINUE, S_ASSIGN, S_EXPR
+    S_VAR, S_RETURN, S_IF, S_ELSEIF, S_WHILE, S_FOR, S_BREAK, S_CONTINUE, S_ASSIGN, S_EXPR, S_SWITCH
 } StmtKind;
+
+typedef struct SwitchCase {
+    long long val;       /* case literal value, or -1 for default */
+    struct Stmt **body;
+    int nbody;
+} SwitchCase;
 
 typedef struct Stmt {
     StmtKind kind;
@@ -177,9 +184,11 @@ typedef struct Stmt {
         struct { struct Expr *val; } ret;
         struct { struct Expr *cond; struct Stmt **then, **els; int nthen, nels; } ifs;
         struct { struct Expr *cond; struct Stmt **body; int n; } whiles;
-        struct { char *varname; int type; struct Expr *start, *limit, *step; struct Stmt **body; int nbody; } fors;
+        struct { char *varname; int type; struct Expr *start, *limit, *step; struct Stmt **body; int nbody; int has_var; } fors;
         struct { LVal lv; struct Expr *val; } assign;
         struct { struct Expr *call; } estmt;
+        struct { struct Expr *cond; struct Stmt **then, **els; int nthen, nels; } elseifs;  /* reused for S_ELSEIF chain */
+        struct { struct Expr *expr; SwitchCase *cases; int ncases; } sw;
     } u;
 } Stmt;
 

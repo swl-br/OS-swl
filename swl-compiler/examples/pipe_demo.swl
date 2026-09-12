@@ -1,0 +1,59 @@
+; pipe_demo.swl -- IPC: pipe and fork with pipe communication
+module pipe_demo
+
+fn main() -> i32
+    ; 1) basic pipe: write then read in the same process
+    var fds: [i32, 2]
+    var rc: i32 = swl_pipe(fds)
+    if rc != 0
+        swl_print_str("FAIL pipe\n")
+        return 1
+    end
+    var rd: i32 = fds[0]
+    var wr: i32 = fds[1]
+    swl_write(wr, "pipe data\n", 10)
+    swl_close(wr)
+    var buf: [u8, 16]
+    var n: i32 = swl_read(rd, buf, 16)
+    swl_close(rd)
+    if n != 10
+        swl_print_i32(n)
+        return 2
+    end
+    buf[10] = 0
+    if swl_strcmp(buf, "pipe data\n") != 0
+        swl_print_str(buf)
+        return 3
+    end
+    swl_print_str("pipe ok\n")
+
+    ; 2) fork + pipe: child writes, parent reads
+    var fds2: [i32, 2]
+    swl_pipe(fds2)
+    var pid: i32 = swl_fork()
+    if pid < 0
+        swl_print_str("FAIL fork\n")
+        return 4
+    end
+    if pid == 0
+        swl_close(fds2[0])
+        swl_write(fds2[1], "child\n", 6)
+        swl_close(fds2[1])
+        return 0
+    end
+    swl_close(fds2[1])
+    var buf2: [u8, 16]
+    n = swl_read(fds2[0], buf2, 16)
+    swl_close(fds2[0])
+    buf2[n] = 0
+    var status: i32 = 0
+    var sp: *i32 = &status
+    swl_waitpid(pid, sp as *u8, 0)
+    if swl_strcmp(buf2, "child\n") != 0
+        swl_print_str(buf2)
+        return 5
+    end
+    swl_print_str(buf2)
+    swl_print_str("pipe demo ok\n")
+    return 0
+end

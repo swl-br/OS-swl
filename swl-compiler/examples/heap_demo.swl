@@ -1,0 +1,80 @@
+; heap_demo.swl -- dynamic heap: malloc/calloc/realloc/free/strdup
+module heap_demo
+
+fn main() -> i32
+    ; malloc + free + pointer arithmetic
+    var p: i32 = swl_malloc(8)
+    if p == 0
+        swl_print_str("FAIL malloc\n")
+        return 1
+    end
+    var a0: *i32 = p as *i32
+    var a1: *i32 = (p + 4) as *i32
+    *a0 = 123
+    *a1 = 456
+    if *a0 != 123
+        return 2
+    end
+    if *a1 != 456
+        return 3
+    end
+    swl_print_str("malloc ok\n")
+
+    ; calloc zeros
+    var q: i32 = swl_calloc(4, 4)
+    if q == 0
+        return 4
+    end
+    var b0: *i32 = q as *i32
+    var b1: *i32 = (q + 4) as *i32
+    if *b0 != 0
+        return 5
+    end
+    *b0 = 77
+    *b1 = 88
+    if *b1 != 88
+        return 6
+    end
+    swl_print_str("calloc ok\n")
+
+    ; strdup
+    var s: i32 = swl_strdup("hello")
+    if s == 0
+        return 7
+    end
+    if swl_strcmp(s as *u8, "hello") != 0
+        return 8
+    end
+    swl_print_str("strdup: ")
+    swl_print_str(s as *u8)
+    swl_print_str("\n")
+
+    ; realloc grow (NULL -> malloc, grow preserves)
+    var r: i32 = swl_malloc(4)
+    var rp: *i32 = r as *i32
+    *rp = 999
+    var r2: i32 = swl_realloc(r, 8)
+    if r2 == 0
+        return 9
+    end
+    var r2p: *i32 = r2 as *i32
+    if *r2p != 999
+        return 10
+    end
+    var rn: *i32 = (r2 + 4) as *i32
+    *rn = 1001
+    if *rn != 1001
+        return 11
+    end
+    swl_print_str("realloc ok\n")
+
+    ; free everything (free(0) is safe)
+    swl_free(0)
+    swl_free(p)
+    swl_free(q)
+    swl_free(s)
+    swl_free(r2)
+
+    swl_print_str("heap ok\n")
+    return 0
+end

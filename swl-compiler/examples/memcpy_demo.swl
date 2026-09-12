@@ -1,0 +1,26 @@
+; memcpy_demo.swl -- swl_memcpy: copy bytes between arrays
+module main
+
+fn main() -> i32
+    var src: [u8, 6]
+    src[0] = 72   ; H
+    src[1] = 101  ; e
+    src[2] = 108  ; l
+    src[3] = 108  ; l
+    src[4] = 111  ; o
+    src[5] = 0    ; NUL
+
+    ; copy "Hello" to dst
+    var dst: [u8, 6]
+    swl_memcpy(dst, src, 6)
+
+    ; verify copy worked
+    var len: i32 = swl_strlen(dst)
+    swl_print_i32(len)
+
+    ; demonstrate memcpy returns dst pointer
+    var ptr: i32 = swl_memcpy(dst, src, 5)
+    swl_print_i32(ptr != 0)
+
+    return 0
+end

@@ -1,0 +1,39 @@
+; memmove_demo.swl -- swl_memmove: safe overlapping memory copy
+module memmove_demo
+
+fn main() -> i32
+    var buf: [u8, 16]
+
+    ; set up "ABCDE\0"
+    buf[0] = 65
+    buf[1] = 66
+    buf[2] = 67
+    buf[3] = 68
+    buf[4] = 69
+    buf[5] = 0
+
+    ; forward overlap: copy "ABC" to positions 2..4
+    ; before: ABCDE\0
+    ; after:  ABABC\0
+    swl_memmove(buf + 2, buf, 3)
+    swl_print_str("forward: ")
+    swl_print_str(buf)
+    swl_print_str("\n")
+
+    ; backward overlap: copy "ABC" from positions 2..4 to 0..2
+    ; before: ABABC\0
+    ; after:  ABCBC\0
+    swl_memmove(buf, buf + 2, 3)
+    swl_print_str("backward: ")
+    swl_print_str(buf)
+    swl_print_str("\n")
+
+    ; no overlap: copy to a separate buffer
+    var dst: [u8, 8]
+    swl_memmove(dst, buf, 6)
+    swl_print_str("copy: ")
+    swl_print_str(dst)
+    swl_print_str("\n")
+
+    return 0
+end

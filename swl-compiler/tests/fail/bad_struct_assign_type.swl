@@ -1,0 +1,21 @@
+module bad_struct_assign_type
+
+struct Point
+    x: i32
+    y: i32
+end
+
+struct Color
+    r: i32
+    g: i32
+    b: i32
+end
+
+fn main() -> i32
+    var p: Point
+    p.x = 1
+    p.y = 2
+    var c: Color
+    c = p
+    return 0
+end

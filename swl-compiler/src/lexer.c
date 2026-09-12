@@ -78,6 +78,7 @@ const char *tok_name(int kind)
         "return", "and", "or", "not",
         "const", "as", "break", "continue", "sizeof",
         "for", "to", "by", "global",
+        "switch", "case", "default",
         "'('", "')'", "','", "':'", "'->'", "'.'", "'=', ';'",
         "+", "-", "*", "/", "%",
         "=='", "!=", "<'", ">'", "<=", ">=',",
@@ -102,6 +103,8 @@ static const struct kw keywords[] = {
     { "sizeof", T_SIZEOF },
     { "for", T_FOR }, { "to", T_TO }, { "by", T_BY },
     { "global", T_GLOBAL },
+    { "switch", T_SWITCH }, { "case", T_CASE },
+    { "default", T_DEFAULT },
     { NULL, 0 }
 };
 

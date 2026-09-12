@@ -1,0 +1,5 @@
+getpid ok
+mkdir ok
+getcwd ok
+chdir ok
+dir ok

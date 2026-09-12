@@ -1,0 +1,5 @@
+strncmp 5: equal
+strncmp 6: equal
+strncmp 7: differ
+strncmp 0: equal
+strncmp 11: equal

@@ -1,0 +1,42 @@
+module struct_assign
+
+struct Point
+    x: i32
+    y: i32
+end
+
+struct Rect
+    top_left: Point
+    bottom_right: Point
+end
+
+fn main() -> i32
+    ; struct initialization via field assignment
+    var a: Point
+    a.x = 10
+    a.y = 20
+
+    ; struct assignment: b = a (copies all fields)
+    var b: Point
+    b = a
+
+    ; verify assignment worked
+    swl_print_i32(b.x)
+    swl_print_i32(b.y)
+
+    ; modify b, verify a is unchanged (independent copy)
+    b.x = 99
+    swl_print_i32(a.x)
+    swl_print_i32(a.y)
+
+    ; struct with struct field (nested)
+    var r: Rect
+    r.top_left = a
+    r.bottom_right = b
+
+    ; access nested struct fields
+    swl_print_i32(r.top_left.x)
+    swl_print_i32(r.bottom_right.x)
+
+    return 0
+end

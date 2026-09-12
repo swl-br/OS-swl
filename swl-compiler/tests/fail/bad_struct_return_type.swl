@@ -1,0 +1,20 @@
+; should be rejected: struct returned from function used as integer
+module bad_struct_return_type
+
+struct Point
+    x: i32
+    y: i32
+end
+
+fn get_point() -> Point
+    var p: Point
+    p.x = 10
+    p.y = 20
+    return p
+end
+
+fn main() -> i32
+    var p: Point = get_point()
+    var result: i32 = p + 1
+    return result
+end

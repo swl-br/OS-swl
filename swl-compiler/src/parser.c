@@ -501,8 +501,10 @@ static Expr *parse_expr(Parser *p)
     }
 }
 
-/* for var i = start to limit [by step] */
+/* for [var] i : T = start to limit [by step] */
 static Stmt *parse_for_stmt(Parser *p);
+/* switch expr ... end */
+static Stmt *parse_switch_stmt(Parser *p);
 
 /* ---- statements ---- */
 
@@ -653,7 +655,8 @@ static void parse_stmt_list(Parser *p, Stmt ***list, int *n)
         while (at(p, T_NL))
             next(p);
         Token *t = peek(p);
-        if (t->kind == T_END || t->kind == T_ELSE || t->kind == T_EOF)
+        if (t->kind == T_END || t->kind == T_ELSE || t->kind == T_EOF ||
+            t->kind == T_CASE || t->kind == T_DEFAULT)
             return;
 
         Stmt *s = NULL;
@@ -720,6 +723,9 @@ static void parse_stmt_list(Parser *p, Stmt ***list, int *n)
         case T_FOR:
             s = parse_for_stmt(p);
             break;
+        case T_SWITCH:
+            s = parse_switch_stmt(p);
+            break;
         case T_IDENT:
             s = parse_assignment_target(p, t);
             break;
@@ -730,7 +736,7 @@ static void parse_stmt_list(Parser *p, Stmt ***list, int *n)
         default:
             die_at(t->pos,
                    "a statement must start with var, return, if, while, for, "
-                   "break, continue, an assignment or a function call "
+                   "switch, break, continue, an assignment or a function call "
                    "(found %s)", tok_name(t->kind));
             return; /* unreachable */
         }
@@ -747,17 +753,25 @@ static void parse_stmt_list(Parser *p, Stmt ***list, int *n)
     }
 }
 
-/* for var i = start to limit [by step] */
+/* for [var] i : T = start to limit [by step] */
 static Stmt *parse_for_stmt(Parser *p)
 {
     Token *kw = next(p); /* 'for' */
-    Token *vartok = next(p); /* 'var' */
-    if (vartok->kind != T_VAR)
-        die_at(vartok->pos, "expected 'var' after 'for'");
-    Token *name = peek(p);
-    if (name->kind != T_IDENT)
-        die_at(name->pos, "expected variable name after 'var'");
-    next(p);
+    int has_var = 0;
+    Token *name;
+    if (at(p, T_VAR)) {
+        next(p); /* consume 'var' */
+        has_var = 1;
+        name = peek(p);
+        if (name->kind != T_IDENT)
+            die_at(name->pos, "expected variable name after 'var'");
+        next(p);
+    } else {
+        name = peek(p);
+        if (name->kind != T_IDENT)
+            die_at(name->pos, "expected 'var' or variable name after 'for'");
+        next(p);
+    }
     expect(p, T_COLON, "':' after variable name in 'for'");
     int type = parse_type(p, 1);
     expect(p, T_ASSIGN, "'=' after type in 'for'");
@@ -784,6 +798,92 @@ static Stmt *parse_for_stmt(Parser *p)
     s->u.fors.step = step;
     s->u.fors.body = body;
     s->u.fors.nbody = nb;
+    s->u.fors.has_var = has_var;
+    return s;
+}
+
+/* switch expr \n case lit \n stmts ... end */
+static Stmt *parse_switch_stmt(Parser *p)
+{
+    Token *kw = next(p);  /* 'switch' */
+    Expr *expr = parse_expr(p);
+    if (!at(p, T_NL))
+        die_at(peek(p)->pos, "expected end of line after switch expression");
+    expect_nl(p);
+
+    SwitchCase *cases = NULL;
+    int ncases = 0;
+    int ccap = 0;
+    Stmt **defbody = NULL;
+    int ndef = 0;
+    int has_default = 0;
+
+    while (!at(p, T_END) && !at(p, T_EOF)) {
+        if (at(p, T_CASE)) {
+            next(p);  /* 'case' */
+            Token *lit = peek(p);
+            if (lit->kind != T_INT && lit->kind != T_STR)
+                die_at(lit->pos, "case value must be an integer or string literal");
+            long long val = 0;
+            if (lit->kind == T_INT) {
+                val = lit->ival;
+                next(p);
+            } else {
+                /* single-char string as integer */
+                if (lit->text && lit->text[0] && lit->text[1] == 0)
+                    val = (unsigned char)lit->text[0];
+                else
+                    die_at(lit->pos, "case string must be a single character");
+                next(p);
+            }
+            if (!at(p, T_NL))
+                die_at(peek(p)->pos, "expected end of line after case value");
+            expect_nl(p);
+            Stmt **body = NULL;
+            int nb = 0;
+            parse_stmt_list(p, &body, &nb);
+            if (ncases >= ccap) {
+                ccap = ccap ? ccap * 2 : 8;
+                cases = xrealloc(cases, sizeof(SwitchCase) * (size_t)ccap);
+            }
+            cases[ncases].val = val;
+            cases[ncases].body = body;
+            cases[ncases].nbody = nb;
+            ncases++;
+        } else if (at(p, T_DEFAULT)) {
+            next(p);  /* 'default' */
+            if (has_default)
+                die_at(kw->pos, "multiple default cases in switch");
+            has_default = 1;
+            if (!at(p, T_NL))
+                die_at(peek(p)->pos, "expected end of line after 'default'");
+            expect_nl(p);
+            parse_stmt_list(p, &defbody, &ndef);
+        } else {
+            die_at(peek(p)->pos, "expected 'case' or 'default' in switch body, found %s",
+                   tok_name(peek(p)->kind));
+        }
+    }
+    expect(p, T_END, "'end' to close switch statement");
+    expect_nl(p);
+
+    /* build AST node */
+    Stmt *s = new_stmt(p, S_SWITCH, kw->pos);
+    s->u.sw.expr = expr;
+
+    /* append default as last case with val = -1 */
+    if (has_default) {
+        if (ncases >= ccap) {
+            ccap = ccap ? ccap * 2 : 8;
+            cases = xrealloc(cases, sizeof(SwitchCase) * (size_t)ccap);
+        }
+        cases[ncases].val = -1;
+        cases[ncases].body = defbody;
+        cases[ncases].nbody = ndef;
+        ncases++;
+    }
+    s->u.sw.cases = cases;
+    s->u.sw.ncases = ncases;
     return s;
 }
 
@@ -928,8 +1028,8 @@ static void parse_fn_decl(Parser *p)
                 die_at(pn->pos, "expected parameter name");
             next(p);
             expect(p, T_COLON, "':' after parameter name");
-            /* params may be scalars or pointers (never plain structs) */
-            int type = parse_type(p, 0);
+            /* params may be scalars, pointers, or plain structs (by value) */
+            int type = parse_type(p, 1);
             f->params = xrealloc(f->params,
                                  sizeof(Param) * (f->nparams + 1));
             f->params[f->nparams].name = pn->text;
@@ -945,7 +1045,7 @@ static void parse_fn_decl(Parser *p)
     expect(p, T_RPAREN, "')' to close parameter list");
     if (at(p, T_ARROW)) {
         next(p);
-        f->ret = parse_type(p, 0);
+        f->ret = parse_type(p, 1);  /* allow struct return by value */
     }
     if (!at(p, T_NL))
         die_at(peek(p)->pos,
