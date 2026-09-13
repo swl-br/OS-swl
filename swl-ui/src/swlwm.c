@@ -508,6 +508,8 @@ static void keyboard_handle_modifiers(
 }
 
 
+static void swl_launch_command(const char *cmd);
+
 static struct tinywl_toplevel *focused_toplevel(struct tinywl_server *server) {
 	struct wlr_surface *focused_surf =
 		server->seat ? server->seat->keyboard_state.focused_surface : NULL;
@@ -739,6 +741,17 @@ static void keyboard_handle_key(
 					handled = true;
 					break;
 				default:
+					break;
+				}
+			}
+		}
+		/* Ctrl+Alt+T — terminal (TSWL) */
+		if (!handled && (modifiers & WLR_MODIFIER_CTRL)
+				&& (modifiers & WLR_MODIFIER_ALT)) {
+			for (int i = 0; i < nsyms; i++) {
+				if (syms[i] == XKB_KEY_t || syms[i] == XKB_KEY_T) {
+					swl_launch_command("/bin/tswl");
+					handled = true;
 					break;
 				}
 			}

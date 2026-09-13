@@ -14,4 +14,4 @@ Forward declaration antes do primeiro uso:
 static void swl_launch_command(const char *cmd);
 ```
 
-Status: PENDENTE.
+Status: ATENDIDO em 2026-09-12 — fix exato verificado com build limpo e integrado.

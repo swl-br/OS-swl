@@ -40,6 +40,11 @@ Veredito padrão: BOM (decoder + handoff corretos); base ATUAL;
 47/47 com e sem sanitizer; build 9/9. Aprovado pelo usuário e
 integrado (com ida pro `main`).
 
+## 2026-09-12 — Ctrl+Alt+T integrado (admin)
+
+Veredito padrão: BOM; base ATUAL; build limpo (tecla no QEMU).
+Aprovado pelo usuário e integrado; aviso ATENDIDO.
+
 ## 2026-09-11 — CSI 3J + DECSTR integrados (admin)
 
 Veredito padrão: BOM (lógica correta e útil); base ATUAL (só adições);
