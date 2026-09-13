@@ -59,6 +59,14 @@ gerada mas ninguém lê ainda. Integrado assim mesmo (capacidade sem
 efeito colateral); falta complemento pequeno (decl + bloco drain).
 Com ida pro `main`.
 
+## 2026-09-11 — V2 1ª leva integrada (time de apps) (admin)
+
+Pedido do usuário (obra encomendada por ele): decorations.c novo
+(round, botões circulares, tema claro) + theme.h (WARN, light) +
+defconfig (PREEMPT, sandbox, zram). Verificado antes: API compatível,
+build limpo. defconfig vale no próximo rebuild do kernel (validar no
+QEMU). Entrada organizada (arquivos movidos, inbox limpa).
+
 ## 2026-09-11 — Bracketed paste integrado (admin)
 
 CSI ?2004 (cola sem interpretar metachars): base atual, 38/38 com e

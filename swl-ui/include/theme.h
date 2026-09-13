@@ -34,6 +34,18 @@ typedef struct { double r, g, b, a; } swl_color_t;
 #define SWL_COL_TEXT          ((swl_color_t){0.83,  0.87,  0.90,  1.00}) /* #d4dee6                */
 #define SWL_COL_TEXT_DIM      ((swl_color_t){0.45,  0.50,  0.56,  1.00}) /* #737f8f                */
 #define SWL_COL_DANGER        ((swl_color_t){0.86,  0.35,  0.40,  1.00}) /* botão fechar           */
+#define SWL_COL_WARN          ((swl_color_t){0.86,  0.62,  0.30,  1.00}) /* botão minimizar (âmbar)*/
+
+/* Paleta do tema CLARO — janela/decoração precisa saber qual tema está
+ * ativo pra combinar com o conteúdo do app (ver swl_theme_is_light() em
+ * decorations.c). Cores espelham as do swlappkit (apps), só que aqui
+ * duplicadas de propósito — a decoração é desenhada pelo compositor,
+ * que não pode depender da lib dos apps. */
+#define SWL_COL_BG_LIGHT         ((swl_color_t){0.914, 0.922, 0.937, 1.00}) /* #e9ebef */
+#define SWL_COL_PANEL_BG_LIGHT   ((swl_color_t){0.965, 0.969, 0.976, 0.98}) /* #f6f7f9 */
+#define SWL_COL_PANEL_BORDER_LIGHT ((swl_color_t){0.0, 0.0, 0.0, 0.10})
+#define SWL_COL_TEXT_LIGHT       ((swl_color_t){0.11, 0.13, 0.16, 1.00})
+#define SWL_COL_TEXT_DIM_LIGHT   ((swl_color_t){0.42, 0.46, 0.51, 1.00})
 
 /* Monta uma cor ad-hoc fora da paleta fixa, ex.: SWL_SET(cr, SWL_COLOR(0.15, 0.35, 0.38, 0.12)); */
 #define SWL_COLOR(R, G, B, A) ((swl_color_t){(R), (G), (B), (A)})
