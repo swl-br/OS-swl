@@ -84,6 +84,14 @@ Fix exato (remove `pressed`) verificado com build 9/9 e integrado;
 aviso selectall ATENDIDO. T5 seleção agora completa (arrasto, palavra,
 linha, tudo + atalhos).
 
+## 2026-09-12 — swlc v2.16 do Buffy sincronizado e verificado (admin)
+
+`origin/main` trouxe v2.2–v2.16 (structs por valor, heap, file/dir,
+fork/pipe, sprintf). Verificado aqui do zero: suíte **75/75**, C2
+(for-only) funciona, `swl_read` lê stdin de verdade. C2/C3 →
+CONCLUÍDAS (Buffy); fix guardado do Grok descartado (moot);
+PROJECT_STATE atualizado (v2.16, 75 testes).
+
 ## 2026-09-11 — Visual bell integrado (admin)
 
 Pacote completo (base atual conferida marcador por marcador — sem o

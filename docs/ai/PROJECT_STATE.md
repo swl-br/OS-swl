@@ -158,7 +158,7 @@ só engana visualmente por rodar fora do nosso compositor. Desde
 
 ## Linguagem SWL / Compilador swlc
 
-STATUS: FUNCIONAL — v2 completa (2026-09-08).
+STATUS: FUNCIONAL — v2.16 (2026-09-12, Buffy).
 
 **Área ativa: FreeBuffy** (DEC-009 — dono da linguagem; outras IAs não
 integram código em `swl-compiler/`, só guardam contribuição. Orquestrador
@@ -179,9 +179,13 @@ Compilador C → NASM x86-32 com runtime em Assembly puro. Pipeline:
   `swl_memset8`, `swl_print_hex`, `swl_time_s`, `swl_rand`/`swl_srand`.
 - **V2**: `for var i : T = start to limit [by step]`, variáveis globais
   `global name: T = init`.
+- **V2.1–V2.16** (Buffy): structs por valor, builtins de string/mem
+  (`memcpy`, `strcpy`, `itoa`...), heap (`malloc`/`free`, `strdup`),
+  arquivo (`open`/`read`/`write`), diretório, `fork`/`exec`/`pipe`,
+  `sprintf`, `swl_read` (stdin).
 
 ### Verificação
-- `make -C swl-compiler test` → 51 verificações (22 exemplos + 29
+- `make -C swl-compiler test` → 75 verificações (40 exemplos + 35
   rejeições), tudo passando.
 - Exemplos com saída verificada byte a byte (`.out` fixtures).
 
