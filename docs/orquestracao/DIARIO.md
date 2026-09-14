@@ -4,6 +4,15 @@ Registro diário das rodadas de orquestração. Entrada mais recente em
 cima. **Conferir sempre o repo real** — este diário é um índice, não a
 verdade de fonte.
 
+## 2026-09-11 — Kit M2 + swlcentral aplicados (time de apps) (admin)
+
+Pedido do usuário (padrão novo do time): `apps/swlappkit/` substituído
+pela versão M2 (menubar retrátil + controles/overlays/shapes/theme) e
+`apps/swlcentral/` adicionado (Central de Controle). Verificado:
+quebra ESPERADA em tswl e swlconfig (assinatura `swl_menubar_draw`
+mudou — adaptação é do time de apps, dono da área). Testes M1 antigos
+saíram com a troca (kit novo sem tests).
+
 ## 2026-09-11 — Super+D mostra desktop (admin)
 
 Veredito padrão: BOM (toggle minimizar/restaurar com taskbar);

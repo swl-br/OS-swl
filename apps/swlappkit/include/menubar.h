@@ -3,29 +3,23 @@
 
 #include <stdbool.h>
 #include <cairo/cairo.h>
+#include "swl_theme.h"
 
 /*
- * menubar: barra de menu clássica por aplicativo (Arquivo, Editar,
- * Ver, Configurar…) — M1. Componente reutilizável dos apps nativos,
- * independente de Wayland: só desenha (cairo/pango) e resolve
- * hit-test/estado. O app integra chamando pointer/key e executa as
- * ações retornadas por id.
+ * menubar: barra de menu por aplicativo (Arquivo, Editar, Ver…) — M2.
  *
- * A paleta espelha a do swl-ui/theme.h (fundo #0e1219, texto #d4dee6,
- * ciano #6bd1cc) pra manter a identidade visual do sistema; os
- * valores são copiados de propósito (a biblioteca não pode depender do
- * swl-ui, que é o compositor).
+ * Padrão visual novo (decidido em conjunto): a barra fica ESCONDIDA
+ * por padrão. Uma seta no canto esquerdo fica sempre visível; clicar
+ * nela abre a barra com uma animação de revelação (como se os títulos
+ * saíssem de dentro da seta) e a seta gira. O campo de busca é um item
+ * DENTRO da própria barra (não um elemento separado), alinhado à
+ * direita; digitar nele mostra um dropdown de resultados por baixo.
  *
- * Modelo de dados: o app declara menus/itens estáticos (label, id,
- * enabled) e passa pro menubar. O menubar é dono só do estado de
- * interação (hover, aberto, dropdown calculado)
- * geometria da barra em si.
+ * O app é dono do texto de busca e da lista de resultados (só ele sabe
+ * indexar seu próprio conteúdo) — a lib só desenha e faz hit-test,
+ * igual já fazia com os menus.
  */
 
-/* Item de um menu. `id` é o código da ação retornado ao app quando o
- * item é ativado (o app escolhe; 0 = sem ação). Se `label` for NULL
- * vira separador horizontal. `enabled` = false desenha o item
- * esmaecido e bloqueia a ativação (placeholder honesto de "em breve"). */
 typedef struct swl_menuitem {
     const char *label;
     int id;
@@ -38,40 +32,46 @@ typedef struct swl_menu {
     int item_count;
 } swl_menu;
 
+typedef struct { const char *label; const char *category; } swl_search_hit;
+
 typedef struct swl_menubar swl_menubar;
 
-/* altura da barra em pixels (constante do componente). */
 #define SWL_MENUBAR_BAR_H 26
 
-/* Cria o menubar com `menu_count` menus. `width` é a largura da
- * superfície onde ele será desenhado (recalcular em resize via
- * swl_menubar_resize. As structs menus/itens podem ser estáticas do
- * app — o menubar guarda só os ponteiros, não copia. */
 swl_menubar *swl_menubar_new(int width, const swl_menu *menus, int menu_count);
 void swl_menubar_free(swl_menubar *mb);
-
 void swl_menubar_resize(swl_menubar *mb, int width);
 
-/* Desenha a barra (e o dropdown aberto, se houver) num contexto
- * cairo cujo (0,0) é o topo da janela do app. Hey o dropdown é
- * desenhado por baixo da barra mesmos;w é a largura da superfície. */
-void swl_menubar_draw(swl_menubar *mb, cairo_t *cr, int surface_w);
+/* Avança a animação de abrir/fechar em dt_ms (chame a cada frame
+ * enquanto swl_menubar_animating() for true). ~180ms de transição. */
+void swl_menubar_tick(swl_menubar *mb, int dt_ms);
+bool swl_menubar_animating(const swl_menubar *mb);
+bool swl_menubar_is_expanded(const swl_menubar *mb);
 
-/* Ponteiro: chame com (sx,sy) em coordenadas da janela do app. */
+/* O app chama isso todo frame ANTES de swl_menubar_draw pra atualizar
+ * o texto de busca e os resultados (ambos só ponteiros, não copiados —
+ * precisam continuar válidos até o próximo set_search ou draw).
+ * hit_count = 0 esconde o dropdown de resultados. */
+void swl_menubar_set_search(swl_menubar *mb, const char *text, bool focused,
+                             const swl_search_hit *hits, int hit_count);
+
+/* Retorna o índice do resultado sob (x,y), ou -1. */
+int swl_menubar_search_hit_at(swl_menubar *mb, int x, int y);
+/* Retângulo do campo de busca (pra saber onde por o cursor de texto,
+ * desenhar foco, etc.) — só válido quando a barra está expandida. */
+void swl_menubar_search_rect(swl_menubar *mb, int *x, int *y, int *w, int *h);
+
+void swl_menubar_draw(const swl_theme_t *th, swl_menubar *mb, cairo_t *cr, int surface_w);
+
 void swl_menubar_pointer_motion(swl_menubar *mb, int x, int y);
 
-/* Clique. Retorna o id da ação se o clique ativou um item (>0),
- * ou 0 se não ativou nada (ex.: abriu/fechou menu, clicou fora, ou
- * clicou num item desabilitado. `pressed` distingue pressão de
- * soltura — ações executam soltura (padrão clássico de menu). */
+/* Clique. Retorna o id da ação (>0), ou 0 se não ativou item de menu —
+ * inclui os casos de clicar na seta (abre/fecha) ou no campo de busca
+ * (o app confere swl_menubar_search_rect/hit_at separadamente). */
 int swl_menubar_pointer_button(swl_menubar *mb, int x, int y, bool pressed);
 
 bool swl_menubar_is_open(swl_menubar *mb);
 
-/* Teclado (navegação clássica: Alt abre o primeiro menu, setas
- * navegam entre menus/itens, Enter ativa, Esc fecha). O app traduz
- * keysyms xkb pra estes códigos (evita dependência de xkbcommon na
- * biblioteca).. Retorna id de ação, ou 0. */
 enum swl_menubar_key {
     SWL_MENUBAR_KEY_ALT,
     SWL_MENUBAR_KEY_LEFT,
