@@ -46,6 +46,9 @@ if [ -d "$ARTIFACTS/apps" ]; then
         chmod 755 "$ROOTFS/bin/$(basename "$app")"
     done
 fi
+# Apps isolados do repo não podem continuar no rootfs só porque o
+# binário ficou no disco de um empacotamento anterior.
+rm -f "$ROOTFS/bin/swlpad" "$ROOTFS/bin/swlsysinfo" "$ROOTFS/bin/swlconfig"
 # Catálogo: TSWL precisa estar em /bin (desktop aponta /bin/tswl).
 if [ ! -x "$ROOTFS/bin/tswl" ]; then
     echo "AVISO: $ROOTFS/bin/tswl ausente — compile apps no chroot (build-gui-i386) e reempacote."

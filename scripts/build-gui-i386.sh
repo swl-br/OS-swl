@@ -134,6 +134,9 @@ ldd build/swlwm | wc -l
 
 # --- coleta os artefatos: binário + todas as .so carregadas ---
 mkdir -p /root/gui-artifacts/lib /root/gui-artifacts/apps
+# Limpa binários velhos: apps isolados/removidos do repo não podem
+# continuar sendo empacotados só porque o arquivo ficou no disco.
+rm -f /root/gui-artifacts/apps/swlpad /root/gui-artifacts/apps/swlsysinfo /root/gui-artifacts/apps/swlconfig
 cp build/swlwm /root/gui-artifacts/swlwm
 for app in tswl swlcentral; do
     cp /root/apps/$app/build/$app /root/gui-artifacts/apps/$app
