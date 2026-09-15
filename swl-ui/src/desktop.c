@@ -31,7 +31,7 @@ static const struct swl_icon_def default_icons[] = {
 	{ SWL_ICON_EDITOR,   "SWLPAD",      "/bin/swlpad", "swlpad.png" },
 	{ SWL_ICON_FOLDER,   "ARQUIVOS",    "swlfiles",    "arquivos.png" },
 	{ SWL_ICON_BOOK,     "SEBRE",       "sebre",       "sebre.png" },
-	{ SWL_ICON_CONFIG,   "CONFIG",      "swlconfig",   "config.png" },
+	{ SWL_ICON_CONFIG,   "CONFIG",      "/bin/swlcentral", "config.png" },
 	{ SWL_ICON_CHIP,     "DRIVERS",     "swldrivers",  "drivers.png" },
 	{ SWL_ICON_NETWORK,  "REDE",        "swlnet",      "rede.png" },
 	{ SWL_ICON_MONITOR,  "SISTEMA",     "swlsysinfo",  "sistema.png" },
